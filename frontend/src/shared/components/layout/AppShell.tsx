@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 
 import { ThemeToggle } from '../../../components/ThemeToggle';
 import { useAuth } from '../../../features/auth/context/useAuth';
+import { buildAccessProfile, formatRoleLabel } from '../../auth/authorization';
 
 const links = [
   { to: '/me', label: 'My Profile' },
@@ -12,9 +13,7 @@ const links = [
 
 export function AppShell() {
   const { user, logout, isAuthenticated } = useAuth();
-  const isAdmin = user?.roles.some((role) => ['Admin', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role)) ?? false;
-  const canReviewDocuments = user?.roles.some((role) => ['Admin', 'Manager', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role)) ?? false;
-  const canSignDocuments = user?.roles.some((role) => ['Admin', 'Signer', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role)) ?? false;
+  const access = buildAccessProfile(user?.roles ?? []);
 
   return (
     <div className="app-shell">
@@ -37,17 +36,17 @@ export function AppShell() {
               {link.label}
             </NavLink>
           ))}
-          {canReviewDocuments ? (
+          {access.canReviewDocuments ? (
             <NavLink className="sidebar__link" to="/approvals">
               Approvals
             </NavLink>
           ) : null}
-          {canSignDocuments ? (
+          {access.canSignDocuments ? (
             <NavLink className="sidebar__link" to="/signatures">
               Signatures
             </NavLink>
           ) : null}
-          {isAdmin ? (
+          {access.canAccessAdmin ? (
             <>
               <NavLink className="sidebar__link" to="/users">
                 Users & Roles
@@ -67,7 +66,9 @@ export function AppShell() {
             <span className="card__label">Signed In</span>
             <strong>{user.username ?? user.email ?? user.subject}</strong>
             <span className="muted">{user.email ?? 'Email not provided'}</span>
-            <span className="muted">Roles: {user.roles.length > 0 ? user.roles.join(', ') : 'No roles'}</span>
+            <span className="muted">
+              Roles: {access.normalizedRoles.length > 0 ? access.normalizedRoles.map(formatRoleLabel).join(', ') : 'No roles'}
+            </span>
             <button className="button button--secondary" type="button" onClick={() => void logout()}>
               Logout
             </button>

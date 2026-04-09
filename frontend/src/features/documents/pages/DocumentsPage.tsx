@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
+import { buildAccessProfile } from '../../../shared/auth/authorization';
 import { createDocument, getDocuments } from '../api/documentsApi';
 import type { CreateDocumentInput, DocumentSummary } from '../types';
 
@@ -12,7 +13,7 @@ export function DocumentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const canManageDocuments = user?.roles.some((role) => ['Admin', 'DocumentController', 'Manager', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role)) ?? false;
+  const access = buildAccessProfile(user?.roles ?? []);
 
   useEffect(() => {
     let ignore = false;
@@ -91,7 +92,7 @@ export function DocumentsPage() {
       {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
 
-      {canManageDocuments ? (
+      {access.canManageDocuments ? (
         <form className="form-grid" onSubmit={handleCreate}>
           <input
             className="input"

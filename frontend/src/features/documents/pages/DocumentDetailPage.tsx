@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
+import { buildAccessProfile } from '../../../shared/auth/authorization';
 import {
   assignDocumentSignature,
   createDocumentVersion,
@@ -49,9 +50,7 @@ export function DocumentDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const canManageVersions = user?.roles.some((role) => ['Admin', 'DocumentController', 'Manager', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role)) ?? false;
-  const canSubmitReview = user?.roles.some((role) => ['Admin', 'DocumentController', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role)) ?? false;
-  const canManageSignatures = user?.roles.some((role) => ['Admin', 'DocumentController', 'Manager', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role)) ?? false;
+  const access = buildAccessProfile(user?.roles ?? []);
 
   useEffect(() => {
     let ignore = false;
@@ -67,7 +66,7 @@ export function DocumentDetailPage() {
           getDocumentVersions(id, accessToken),
           getApprovalHistory(id, accessToken),
           getDocumentSignatures(id, accessToken),
-          canManageSignatures ? getAssignableSigners(accessToken) : Promise.resolve([]),
+          access.canManageSignatures ? getAssignableSigners(accessToken) : Promise.resolve([]),
         ]);
 
         if (!ignore) {
@@ -101,7 +100,7 @@ export function DocumentDetailPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken, canManageSignatures, id]);
+  }, [access.canManageSignatures, accessToken, id]);
 
   const currentVersion = useMemo(
     () => versions.find((version) => version.isCurrent) ?? null,
@@ -118,7 +117,7 @@ export function DocumentDetailPage() {
       getDocumentVersions(id, accessToken),
       getApprovalHistory(id, accessToken),
       getDocumentSignatures(id, accessToken),
-      canManageSignatures ? getAssignableSigners(accessToken) : Promise.resolve([]),
+      access.canManageSignatures ? getAssignableSigners(accessToken) : Promise.resolve([]),
     ]);
 
     setDocument(detail);
@@ -271,7 +270,7 @@ export function DocumentDetailPage() {
         </article>
       </div>
 
-      {canManageVersions ? (
+      {access.canManageDocuments ? (
         <form className="form-grid" onSubmit={handleDocumentSave}>
           <input
             className="input"
@@ -293,7 +292,7 @@ export function DocumentDetailPage() {
         </form>
       ) : null}
 
-      {canManageVersions ? (
+      {access.canManageDocuments ? (
         <form className="form-grid" onSubmit={handleCreateVersion}>
           <input
             className="input"
@@ -340,7 +339,7 @@ export function DocumentDetailPage() {
         </form>
       ) : null}
 
-      {canSubmitReview && (document.status === 'Draft' || document.status === 'Rejected') ? (
+      {access.canSubmitReview && (document.status === 'Draft' || document.status === 'Rejected') ? (
         <div className="card stack">
           <span className="card__label">Submit Review</span>
           <textarea
@@ -362,7 +361,7 @@ export function DocumentDetailPage() {
         </div>
       ) : null}
 
-      {canManageSignatures ? (
+      {access.canManageSignatures ? (
         <form className="form-grid" onSubmit={handleAssignSigner}>
           <select
             className="input input--select"
@@ -423,7 +422,7 @@ export function DocumentDetailPage() {
                   <div className="muted">{new Date(version.createdAt).toLocaleString()}</div>
                 </td>
                 <td>
-                  {canManageVersions && !version.isCurrent ? (
+                  {access.canManageDocuments && !version.isCurrent ? (
                     <button className="button button--secondary" type="button" onClick={() => void handleRestore(version.id, version.versionNumber)}>
                       Restore
                     </button>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { StatePanel } from '../../../shared/components/state/StatePanel';
+import { buildAccessProfile, formatRoleLabel } from '../../../shared/auth/authorization';
 import { useAuth } from '../../auth/context/useAuth';
 import {
   getDashboardSummary,
@@ -22,10 +23,7 @@ export function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   const roles = user?.roles ?? [];
-  const isAdmin = roles.some((role) => ['Admin', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role));
-  const canManageDocuments = roles.some((role) => ['Admin', 'DocumentController', 'Manager', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role));
-  const canReviewDocuments = roles.some((role) => ['Admin', 'Manager', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role));
-  const canSignDocuments = roles.some((role) => ['Admin', 'Signer', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role));
+  const access = buildAccessProfile(roles);
 
   useEffect(() => {
     let ignore = false;
@@ -66,8 +64,8 @@ export function DashboardPage() {
     const actions = [
       {
         to: '/documents',
-        label: canManageDocuments ? 'Upload or manage documents' : 'Open document registry',
-        description: canManageDocuments
+        label: access.canManageDocuments ? 'Upload or manage documents' : 'Open document registry',
+        description: access.canManageDocuments
           ? 'Continue controlled upload, metadata maintenance, versioning, and archive work.'
           : 'Review current controlled documents and their latest statuses.',
       },
@@ -78,7 +76,7 @@ export function DashboardPage() {
       },
     ];
 
-    if (canReviewDocuments) {
+    if (access.canReviewDocuments) {
       actions.push({
         to: '/approvals',
         label: 'Open approvals queue',
@@ -86,7 +84,7 @@ export function DashboardPage() {
       });
     }
 
-    if (canSignDocuments) {
+    if (access.canSignDocuments) {
       actions.push({
         to: '/signatures',
         label: 'Open signatures queue',
@@ -94,7 +92,7 @@ export function DashboardPage() {
       });
     }
 
-    if (isAdmin) {
+    if (access.isAdmin) {
       actions.push(
         {
           to: '/users',
@@ -110,7 +108,7 @@ export function DashboardPage() {
     }
 
     return actions;
-  }, [canManageDocuments, canReviewDocuments, canSignDocuments, isAdmin]);
+  }, [access.canManageDocuments, access.canReviewDocuments, access.canSignDocuments, access.isAdmin]);
 
   const summaryCards = [
     { label: 'Total Documents', value: summary?.totalDocuments ?? 0 },
@@ -169,7 +167,7 @@ export function DashboardPage() {
           <span className="card__label">Current Session</span>
           <div>Username: {user?.username ?? 'Unavailable'}</div>
           <div>Email: {user?.email ?? 'Unavailable'}</div>
-          <div>Roles: {roles.length > 0 ? roles.join(', ') : 'No mapped roles'}</div>
+          <div>Roles: {access.normalizedRoles.length > 0 ? access.normalizedRoles.map(formatRoleLabel).join(', ') : 'No mapped roles'}</div>
         </article>
       </div>
 

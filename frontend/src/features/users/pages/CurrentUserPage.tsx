@@ -1,13 +1,12 @@
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
+import { buildAccessProfile, formatRoleLabel } from '../../../shared/auth/authorization';
 
 export function CurrentUserPage() {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
-  const isAdmin = roles.some((role) => ['Admin', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role));
-  const canReviewDocuments = roles.some((role) => ['Admin', 'Manager', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role));
-  const canSignDocuments = roles.some((role) => ['Admin', 'Signer', 'admin', 'realm-admin', 'insightdocs-admin'].includes(role));
+  const access = buildAccessProfile(roles);
 
   return (
     <section className="panel stack">
@@ -32,10 +31,10 @@ export function CurrentUserPage() {
         <article className="card">
           <span className="card__label">Access Scope</span>
           <div className="stack">
-            <div>Roles: {roles.length > 0 ? roles.join(', ') : 'No mapped roles'}</div>
-            <div>Approvals: {canReviewDocuments ? 'Enabled' : 'Not assigned'}</div>
-            <div>Signatures: {canSignDocuments ? 'Enabled' : 'Not assigned'}</div>
-            <div>Admin: {isAdmin ? 'Enabled' : 'Not assigned'}</div>
+            <div>Roles: {access.normalizedRoles.length > 0 ? access.normalizedRoles.map(formatRoleLabel).join(', ') : 'No mapped roles'}</div>
+            <div>Approvals: {access.canReviewDocuments ? 'Enabled' : 'Not assigned'}</div>
+            <div>Signatures: {access.canSignDocuments ? 'Enabled' : 'Not assigned'}</div>
+            <div>Admin: {access.isAdmin ? 'Enabled' : 'Not assigned'}</div>
           </div>
         </article>
       </div>
@@ -50,7 +49,7 @@ export function CurrentUserPage() {
           </div>
         </article>
 
-        {canReviewDocuments ? (
+        {access.canReviewDocuments ? (
           <article className="card card--interactive">
             <span className="card__label">Approvals</span>
             <h3>Review pending work</h3>

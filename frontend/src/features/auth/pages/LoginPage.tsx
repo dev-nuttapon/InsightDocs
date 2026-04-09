@@ -1,15 +1,21 @@
 import { useEffect, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
+import { buildAccessProfile, canAccessPath, resolveDefaultAuthorizedPath } from '../../../shared/auth/authorization';
 import { useAuth } from '../context/useAuth';
 import { resetLoginRedirectFlag } from '../services/oidcClient';
 
 export function LoginPage() {
   const location = useLocation();
-  const { authState, isAuthenticated, isReady, login, error } = useAuth();
+  const { authState, isAuthenticated, isReady, login, error, user } = useAuth();
   const redirectTarget = readRedirectTarget(location.state);
   const entryError = readEntryError(location.state) ?? error;
   const loginStartedRef = useRef(false);
+  const access = buildAccessProfile(user?.roles ?? []);
+  const hasMappedAccess = access.normalizedRoles.length > 0;
+  const authorizedTarget = hasMappedAccess && canAccessPath(access, redirectTarget)
+    ? redirectTarget
+    : resolveDefaultAuthorizedPath(access);
 
   useEffect(() => {
     resetLoginRedirectFlag();
@@ -27,8 +33,12 @@ export function LoginPage() {
     });
   }, [entryError, isAuthenticated, isReady, login, redirectTarget]);
 
+  if (isAuthenticated && !hasMappedAccess) {
+    return <Navigate replace to="/unauthorized" state={{ errorMessage: 'This account is authenticated but does not have any mapped InsightDocs roles.' }} />;
+  }
+
   if (isAuthenticated) {
-    return <Navigate replace to={redirectTarget} />;
+    return <Navigate replace to={authorizedTarget} />;
   }
 
   const isBusy = !isReady || authState === 'loading';
@@ -72,7 +82,7 @@ export function LoginPage() {
           <div className="card">
             <span className="card__label">Session Return</span>
             <strong>{redirectTarget}</strong>
-            <div className="muted">The app will send you back here after the callback completes.</div>
+            <div className="muted">If access to that page is not permitted, the app will send you to the first page allowed by your InsightDocs roles.</div>
           </div>
         </div>
       </article>

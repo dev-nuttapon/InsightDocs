@@ -21,6 +21,7 @@ import { CurrentUserPage } from '../features/users/pages/CurrentUserPage';
 import { UserDetailPage } from '../features/users/pages/UserDetailPage';
 import { UsersPage } from '../features/users/pages/UsersPage';
 import { AdminRoute } from '../features/users/routes/AdminRoute';
+import { RoleRoute } from '../shared/routing/RoleRoute';
 
 export const router = createBrowserRouter([
   {
@@ -84,11 +85,23 @@ export const router = createBrowserRouter([
           },
           {
             path: 'approvals',
-            element: <ApprovalsPage />,
+            element: <RoleRoute check={(access) => access.canReviewDocuments} />,
+            children: [
+              {
+                index: true,
+                element: <ApprovalsPage />,
+              },
+            ],
           },
           {
             path: 'signatures',
-            element: <SignaturesPage />,
+            element: <RoleRoute check={(access) => access.canSignDocuments} />,
+            children: [
+              {
+                index: true,
+                element: <SignaturesPage />,
+              },
+            ],
           },
           {
             element: <AdminRoute />,
