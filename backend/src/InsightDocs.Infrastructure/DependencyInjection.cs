@@ -97,6 +97,7 @@ public static class DependencyInjection
 
         services.AddTransient<IClaimsTransformation, KeycloakClaimsTransformation>();
         services.AddHttpClient<IKeycloakAdminService, KeycloakAdminService>();
+        services.AddHttpClient<IKeycloakBrowserAuthService, KeycloakBrowserAuthService>();
         services.AddSingleton<IMinioClient>(_ =>
             new MinioClient()
                 .WithEndpoint(minioOptions.Endpoint)

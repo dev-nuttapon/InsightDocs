@@ -10,9 +10,38 @@ namespace InsightDocs.Api.Controllers;
 [Route("api/auth")]
 public sealed class AuthController(
     ICurrentUser currentUser,
+    IKeycloakBrowserAuthService keycloakBrowserAuthService,
     IRegistrationService registrationService,
     IPasswordResetService passwordResetService) : ControllerBase
 {
+    [AllowAnonymous]
+    [HttpGet("login")]
+    public IActionResult Login([FromQuery] BrowserLoginRequest request)
+    {
+        var authorizationUrl = keycloakBrowserAuthService.BuildAuthorizationUrl(request.RedirectUri, request.State, request.CodeChallenge);
+        return Redirect(authorizationUrl);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("exchange")]
+    [ProducesResponseType(typeof(ApiResponse<BrowserTokenExchangeResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<BrowserTokenExchangeResponse>>> Exchange([FromBody] BrowserTokenExchangeRequest request, CancellationToken cancellationToken)
+    {
+        var tokens = await keycloakBrowserAuthService.ExchangeAuthorizationCodeAsync(
+            request.Code,
+            request.CodeVerifier,
+            request.RedirectUri,
+            cancellationToken);
+
+        var response = new BrowserTokenExchangeResponse(
+            tokens.AccessToken,
+            tokens.ExpiresIn,
+            tokens.RefreshToken,
+            tokens.IdToken);
+
+        return Ok(ApiResponse<BrowserTokenExchangeResponse>.Ok(response, HttpContext.TraceIdentifier));
+    }
+
     [AllowAnonymous]
     [HttpPost("register")]
     [ProducesResponseType(typeof(ApiResponse<RegistrationResultDto>), StatusCodes.Status201Created)]
@@ -89,6 +118,22 @@ public sealed record CurrentUserResponse(
     string? Username,
     string? Email,
     IReadOnlyCollection<string> Roles);
+
+public sealed record BrowserLoginRequest(
+    string RedirectUri,
+    string State,
+    string CodeChallenge);
+
+public sealed record BrowserTokenExchangeRequest(
+    string Code,
+    string CodeVerifier,
+    string RedirectUri);
+
+public sealed record BrowserTokenExchangeResponse(
+    string AccessToken,
+    int ExpiresIn,
+    string? RefreshToken,
+    string? IdToken);
 
 public sealed record ProtectedResourceResponse(
     string Message,

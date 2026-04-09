@@ -1,10 +1,8 @@
 import {
   authRequestTimeoutMs,
+  apiBaseUrl,
   keycloakClientId,
-  keycloakScopes,
-  keycloakAuthorizationEndpoint,
   keycloakLogoutEndpoint,
-  keycloakTokenEndpoint,
   postLogoutRedirectUri,
   redirectUri,
 } from '../config/authConfig';
@@ -36,16 +34,12 @@ export async function beginLoginRedirect(returnTo?: string) {
     writeTransientValue(stateKey, state);
     writeTransientValue(returnToKey, returnTo ?? window.location.pathname);
 
-    const url = new URL(keycloakAuthorizationEndpoint);
-    url.searchParams.set('client_id', keycloakClientId);
-    url.searchParams.set('redirect_uri', redirectUri);
-    url.searchParams.set('response_type', 'code');
-    url.searchParams.set('scope', keycloakScopes);
-    url.searchParams.set('code_challenge', challenge);
-    url.searchParams.set('code_challenge_method', 'S256');
-    url.searchParams.set('state', state);
+    const loginUrl = new URL('/api/auth/login', apiBaseUrl);
+    loginUrl.searchParams.set('redirectUri', redirectUri);
+    loginUrl.searchParams.set('state', state);
+    loginUrl.searchParams.set('codeChallenge', challenge);
 
-    window.location.assign(url.toString());
+    window.location.assign(loginUrl.toString());
   } catch (error) {
     clearTransientValue(redirectInProgressKey);
     throw error;
@@ -78,35 +72,33 @@ async function completeAuthorizationCodeFlowInternal(callbackUrl: string): Promi
     throw new Error('The authentication response is missing required PKCE state.');
   }
 
-  const body = new URLSearchParams({
-    client_id: keycloakClientId,
+  const response = await postJsonWithTimeout(new URL('/api/auth/exchange', apiBaseUrl).toString(), {
     code,
     code_verifier: verifier,
-    grant_type: 'authorization_code',
     redirect_uri: redirectUri,
   });
 
-  const response = await postFormWithTimeout(keycloakTokenEndpoint, body);
-
   if (!response.ok) {
     clearLoginRedirectState();
-    throw new Error(`Token exchange failed with status ${response.status}.`);
+    throw new Error(`API token exchange failed with status ${response.status}.`);
   }
 
   const payload = (await response.json()) as {
-    access_token: string;
-    expires_in: number;
-    id_token?: string;
-    refresh_token?: string;
+    data: {
+      accessToken: string;
+      expiresIn: number;
+      idToken?: string;
+      refreshToken?: string;
+    };
   };
 
   clearLoginRedirectState();
 
   return {
-    accessToken: payload.access_token,
-    expiresAt: Date.now() + payload.expires_in * 1000,
-    idToken: payload.id_token,
-    refreshToken: payload.refresh_token,
+    accessToken: payload.data.accessToken,
+    expiresAt: Date.now() + payload.data.expiresIn * 1000,
+    idToken: payload.data.idToken,
+    refreshToken: payload.data.refreshToken,
   };
 }
 
@@ -194,7 +186,7 @@ function clearTransientValue(key: string) {
   localStorage.removeItem(key);
 }
 
-async function postFormWithTimeout(url: string, body: URLSearchParams) {
+async function postJsonWithTimeout(url: string, payload: { code: string; code_verifier: string; redirect_uri: string }) {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), authRequestTimeoutMs);
 
@@ -202,19 +194,23 @@ async function postFormWithTimeout(url: string, body: URLSearchParams) {
     return await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body,
+      body: JSON.stringify({
+        code: payload.code,
+        codeVerifier: payload.code_verifier,
+        redirectUri: payload.redirect_uri,
+      }),
       signal: controller.signal,
     });
   } catch (error) {
     clearLoginRedirectState();
 
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error(`Keycloak token exchange timed out after ${Math.floor(authRequestTimeoutMs / 1000)} seconds.`);
+      throw new Error(`API token exchange timed out after ${Math.floor(authRequestTimeoutMs / 1000)} seconds.`);
     }
 
-    throw new Error('Unable to reach Keycloak token endpoint. Check VITE_KEYCLOAK_BASE_URL.');
+    throw new Error('Unable to reach the API token exchange endpoint.');
   } finally {
     window.clearTimeout(timeoutId);
   }

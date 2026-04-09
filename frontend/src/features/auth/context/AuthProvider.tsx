@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 import { getCurrentUser } from '../api/authApi';
 import {
@@ -49,12 +49,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const profile = await getCurrentUser(storedTokens.accessToken);
 
         if (!ignore) {
-          startTransition(() => {
-            setAccessToken(storedTokens.accessToken);
-            setUser(profile);
-            setError(null);
-            setIsLoading(false);
-          });
+          setAccessToken(storedTokens.accessToken);
+          setUser(profile);
+          setError(null);
+          setIsLoading(false);
         }
       } catch (bootstrapError) {
         removeStoredTokens();
@@ -88,11 +86,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const tokens = await completeAuthorizationCodeFlow(callbackUrl);
       const profile = await applyAuthenticatedSession(tokens);
 
-      startTransition(() => {
-        setUser(profile);
-        setAccessToken(tokens.accessToken);
-        setIsLoading(false);
-      });
+      setUser(profile);
+      setAccessToken(tokens.accessToken);
+      setIsLoading(false);
     } catch (callbackError) {
       removeStoredTokens();
       setAccessToken(null);
