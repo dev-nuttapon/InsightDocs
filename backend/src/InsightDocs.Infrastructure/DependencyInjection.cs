@@ -1,12 +1,16 @@
 using System.Security.Claims;
+using InsightDocs.Application.Audit;
+using InsightDocs.Application.Dashboard;
 using InsightDocs.Application.Identity;
 using InsightDocs.Application.Search;
 using InsightDocs.Application.Users;
 using InsightDocs.Application.Auth;
 using InsightDocs.Application.Documents;
 using InsightDocs.Infrastructure.Authentication;
+using InsightDocs.Infrastructure.Audit;
 using InsightDocs.Infrastructure.Auth;
 using InsightDocs.Infrastructure.Configuration;
+using InsightDocs.Infrastructure.Dashboard;
 using InsightDocs.Infrastructure.Documents;
 using InsightDocs.Infrastructure.Identity;
 using InsightDocs.Infrastructure.Persistence;
@@ -14,6 +18,7 @@ using InsightDocs.Infrastructure.Search;
 using InsightDocs.Infrastructure.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -82,6 +87,20 @@ public static class DependencyInjection
                 options.Authority = keycloakOptions.Authority;
                 options.RequireHttpsMetadata = IsHttps(keycloakOptions.BaseUrl);
                 options.MapInboundClaims = false;
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Cookies["insightdocs_access_token"];
+
+                        if (!string.IsNullOrWhiteSpace(accessToken))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     NameClaimType = "preferred_username",
@@ -106,6 +125,8 @@ public static class DependencyInjection
                 .Build());
         services.AddScoped<IRegistrationService, RegistrationService>();
         services.AddScoped<IPasswordResetService, PasswordResetService>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
+        services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IBusinessRoleLookup, BusinessRoleLookup>();
         services.AddScoped<IUserManagementService, UserManagementService>();
         services.AddScoped<IDocumentObjectStorage, MinioDocumentObjectStorage>();

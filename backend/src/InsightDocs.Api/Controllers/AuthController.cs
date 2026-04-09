@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using InsightDocs.Api.Models;
 using InsightDocs.Application.Auth;
 using InsightDocs.Application.Identity;
@@ -33,8 +34,10 @@ public sealed class AuthController(
             request.RedirectUri,
             cancellationToken);
 
+        Response.Cookies.Append("insightdocs_access_token", tokens.AccessToken, BuildCookieOptions(tokens.ExpiresIn));
+
         var response = new BrowserTokenExchangeResponse(
-            tokens.AccessToken,
+            "cookie-session",
             tokens.ExpiresIn,
             tokens.RefreshToken,
             tokens.IdToken);
@@ -67,6 +70,29 @@ public sealed class AuthController(
     {
         await passwordResetService.ResetPasswordAsync(command, cancellationToken);
         return NoContent();
+    }
+
+    [AllowAnonymous]
+    [HttpPost("logout-session")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public IActionResult LogoutSession()
+    {
+        Response.Cookies.Delete("insightdocs_access_token", BuildCookieOptions(0));
+        return NoContent();
+    }
+
+    [AllowAnonymous]
+    [HttpGet("logout")]
+    public IActionResult Logout([FromQuery] string? postLogoutRedirectUri = null)
+    {
+        Response.Cookies.Delete("insightdocs_access_token", BuildCookieOptions(0));
+
+        var redirectUri = string.IsNullOrWhiteSpace(postLogoutRedirectUri)
+            ? $"{Request.Scheme}://{Request.Host}/login"
+            : postLogoutRedirectUri;
+
+        var logoutUrl = keycloakBrowserAuthService.BuildLogoutUrl(redirectUri);
+        return Redirect(logoutUrl);
     }
 
     [Authorize(Policy = AuthorizationPolicies.AuthenticatedUser)]
@@ -111,6 +137,16 @@ public sealed class AuthController(
 
         return Ok(ApiResponse<ProtectedResourceResponse>.Ok(response, HttpContext.TraceIdentifier));
     }
+
+    private static CookieOptions BuildCookieOptions(int expiresInSeconds) => new()
+    {
+        HttpOnly = true,
+        IsEssential = true,
+        SameSite = SameSiteMode.Lax,
+        Secure = false,
+        Path = "/",
+        Expires = expiresInSeconds > 0 ? DateTimeOffset.UtcNow.AddSeconds(expiresInSeconds) : DateTimeOffset.UtcNow.AddDays(-1)
+    };
 }
 
 public sealed record CurrentUserResponse(
@@ -120,14 +156,14 @@ public sealed record CurrentUserResponse(
     IReadOnlyCollection<string> Roles);
 
 public sealed record BrowserLoginRequest(
-    string RedirectUri,
-    string State,
-    string CodeChallenge);
+    [property: Required] string RedirectUri,
+    [property: Required] string State,
+    [property: Required] string CodeChallenge);
 
 public sealed record BrowserTokenExchangeRequest(
-    string Code,
-    string CodeVerifier,
-    string RedirectUri);
+    [property: Required] string Code,
+    [property: Required] string CodeVerifier,
+    [property: Required] string RedirectUri);
 
 public sealed record BrowserTokenExchangeResponse(
     string AccessToken,

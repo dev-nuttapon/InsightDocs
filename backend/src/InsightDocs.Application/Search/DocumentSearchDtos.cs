@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using InsightDocs.Domain.Documents;
 
 namespace InsightDocs.Application.Search;
@@ -11,7 +12,11 @@ public sealed record DocumentSearchQuery
     public string? Controller { get; init; }
     public string? Signer { get; init; }
     public bool? Archived { get; init; }
+
+    [Range(1, int.MaxValue)]
     public int Page { get; init; } = 1;
+
+    [Range(1, 100)]
     public int PageSize { get; init; } = 20;
 }
 

@@ -1,10 +1,5 @@
-import { apiBaseUrl, authRequestTimeoutMs } from '../config/authConfig';
+import { getJson, postJson } from '../../../shared/api/http';
 import type { CurrentUser } from '../context/authTypes';
-
-type ApiEnvelope<T> = {
-  success: boolean;
-  data: T;
-};
 
 type ProtectedResponse = {
   message: string;
@@ -36,57 +31,20 @@ export type RegisterUserInput = {
   password: string;
 };
 
-async function apiFetch<T>(path: string, accessToken: string): Promise<T> {
-  const response = await requestWithTimeout(`${apiBaseUrl}${path}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-  if (response.status === 401) {
-    throw new Error('Your session is not authorized. Please sign in again.');
-  }
-
-  if (response.status === 403) {
-    throw new Error('You are authenticated but do not have permission for this action.');
-  }
-
-  if (!response.ok) {
-    throw new Error(`API request failed with status ${response.status}.`);
-  }
-
-  const payload = (await response.json()) as ApiEnvelope<T>;
-  return payload.data;
+async function apiFetch<T>(path: string, accessToken?: string | null): Promise<T> {
+  return getJson<T>(path, { accessToken });
 }
 
-export function getCurrentUser(accessToken: string) {
+export function getCurrentUser(accessToken?: string | null) {
   return apiFetch<CurrentUser>('/api/auth/me', accessToken);
 }
 
-export function getProtectedMessage(accessToken: string) {
+export function getProtectedMessage(accessToken?: string | null) {
   return apiFetch<ProtectedResponse>('/api/auth/protected', accessToken);
 }
 
 async function publicPost<T>(path: string, body: unknown): Promise<T> {
-  const response = await requestWithTimeout(`${apiBaseUrl}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null) as { message?: string } | null;
-    throw new Error(payload?.message ?? `Request failed with status ${response.status}.`);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  const payload = (await response.json()) as ApiEnvelope<T>;
-  return payload.data;
+  return postJson<T>(path, body);
 }
 
 export function registerUser(input: RegisterUserInput) {
@@ -114,40 +72,5 @@ export async function rejectPasswordResetRequest(id: string, comment: string, ac
 }
 
 async function publicAuthorizedPost<T>(path: string, body: unknown, accessToken: string) {
-  const response = await requestWithTimeout(`${apiBaseUrl}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null) as { message?: string } | null;
-    throw new Error(payload?.message ?? `Request failed with status ${response.status}.`);
-  }
-
-  const payload = (await response.json()) as ApiEnvelope<T>;
-  return payload.data;
-}
-
-async function requestWithTimeout(input: RequestInfo | URL, init?: RequestInit) {
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), authRequestTimeoutMs);
-
-  try {
-    return await fetch(input, {
-      ...init,
-      signal: controller.signal,
-    });
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error(`Request timed out after ${Math.floor(authRequestTimeoutMs / 1000)} seconds.`);
-    }
-
-    throw new Error('Unable to reach the API. Check that InsightDocs backend is running and VITE_API_BASE_URL is correct.');
-  } finally {
-    window.clearTimeout(timeoutId);
-  }
+  return postJson<T>(path, body, { accessToken });
 }

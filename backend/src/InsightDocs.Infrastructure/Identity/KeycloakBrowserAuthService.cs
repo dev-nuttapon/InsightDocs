@@ -30,6 +30,18 @@ public sealed class KeycloakBrowserAuthService(
         return QueryString(query, url);
     }
 
+    public string BuildLogoutUrl(string postLogoutRedirectUri)
+    {
+        var url = $"{_options.Authority}/protocol/openid-connect/logout";
+        var query = new Dictionary<string, string?>
+        {
+            ["client_id"] = _options.RoleClientId,
+            ["post_logout_redirect_uri"] = postLogoutRedirectUri
+        };
+
+        return QueryString(query, url);
+    }
+
     public async Task<BrowserTokenExchangeResult> ExchangeAuthorizationCodeAsync(string code, string codeVerifier, string redirectUri, CancellationToken cancellationToken)
     {
         var tokenEndpoint = $"{_options.Authority}/protocol/openid-connect/token";

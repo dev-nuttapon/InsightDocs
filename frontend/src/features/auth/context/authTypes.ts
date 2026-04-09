@@ -5,6 +5,8 @@ export type CurrentUser = {
   roles: string[];
 };
 
+export type AuthState = 'loading' | 'anonymous' | 'authenticated' | 'expired';
+
 export type TokenSet = {
   accessToken: string;
   refreshToken?: string;
@@ -12,10 +14,14 @@ export type TokenSet = {
   expiresAt: number;
 };
 
+export const cookieSessionToken = 'cookie-session';
+
 export type AuthContextValue = {
   accessToken: string | null;
+  authState: AuthState;
   error: string | null;
   isAuthenticated: boolean;
+  isReady: boolean;
   isLoading: boolean;
   user: CurrentUser | null;
   login: (returnTo?: string) => Promise<void>;

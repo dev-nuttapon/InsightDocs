@@ -91,6 +91,16 @@ public sealed class DocumentsController(
         return Ok(ApiResponse<DocumentDetailDto>.Ok(document, HttpContext.TraceIdentifier));
     }
 
+    [HttpPost("{id:guid}/archive")]
+    [Authorize(Policy = AuthorizationPolicies.DocumentManagement)]
+    [ProducesResponseType(typeof(ApiResponse<DocumentDetailDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<DocumentDetailDto>>> Archive(Guid id, CancellationToken cancellationToken)
+    {
+        var archivedBy = currentUser.Username ?? currentUser.Subject ?? "system";
+        var document = await documentService.ArchiveAsync(id, archivedBy, cancellationToken);
+        return Ok(ApiResponse<DocumentDetailDto>.Ok(document, HttpContext.TraceIdentifier));
+    }
+
     [HttpGet("{id:guid}/approval-history")]
     [Authorize(Policy = AuthorizationPolicies.AuthenticatedUser)]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyCollection<DocumentApprovalHistoryDto>>), StatusCodes.Status200OK)]

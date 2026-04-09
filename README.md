@@ -45,6 +45,8 @@ InsightDocs/
 - approval queue at `/approvals` with manager actions and approval history
 - signer queue at `/signatures` with sequential PDF signing actions
 - document search at `/search` with PostgreSQL metadata and full-text retrieval
+- audit log review at `/audit-logs`
+- operational dashboard at `/dashboard`
 - local Docker Compose stack for PostgreSQL, MinIO, and Keycloak
 - `.env.example` files for backend and frontend
 
@@ -63,6 +65,7 @@ Services:
 - MinIO API: `http://localhost:9000`
 - MinIO Console: `http://localhost:9001`
 - Keycloak: `http://localhost:8080`
+- Keycloak routed host used by committed backend config: `http://auth.localhost/`
 
 ### 2. Run the backend
 
@@ -72,6 +75,12 @@ cp .env.example .env
 dotnet restore
 dotnet ef database update --project src/InsightDocs.Infrastructure
 dotnet run --project src/InsightDocs.Api
+```
+
+Run backend tests:
+
+```bash
+dotnet test tests/InsightDocs.Backend.Tests/InsightDocs.Backend.Tests.csproj
 ```
 
 API endpoints:
@@ -115,6 +124,12 @@ API endpoints:
 - `POST /api/documents/{id}/signatures/{signatureRequestId}/reject`
 - `GET /api/signatures/pending`
 - `GET /api/search/documents`
+- `GET /api/audit-logs`
+- `GET /api/audit-logs/{id}`
+- `GET /api/dashboard/summary`
+- `GET /api/dashboard/recent-documents`
+- `GET /api/dashboard/recent-activities`
+- `POST /api/documents/{id}/archive`
 
 ### 3. Run the frontend
 
@@ -128,6 +143,15 @@ npm run dev
 Frontend URL:
 
 - `http://localhost:5173`
+
+### 4. Load sample demo data
+
+After migrations, load sample records for dashboard, search, audit, approvals, and document demos:
+
+```bash
+PGPASSWORD='uBUU34ksWv5ouiTh1xJUBx6b38enBcgPRHfTpHCa' \
+psql -h localhost -p 5433 -U appuser -d insightDocs -f docs/demo-data.sql
+```
 
 ## Configuration
 
@@ -154,6 +178,12 @@ For local Docker Compose Keycloak, the committed backend config should usually b
 - `INSIGHTDOCS_Keycloak__ClientId=insightdocs-admin-api`
 - `INSIGHTDOCS_Keycloak__RoleClientId=insightdocs-web`
 
+MinIO notes:
+
+- `INSIGHTDOCS_Minio__Endpoint` can be `localhost:9000` or your routed hostname depending on local reverse-proxy setup
+- bucket creation is handled by the application on demand
+- signed and original PDFs are stored as separate object keys per document version
+
 ### Frontend
 
 Frontend configuration uses standard `VITE_` variables for API and Keycloak endpoints.
@@ -176,6 +206,8 @@ Recommended local values:
 7. Start backend and frontend with the local env overrides above
 8. Open `http://localhost:5173`, sign in, and confirm the dashboard shows your profile from `/api/auth/me`
 
+If your environment routes Keycloak through `auth.localhost`, align both backend and frontend base URLs to that host instead of `localhost:8080`.
+
 ## Registration And Password Reset Flow
 
 1. Users submit registration at `/register`
@@ -197,13 +229,17 @@ Recommended local values:
 - `DocumentController` submits reviews, `Manager` approves or rejects
 - signatures are tracked per current version with signer order and visible coordinate placement on the PDF itself
 - search uses PostgreSQL metadata filters plus full-text search on title, description, and category
+- audit logging records append-only compliance events across auth, documents, approvals, and signatures
+- dashboard endpoints provide operational metrics, recent documents, and recent activities for day-to-day use and demos
 
 See [docs/version-lifecycle.md](/Users/nuttapon/Github-dev/InsightDocs/docs/version-lifecycle.md).
 See [docs/signature-workflow.md](/Users/nuttapon/Github-dev/InsightDocs/docs/signature-workflow.md).
 See [docs/search-strategy.md](/Users/nuttapon/Github-dev/InsightDocs/docs/search-strategy.md).
+See [docs/audit-coverage.md](/Users/nuttapon/Github-dev/InsightDocs/docs/audit-coverage.md).
+See [docs/dashboard.md](/Users/nuttapon/Github-dev/InsightDocs/docs/dashboard.md).
+See [docs/demo-data.md](/Users/nuttapon/Github-dev/InsightDocs/docs/demo-data.md).
 
 ## Pending Modules For Later Phases
 
-- audit trails
 - certificate-backed signing provider hardening
 - richer retrieval/download flows and semantic search

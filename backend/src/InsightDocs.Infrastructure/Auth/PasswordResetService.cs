@@ -1,4 +1,5 @@
 using InsightDocs.Application.Auth;
+using InsightDocs.Application.Audit;
 using InsightDocs.Application.Common;
 using InsightDocs.Application.Identity;
 using InsightDocs.Domain.Auth;
@@ -14,6 +15,7 @@ namespace InsightDocs.Infrastructure.Auth;
 public sealed class PasswordResetService(
     InsightDocsDbContext dbContext,
     IKeycloakAdminService keycloakAdminService,
+    IAuditLogService auditLogService,
     IOptions<ApplicationOptions> applicationOptions,
     IOptions<PasswordResetOptions> passwordResetOptions) : IPasswordResetService
 {
@@ -37,6 +39,19 @@ public sealed class PasswordResetService(
 
         var request = new PasswordResetRequest(user.Id, lookup);
         dbContext.Add(request);
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "password-reset.requested",
+                "PasswordResetRequest",
+                request.Id,
+                ActorUserId: user.Id,
+                Metadata: new
+                {
+                    request.UserId,
+                    request.RequestedByIdentifier,
+                    Status = request.Status.ToString()
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return new ForgotPasswordResultDto(request.Id, request.Status.ToString(), request.RequestedAt);
@@ -67,6 +82,20 @@ public sealed class PasswordResetService(
         var expiresAt = DateTimeOffset.UtcNow.AddMinutes(_passwordResetOptions.TokenTtlMinutes);
 
         request.Approve(reviewedBy, comment, token, tokenHash, expiresAt);
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "password-reset.approved",
+                "PasswordResetRequest",
+                request.Id,
+                ActorIdentifier: reviewedBy,
+                Metadata: new
+                {
+                    request.UserId,
+                    ReviewedBy = reviewedBy,
+                    request.RequestedByIdentifier,
+                    request.ResetTokenExpiresAt
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Map(request);
@@ -82,6 +111,19 @@ public sealed class PasswordResetService(
         }
 
         request.Reject(reviewedBy, comment);
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "password-reset.rejected",
+                "PasswordResetRequest",
+                request.Id,
+                ActorIdentifier: reviewedBy,
+                Metadata: new
+                {
+                    request.UserId,
+                    ReviewedBy = reviewedBy,
+                    Comment = comment
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Map(request);
@@ -107,6 +149,18 @@ public sealed class PasswordResetService(
 
         await keycloakAdminService.ResetPasswordAsync(request.User.KeycloakUserId, command.NewPassword, cancellationToken);
         request.Complete();
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "password-reset.completed",
+                "PasswordResetRequest",
+                request.Id,
+                ActorUserId: request.UserId,
+                Metadata: new
+                {
+                    request.UserId,
+                    request.CompletedAt
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 

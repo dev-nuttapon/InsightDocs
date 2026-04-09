@@ -5,4 +5,7 @@
     <Project Path="src/InsightDocs.Domain/InsightDocs.Domain.csproj" />
     <Project Path="src/InsightDocs.Infrastructure/InsightDocs.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/InsightDocs.Backend.Tests/InsightDocs.Backend.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 
+import { StatePanel } from '../../../shared/components/state/StatePanel';
 import { useAuth } from '../context/useAuth';
 
 export function AccessCheckPage() {
@@ -13,29 +14,23 @@ export function AccessCheckPage() {
     }
 
     hasStartedLogin.current = true;
-    void login('/me');
+    void login('/dashboard');
   }, [isAuthenticated, isLoading, login]);
 
   if (isLoading) {
-    return (
-      <section className="panel">
-        <span className="sidebar__eyebrow">Authentication</span>
-        <h2>Checking access</h2>
-        <p className="muted">กำลังตรวจสอบ session และสิทธิ์การเข้าใช้งานของคุณ</p>
-      </section>
-    );
+    return <StatePanel eyebrow="Authentication" title="Checking access" description="กำลังตรวจสอบ session และสิทธิ์การเข้าใช้งานของคุณ" />;
   }
 
   if (isAuthenticated) {
-    return <Navigate replace to="/me" />;
+    return <Navigate replace to="/dashboard" />;
   }
 
   return (
-    <section className="panel">
-      <span className="sidebar__eyebrow">Authentication</span>
-      <h2>Checking access</h2>
-      <p className="muted">ไม่พบ session ที่ใช้งานได้ กำลังส่งคุณไปยัง Keycloak login</p>
-      {error ? <div className="callout callout--danger">{error}</div> : null}
-    </section>
+    <StatePanel
+      eyebrow="Authentication"
+      title="Checking access"
+      description={error ?? 'ไม่พบ session ที่ใช้งานได้ กำลังส่งคุณไปยัง Keycloak login'}
+      tone={error ? 'danger' : 'default'}
+    />
   );
 }

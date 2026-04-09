@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Linq.Expressions;
+using InsightDocs.Application.Audit;
 using InsightDocs.Application.Common;
 using InsightDocs.Application.Documents;
 using InsightDocs.Application.Users;
@@ -13,7 +14,8 @@ namespace InsightDocs.Infrastructure.Documents;
 internal sealed class DocumentService(
     InsightDocsDbContext dbContext,
     IDocumentObjectStorage objectStorage,
-    IPdfDigitalSignatureService pdfDigitalSignatureService) : IDocumentService
+    IPdfDigitalSignatureService pdfDigitalSignatureService,
+    IAuditLogService auditLogService) : IDocumentService
 {
     public async Task<IReadOnlyCollection<DocumentSummaryDto>> GetDocumentsAsync(CancellationToken cancellationToken)
     {
@@ -70,6 +72,23 @@ internal sealed class DocumentService(
 
         var document = Document.Create(title, command.Description, command.Category, command.OwnerUserId, command.ControllerUserId, createdBy);
         dbContext.Documents.Add(document);
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "document.created",
+                "Document",
+                document.Id,
+                RelatedDocumentId: document.Id,
+                ActorIdentifier: createdBy,
+                Metadata: new
+                {
+                    document.Title,
+                    document.Description,
+                    document.Category,
+                    document.OwnerUserId,
+                    document.ControllerUserId,
+                    Status = document.Status.ToString()
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return await GetDocumentAsync(document.Id, cancellationToken);
@@ -85,6 +104,23 @@ internal sealed class DocumentService(
         await EnsureUniqueTitleAsync(title, documentId, cancellationToken);
 
         TryDocumentMutation(() => document.UpdateDetails(title, command.Description, command.Category, command.OwnerUserId, command.ControllerUserId, updatedBy));
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "document.metadata.updated",
+                "Document",
+                document.Id,
+                RelatedDocumentId: document.Id,
+                ActorIdentifier: updatedBy,
+                Metadata: new
+                {
+                    document.Title,
+                    document.Description,
+                    document.Category,
+                    document.OwnerUserId,
+                    document.ControllerUserId,
+                    Status = document.Status.ToString()
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return await GetDocumentAsync(documentId, cancellationToken);
@@ -169,6 +205,37 @@ internal sealed class DocumentService(
 
         document.MarkContentUpdated(createdBy);
         dbContext.DocumentVersions.Add(versionEntity);
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "document.uploaded",
+                "Document",
+                document.Id,
+                RelatedDocumentId: document.Id,
+                RelatedVersionId: versionEntity.Id,
+                ActorIdentifier: createdBy,
+                Metadata: new
+                {
+                    versionEntity.VersionNumber,
+                    versionEntity.ChangeSummary,
+                    versionEntity.OriginalObjectKey,
+                    versionEntity.SignedObjectKey
+                }),
+            cancellationToken);
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "document.version.created",
+                "DocumentVersion",
+                versionEntity.Id,
+                RelatedDocumentId: document.Id,
+                RelatedVersionId: versionEntity.Id,
+                ActorIdentifier: createdBy,
+                Metadata: new
+                {
+                    versionEntity.VersionNumber,
+                    versionEntity.ChangeSummary,
+                    versionEntity.Checksum
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
@@ -226,6 +293,21 @@ internal sealed class DocumentService(
 
         document.MarkContentUpdated(restoredBy);
         dbContext.DocumentVersions.Add(restoredVersion);
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "document.version.restored",
+                "DocumentVersion",
+                restoredVersion.Id,
+                RelatedDocumentId: document.Id,
+                RelatedVersionId: restoredVersion.Id,
+                ActorIdentifier: restoredBy,
+                Metadata: new
+                {
+                    restoredVersion.VersionNumber,
+                    SourceVersionId = sourceVersion.Id,
+                    SourceVersionNumber = sourceVersion.VersionNumber
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
@@ -246,6 +328,21 @@ internal sealed class DocumentService(
         }
 
         TryDocumentMutation(() => document.SubmitForReview(submittedBy, comment));
+        var latestApproval = document.Approvals.OrderByDescending(entity => entity.PerformedAt).First();
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "document.approval.submitted",
+                "DocumentApproval",
+                latestApproval.Id,
+                RelatedDocumentId: document.Id,
+                ActorIdentifier: submittedBy,
+                Metadata: new
+                {
+                    FromStatus = latestApproval.FromStatus.ToString(),
+                    ToStatus = latestApproval.ToStatus.ToString(),
+                    Comment = comment
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
         return await GetDocumentAsync(documentId, cancellationToken);
     }
@@ -258,6 +355,21 @@ internal sealed class DocumentService(
             ?? throw new NotFoundException($"Document '{documentId}' was not found.");
 
         TryDocumentMutation(() => document.Approve(approvedBy, comment));
+        var latestApproval = document.Approvals.OrderByDescending(entity => entity.PerformedAt).First();
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "document.approval.approved",
+                "DocumentApproval",
+                latestApproval.Id,
+                RelatedDocumentId: document.Id,
+                ActorIdentifier: approvedBy,
+                Metadata: new
+                {
+                    FromStatus = latestApproval.FromStatus.ToString(),
+                    ToStatus = latestApproval.ToStatus.ToString(),
+                    Comment = comment
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
         return await GetDocumentAsync(documentId, cancellationToken);
     }
@@ -270,6 +382,45 @@ internal sealed class DocumentService(
             ?? throw new NotFoundException($"Document '{documentId}' was not found.");
 
         TryDocumentMutation(() => document.Reject(rejectedBy, comment));
+        var latestApproval = document.Approvals.OrderByDescending(entity => entity.PerformedAt).First();
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "document.approval.rejected",
+                "DocumentApproval",
+                latestApproval.Id,
+                RelatedDocumentId: document.Id,
+                ActorIdentifier: rejectedBy,
+                Metadata: new
+                {
+                    FromStatus = latestApproval.FromStatus.ToString(),
+                    ToStatus = latestApproval.ToStatus.ToString(),
+                    Comment = comment
+                }),
+            cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return await GetDocumentAsync(documentId, cancellationToken);
+    }
+
+    public async Task<DocumentDetailDto> ArchiveAsync(Guid documentId, string archivedBy, CancellationToken cancellationToken)
+    {
+        var document = await dbContext.Documents
+            .FirstOrDefaultAsync(entity => entity.Id == documentId, cancellationToken)
+            ?? throw new NotFoundException($"Document '{documentId}' was not found.");
+
+        TryDocumentMutation(() => document.Archive(archivedBy));
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "document.archived",
+                "Document",
+                document.Id,
+                RelatedDocumentId: document.Id,
+                ActorIdentifier: archivedBy,
+                Metadata: new
+                {
+                    document.Title,
+                    Status = document.Status.ToString()
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
         return await GetDocumentAsync(documentId, cancellationToken);
     }
@@ -386,6 +537,26 @@ internal sealed class DocumentService(
             command.Comment);
 
         dbContext.DocumentSignatureRequests.Add(request);
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "document.signer.assigned",
+                "DocumentSignatureRequest",
+                request.Id,
+                RelatedDocumentId: request.DocumentId,
+                RelatedVersionId: request.DocumentVersionId,
+                ActorIdentifier: assignedBy,
+                Metadata: new
+                {
+                    request.SignerUserId,
+                    request.SigningOrder,
+                    request.PageNumber,
+                    request.PositionX,
+                    request.PositionY,
+                    request.Width,
+                    request.Height,
+                    request.Comment
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return await GetSignatureAsync(documentId, request.Id, cancellationToken);
@@ -451,6 +622,23 @@ internal sealed class DocumentService(
 
         request.DocumentVersion.SetSignedObjectKey(storedSignedObject.ObjectKey);
         request.MarkSigned(actor.Username, storedSignedObject.ObjectKey, command.Comment);
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "document.signature.signed",
+                "DocumentSignatureRequest",
+                request.Id,
+                RelatedDocumentId: request.DocumentId,
+                RelatedVersionId: request.DocumentVersionId,
+                ActorUserId: actor.Id,
+                Metadata: new
+                {
+                    request.SigningOrder,
+                    request.PageNumber,
+                    request.SignedAt,
+                    OutputObjectKey = storedSignedObject.ObjectKey,
+                    command.Comment
+                }),
+            cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -484,6 +672,20 @@ internal sealed class DocumentService(
         EnsureSignatureWorkflow(document, request);
         await EnsureSigningOrderSatisfiedAsync(request, cancellationToken);
         request.MarkRejected(actor.Username, command.Comment);
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "document.signature.rejected",
+                "DocumentSignatureRequest",
+                request.Id,
+                RelatedDocumentId: request.DocumentId,
+                RelatedVersionId: request.DocumentVersionId,
+                ActorUserId: actor.Id,
+                Metadata: new
+                {
+                    request.SigningOrder,
+                    command.Comment
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return await GetSignatureAsync(documentId, signatureRequestId, cancellationToken);

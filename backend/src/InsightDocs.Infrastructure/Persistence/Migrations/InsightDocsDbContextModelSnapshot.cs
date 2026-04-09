@@ -13,6 +13,53 @@ partial class InsightDocsDbContextModelSnapshot : ModelSnapshot
 #pragma warning disable 612, 618
         modelBuilder.HasAnnotation("ProductVersion", "8.0.8");
 
+        modelBuilder.Entity("InsightDocs.Domain.Audit.AuditLog", b =>
+        {
+            b.Property<Guid>("Id")
+                .ValueGeneratedOnAdd()
+                .HasColumnType("uuid");
+
+            b.Property<string>("Action")
+                .IsRequired()
+                .HasMaxLength(120)
+                .HasColumnType("character varying(120)");
+
+            b.Property<Guid?>("ActorUserId")
+                .HasColumnType("uuid");
+
+            b.Property<Guid?>("EntityId")
+                .HasColumnType("uuid");
+
+            b.Property<string>("EntityType")
+                .IsRequired()
+                .HasMaxLength(80)
+                .HasColumnType("character varying(80)");
+
+            b.Property<string>("MetadataJson")
+                .HasColumnType("jsonb");
+
+            b.Property<Guid?>("RelatedDocumentId")
+                .HasColumnType("uuid");
+
+            b.Property<Guid?>("RelatedVersionId")
+                .HasColumnType("uuid");
+
+            b.Property<DateTimeOffset>("Timestamp")
+                .HasColumnType("timestamp with time zone");
+
+            b.HasKey("Id");
+
+            b.HasIndex("Action");
+
+            b.HasIndex("ActorUserId");
+
+            b.HasIndex("RelatedDocumentId");
+
+            b.HasIndex("Timestamp");
+
+            b.ToTable("audit_logs", (string)null!);
+        });
+
         modelBuilder.Entity("InsightDocs.Domain.Documents.DocumentSignatureAction", b =>
         {
             b.Property<Guid>("Id")
@@ -514,6 +561,14 @@ partial class InsightDocsDbContextModelSnapshot : ModelSnapshot
                 .HasForeignKey("UserId")
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
+        });
+
+        modelBuilder.Entity("InsightDocs.Domain.Audit.AuditLog", b =>
+        {
+            b.HasOne("InsightDocs.Domain.Users.User", "ActorUser")
+                .WithMany()
+                .HasForeignKey("ActorUserId")
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity("InsightDocs.Domain.Documents.ApprovalComment", b =>

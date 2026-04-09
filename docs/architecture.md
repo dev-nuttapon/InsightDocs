@@ -20,3 +20,8 @@
 - audit trail
 - digital signature workflow
 - semantic search and retrieval enhancements
+
+## Compliance Visibility
+
+- audit logging is implemented as a shared infrastructure service and append-only PostgreSQL table
+- filters and review UI are available for admin users through the audit module

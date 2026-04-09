@@ -1,8 +1,8 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { Navigate, createBrowserRouter } from 'react-router-dom';
 
 import { AppShell } from '../shared/components/layout/AppShell';
 import { ApprovalsPage } from '../features/approvals/pages/ApprovalsPage';
-import { AccessCheckPage } from '../features/auth/pages/AccessCheckPage';
+import { AuditLogsPage } from '../features/audit/pages/AuditLogsPage';
 import { AuthCallbackPage } from '../features/auth/pages/AuthCallbackPage';
 import { AdminPasswordResetRequestsPage } from '../features/auth/pages/AdminPasswordResetRequestsPage';
 import { ForgotPasswordPage } from '../features/auth/pages/ForgotPasswordPage';
@@ -25,7 +25,7 @@ import { AdminRoute } from '../features/users/routes/AdminRoute';
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <AccessCheckPage />,
+    element: <Navigate replace to="/login" />,
   },
   {
     path: '/login',
@@ -104,6 +104,10 @@ export const router = createBrowserRouter([
               {
                 path: 'admin/password-reset-requests',
                 element: <AdminPasswordResetRequestsPage />,
+              },
+              {
+                path: 'audit-logs',
+                element: <AuditLogsPage />,
               },
             ],
           },

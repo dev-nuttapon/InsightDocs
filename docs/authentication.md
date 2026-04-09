@@ -82,3 +82,4 @@ VITE_KEYCLOAK_SCOPES=openid profile email
 - if `Keycloak.ApiAudience` is left empty, backend audience validation is disabled; set it once your Keycloak token audience is finalized
 - registration and reset requests do not send email automatically; Admins manually communicate reset links
 - reset tokens are secure random strings, time-limited, and one-time use
+- registration and password reset lifecycle events are also written into the audit trail for traceability

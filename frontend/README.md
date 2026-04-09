@@ -12,6 +12,8 @@ This frontend is a `Vite + React + TypeScript` scaffold for the InsightDocs inte
 - `src/features/approvals`: pending review queue with manager decisions
 - `src/features/signatures`: pending signer queue
 - `src/features/search`: metadata and full-text document search UI
+- `src/features/audit`: admin-only audit log list and detail view
+- `src/features/dashboard`: operational dashboard summary, recent documents, and recent activities
 - `src/features/users`: admin-only user and role management screens plus typed API client
 - `src/shared/components/layout`: reusable shell and layout primitives
 
@@ -28,6 +30,8 @@ This frontend is a `Vite + React + TypeScript` scaffold for the InsightDocs inte
 - `/approvals` for pending review decisions
 - `/signatures` for signer work queue
 - `/search` for enterprise search and retrieval
+- `/dashboard` for operational overview and quick actions
+- admin-only `/audit-logs` for compliance review
 - admin-only `/users` and `/users/:id` management screens
 - public `/register`, `/forgot-password`, `/reset-password`
 - admin-only `/admin/password-reset-requests`
@@ -42,6 +46,12 @@ npm run dev
 ```
 
 Default URL: `http://localhost:5173`
+
+Recommended companion services:
+
+- backend API at `http://localhost:8081`
+- Keycloak at `http://localhost:8080` or `http://auth.localhost/`
+- MinIO reachable by the backend for document upload, restore, and signing flows
 
 ## Auth Flow
 
@@ -81,6 +91,8 @@ The Keycloak SPA client should be configured as a public client with:
 - Redirect URI: `http://localhost:5173/*`
 - Web Origin: `http://localhost:5173`
 
+If your local stack fronts Keycloak through `auth.localhost`, set `VITE_KEYCLOAK_BASE_URL=http://auth.localhost`.
+
 ## Version UI
 
 - `/documents` lists document records and allows document creation for authorized roles
@@ -90,3 +102,6 @@ The Keycloak SPA client should be configured as a public client with:
 - `/documents/:id` also includes signature assignment, placement configuration, and signature history
 - `/signatures` lets assigned signers sign or reject their own pending requests
 - `/search` provides keyword search, filters, pagination, and quick links back to document detail
+- `/audit-logs` provides filterable event history with detail metadata and quick links back to related documents and users
+- `/dashboard` shows summary cards, recent documents, recent activities, and role-aware quick actions
+- for a richer demo workspace, load [docs/demo-data.sql](/Users/nuttapon/Github-dev/InsightDocs/docs/demo-data.sql) after backend migrations

@@ -1,23 +1,22 @@
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 
+import { StatePanel } from '../../../shared/components/state/StatePanel';
 import { useAuth } from '../context/useAuth';
 
 export function ProtectedRoute() {
   const location = useLocation();
-  const { isAuthenticated, isLoading, error } = useAuth();
+  const { authState, isAuthenticated, isReady, error } = useAuth();
 
-  if (isLoading) {
-    return (
-      <section className="panel">
-        <span className="sidebar__eyebrow">Authentication</span>
-        <h2>Checking your session</h2>
-        <p className="muted">Validating stored tokens and loading your profile.</p>
-      </section>
-    );
+  if (!isReady) {
+    return <StatePanel eyebrow="Authentication" title="Checking your session" description="Validating your API session and loading your profile." />;
+  }
+
+  if (authState === 'expired') {
+    return <Navigate replace to="/login" state={{ from: location, errorMessage: 'Your session expired. Please sign in again.' }} />;
   }
 
   if (!isAuthenticated) {
-    return <Navigate replace to="/login" state={{ from: location, errorMessage: error, autoStart: true }} />;
+    return <Navigate replace to="/login" state={{ from: location, errorMessage: error }} />;
   }
 
   return <Outlet />;

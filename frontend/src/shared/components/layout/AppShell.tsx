@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 
+import { ThemeToggle } from '../../../components/ThemeToggle';
 import { useAuth } from '../../../features/auth/context/useAuth';
 
 const links = [
@@ -54,6 +55,9 @@ export function AppShell() {
               <NavLink className="sidebar__link" to="/admin/password-reset-requests">
                 Password Reset Requests
               </NavLink>
+              <NavLink className="sidebar__link" to="/audit-logs">
+                Audit Logs
+              </NavLink>
             </>
           ) : null}
         </nav>
@@ -77,12 +81,15 @@ export function AppShell() {
             <span className="sidebar__eyebrow">Authenticated Workspace</span>
             <h2 className="topbar__title">Document Control Workspace</h2>
           </div>
-          {user ? (
-            <div className="topbar__profile">
-              <strong>{user.username ?? user.subject}</strong>
-              <span className="muted">{user.email ?? 'No email claim'}</span>
-            </div>
-          ) : null}
+          <div className="topbar__actions">
+            <ThemeToggle />
+            {user ? (
+              <div className="topbar__profile">
+                <strong>{user.username ?? user.subject}</strong>
+                <span className="muted">{user.email ?? 'No email claim'}</span>
+              </div>
+            ) : null}
+          </div>
         </header>
         <Outlet />
       </main>

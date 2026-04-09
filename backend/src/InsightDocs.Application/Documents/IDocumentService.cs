@@ -13,6 +13,7 @@ public interface IDocumentService
     Task<DocumentDetailDto> SubmitForReviewAsync(Guid documentId, string submittedBy, string? comment, CancellationToken cancellationToken);
     Task<DocumentDetailDto> ApproveAsync(Guid documentId, string approvedBy, string? comment, CancellationToken cancellationToken);
     Task<DocumentDetailDto> RejectAsync(Guid documentId, string rejectedBy, string? comment, CancellationToken cancellationToken);
+    Task<DocumentDetailDto> ArchiveAsync(Guid documentId, string archivedBy, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<PendingApprovalDto>> GetPendingApprovalsAsync(CancellationToken cancellationToken);
     Task<IReadOnlyCollection<DocumentApprovalHistoryDto>> GetApprovalHistoryAsync(Guid documentId, CancellationToken cancellationToken);
     Task<DocumentSignatureRequestDto> AssignSignatureAsync(Guid documentId, AssignDocumentSignatureCommand command, string assignedBy, CancellationToken cancellationToken);

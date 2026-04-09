@@ -76,6 +76,19 @@ Search is currently metadata-first and PostgreSQL-backed.
 - result rows include current version number plus signature summary so users can triage quickly from the search screen
 - the search contract is kept separate from document CRUD so semantic retrieval can be layered in later without breaking the UI route or API path
 
+## Audit Visibility
+
+Document lifecycle events are also written to the audit trail, including:
+
+- metadata updates
+- version uploads
+- version restore
+- review submission
+- approve/reject decisions
+- signer assignment
+- sign/reject execution
+- archive
+
 ## Local Development Seed
 
 Phase 5 seeds one sample document:

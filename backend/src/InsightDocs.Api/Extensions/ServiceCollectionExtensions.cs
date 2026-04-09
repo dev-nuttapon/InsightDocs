@@ -41,6 +41,7 @@ public static class ServiceCollectionExtensions
                 if (!string.IsNullOrWhiteSpace(frontendUrl))
                 {
                     policy.WithOrigins(frontendUrl)
+                        .AllowCredentials()
                         .AllowAnyHeader()
                         .AllowAnyMethod();
                 }

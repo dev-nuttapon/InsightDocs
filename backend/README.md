@@ -100,6 +100,12 @@ Document APIs:
 - `POST /api/documents/{id}/signatures/{signatureRequestId}/reject`
 - `GET /api/signatures/pending`
 - `GET /api/search/documents`
+- `GET /api/audit-logs`
+- `GET /api/audit-logs/{id}`
+- `GET /api/dashboard/summary`
+- `GET /api/dashboard/recent-documents`
+- `GET /api/dashboard/recent-activities`
+- `POST /api/documents/{id}/archive`
 
 ## Approval Workflow
 
@@ -126,6 +132,23 @@ Document APIs:
 - enterprise filters for category, status, owner, controller, signer, and archived state
 - paged results with current version number and signature summary
 - search orchestration sits behind `ISearchService` so semantic retrieval can be added later without breaking the API contract
+
+## Audit Log
+
+- `AuditLog` is stored in PostgreSQL as an append-only compliance trail
+- important auth, document, approval, signature, and archive events are written from service-layer orchestration
+- `GET /api/audit-logs` supports filters for actor, action, document, and date range
+- `GET /api/audit-logs/{id}` returns the full stored metadata payload for an event
+- there are no edit or delete APIs for audit entries
+
+## Dashboard
+
+- `GET /api/dashboard/summary`
+- `GET /api/dashboard/recent-documents`
+- `GET /api/dashboard/recent-activities`
+- summary returns core operational counts such as total documents, pending approvals, pending signatures, approved documents, and archived documents
+- recent activities are sourced from append-only audit entries so the dashboard stays aligned with compliance visibility
+- summary and recent activities are role-aware where queue counts or work lists depend on the current user
 
 Admin password reset APIs:
 
@@ -162,6 +185,12 @@ dotnet ef database update --project src/InsightDocs.Infrastructure
 dotnet run --project src/InsightDocs.Api
 ```
 
+Run tests:
+
+```bash
+dotnet test tests/InsightDocs.Backend.Tests/InsightDocs.Backend.Tests.csproj
+```
+
 API defaults:
 
 - Base URL: `http://localhost:8081`
@@ -175,6 +204,7 @@ API defaults:
 ## Notes
 
 - Phase 5 seeds one sample document record for local development
+- richer sample data can be loaded from [docs/demo-data.sql](/Users/nuttapon/Github-dev/InsightDocs/docs/demo-data.sql)
 - the MinIO bucket is created on demand if it does not already exist
 - restore does not overwrite or delete stored MinIO objects
 - `PdfSharpCore` is currently used for PDF mutation and should be reviewed before hardened production rollout because its dependency chain emits vulnerability warnings during restore/build

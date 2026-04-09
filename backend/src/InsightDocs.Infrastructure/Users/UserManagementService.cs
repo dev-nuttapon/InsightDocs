@@ -1,6 +1,7 @@
 using InsightDocs.Application.Common;
 using InsightDocs.Application.Identity;
 using InsightDocs.Application.Users;
+using InsightDocs.Application.Audit;
 using InsightDocs.Domain.Users;
 using InsightDocs.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +10,8 @@ namespace InsightDocs.Infrastructure.Users;
 
 public sealed class UserManagementService(
     InsightDocsDbContext dbContext,
-    IKeycloakAdminService keycloakAdminService) : IUserManagementService
+    IKeycloakAdminService keycloakAdminService,
+    IAuditLogService auditLogService) : IUserManagementService
 {
     public async Task<IReadOnlyCollection<UserSummaryDto>> GetUsersAsync(CancellationToken cancellationToken)
     {
@@ -108,6 +110,22 @@ public sealed class UserManagementService(
         var user = await LoadUserAsync(id, cancellationToken);
         user.Approve(approvedBy);
         await keycloakAdminService.SetUserEnabledAsync(user.KeycloakUserId, true, cancellationToken);
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "registration.approved",
+                "User",
+                user.Id,
+                ActorIdentifier: approvedBy,
+                Metadata: new
+                {
+                    user.KeycloakUserId,
+                    user.Username,
+                    user.Email,
+                    user.DisplayName,
+                    ApprovedBy = approvedBy,
+                    Status = user.Status.ToString()
+                }),
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return MapDetail(user);

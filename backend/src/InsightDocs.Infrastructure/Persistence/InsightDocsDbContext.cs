@@ -1,4 +1,5 @@
 using InsightDocs.Domain.Auth;
+using InsightDocs.Domain.Audit;
 using InsightDocs.Domain.Documents;
 using InsightDocs.Domain.Users;
 using InsightDocs.Infrastructure.Persistence.Configurations;
@@ -12,6 +13,7 @@ public sealed class InsightDocsDbContext(DbContextOptions<InsightDocsDbContext> 
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<PasswordResetRequest> PasswordResetRequests => Set<PasswordResetRequest>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<DocumentVersion> DocumentVersions => Set<DocumentVersion>();
     public DbSet<DocumentApproval> DocumentApprovals => Set<DocumentApproval>();
@@ -25,6 +27,7 @@ public sealed class InsightDocsDbContext(DbContextOptions<InsightDocsDbContext> 
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
         modelBuilder.ApplyConfiguration(new UserRoleConfiguration());
         modelBuilder.ApplyConfiguration(new PasswordResetRequestConfiguration());
+        modelBuilder.ApplyConfiguration(new AuditLogConfiguration());
         modelBuilder.ApplyConfiguration(new DocumentConfiguration());
         modelBuilder.ApplyConfiguration(new DocumentVersionConfiguration());
         modelBuilder.ApplyConfiguration(new DocumentApprovalConfiguration());

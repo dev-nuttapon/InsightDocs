@@ -84,6 +84,17 @@ public sealed class Document
         Status = DocumentStatus.Draft;
     }
 
+    public void Archive(string archivedBy)
+    {
+        EnsureStatus(
+            [DocumentStatus.Draft, DocumentStatus.Approved, DocumentStatus.Rejected],
+            "Only draft, approved, or rejected documents can be archived.");
+
+        UpdatedBy = archivedBy;
+        UpdatedAt = DateTimeOffset.UtcNow;
+        Status = DocumentStatus.Archived;
+    }
+
     private DocumentApproval Transition(DocumentApprovalAction action, DocumentStatus toStatus, string performedBy, string? comment)
     {
         var fromStatus = Status;

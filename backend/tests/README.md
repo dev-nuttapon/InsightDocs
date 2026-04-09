@@ -1,9 +1,19 @@
 # Tests
 
-Reserved for backend automated tests in later phases.
+Automated backend tests live here.
 
-Recommended future structure:
+Current structure:
 
-- `InsightDocs.Application.Tests`
-- `InsightDocs.Infrastructure.Tests`
-- `InsightDocs.Api.IntegrationTests`
+- `InsightDocs.Backend.Tests`
+
+Coverage currently focuses on:
+
+- document workflow domain transitions
+- dashboard API controller contract
+
+Run:
+
+```bash
+cd backend
+dotnet test tests/InsightDocs.Backend.Tests/InsightDocs.Backend.Tests.csproj
+```

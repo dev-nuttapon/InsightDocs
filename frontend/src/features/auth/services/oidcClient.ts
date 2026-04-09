@@ -1,9 +1,6 @@
 import {
   authRequestTimeoutMs,
   apiBaseUrl,
-  keycloakClientId,
-  keycloakLogoutEndpoint,
-  postLogoutRedirectUri,
   redirectUri,
 } from '../config/authConfig';
 import type { TokenSet } from '../context/authTypes';
@@ -11,7 +8,6 @@ import type { TokenSet } from '../context/authTypes';
 const codeVerifierKey = 'insightdocs.auth.codeVerifier';
 const stateKey = 'insightdocs.auth.state';
 const returnToKey = 'insightdocs.auth.returnTo';
-const tokensKey = 'insightdocs.auth.tokens';
 const redirectInProgressKey = 'insightdocs.auth.redirectInProgress';
 
 export type KeycloakTokens = TokenSet;
@@ -102,47 +98,12 @@ async function completeAuthorizationCodeFlowInternal(callbackUrl: string): Promi
   };
 }
 
-export async function buildLogoutRedirectUrl(idTokenHint?: string) {
-  const url = new URL(keycloakLogoutEndpoint);
-  url.searchParams.set('post_logout_redirect_uri', postLogoutRedirectUri);
-  url.searchParams.set('client_id', keycloakClientId);
-
-  if (idTokenHint) {
-    url.searchParams.set('id_token_hint', idTokenHint);
-  }
-
-  return url.toString();
-}
-
-export function readStoredTokens(): KeycloakTokens | null {
-  const raw = sessionStorage.getItem(tokensKey) ?? localStorage.getItem(tokensKey);
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw) as KeycloakTokens;
-  } catch {
-    sessionStorage.removeItem(tokensKey);
-    localStorage.removeItem(tokensKey);
-    return null;
-  }
-}
-
-export function storeTokens(tokens: KeycloakTokens) {
-  sessionStorage.setItem(tokensKey, JSON.stringify(tokens));
-  localStorage.setItem(tokensKey, JSON.stringify(tokens));
-}
-
 export function removeStoredTokens() {
-  sessionStorage.removeItem(tokensKey);
-  localStorage.removeItem(tokensKey);
   clearLoginRedirectState();
 }
 
 export function consumeReturnTo() {
-  const returnTo = readTransientValue(returnToKey) ?? '/';
+  const returnTo = readTransientValue(returnToKey) ?? '/me';
   clearTransientValue(returnToKey);
   return returnTo;
 }
@@ -193,6 +154,7 @@ async function postJsonWithTimeout(url: string, payload: { code: string; code_ve
   try {
     return await fetch(url, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },

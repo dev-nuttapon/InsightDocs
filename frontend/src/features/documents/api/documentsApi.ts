@@ -1,4 +1,5 @@
 import { apiBaseUrl } from '../../auth/config/authConfig';
+import { cookieSessionToken } from '../../auth/context/authTypes';
 import type {
   ApprovalActionInput,
   AssignDocumentSignatureInput,
@@ -24,8 +25,9 @@ type ApiEnvelope<T> = {
 async function request<T>(path: string, accessToken: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
+    credentials: 'include',
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      ...(accessToken !== cookieSessionToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(init?.headers ?? {}),
     },
   });
