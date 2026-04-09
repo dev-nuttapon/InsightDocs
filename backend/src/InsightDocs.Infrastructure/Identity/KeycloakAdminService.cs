@@ -1,0 +1,155 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using InsightDocs.Application.Common;
+using InsightDocs.Application.Identity;
+using InsightDocs.Infrastructure.Configuration;
+using Microsoft.Extensions.Options;
+
+namespace InsightDocs.Infrastructure.Identity;
+
+public sealed class KeycloakAdminService(
+    HttpClient httpClient,
+    IOptions<KeycloakOptions> keycloakOptions) : IKeycloakAdminService
+{
+    private readonly KeycloakOptions _options = keycloakOptions.Value;
+
+    public async Task<string> CreateUserAsync(string username, string email, string displayName, string password, bool enabled, CancellationToken cancellationToken)
+    {
+        var accessToken = await GetAccessTokenAsync(cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Post, BuildAdminUsersUrl())
+        {
+            Content = JsonContent.Create(new
+            {
+                username,
+                email,
+                enabled,
+                emailVerified = true,
+                firstName = displayName,
+                credentials = new[]
+                {
+                    new
+                    {
+                        type = "password",
+                        temporary = false,
+                        value = password
+                    }
+                }
+            })
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.Conflict)
+        {
+            throw new ConflictException("A matching Keycloak user already exists.");
+        }
+
+        if (response.StatusCode != HttpStatusCode.Created)
+        {
+            throw new ValidationException($"Keycloak user creation failed with status {(int)response.StatusCode}.");
+        }
+
+        var location = response.Headers.Location?.ToString();
+        var keycloakUserId = location?.Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+
+        if (string.IsNullOrWhiteSpace(keycloakUserId))
+        {
+            throw new ValidationException("Keycloak did not return a created user id.");
+        }
+
+        return keycloakUserId;
+    }
+
+    public async Task DeleteUserAsync(string keycloakUserId, CancellationToken cancellationToken)
+    {
+        var accessToken = await GetAccessTokenAsync(cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Delete, BuildAdminUserUrl(keycloakUserId));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotFound)
+        {
+            return;
+        }
+
+        throw new ValidationException($"Keycloak user deletion failed with status {(int)response.StatusCode}.");
+    }
+
+    public async Task SetUserEnabledAsync(string keycloakUserId, bool enabled, CancellationToken cancellationToken)
+    {
+        var accessToken = await GetAccessTokenAsync(cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Put, BuildAdminUserUrl(keycloakUserId))
+        {
+            Content = JsonContent.Create(new { enabled })
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode != HttpStatusCode.NoContent)
+        {
+            throw new ValidationException($"Keycloak user update failed with status {(int)response.StatusCode}.");
+        }
+    }
+
+    public async Task ResetPasswordAsync(string keycloakUserId, string password, CancellationToken cancellationToken)
+    {
+        var accessToken = await GetAccessTokenAsync(cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Put, $"{BuildAdminUserUrl(keycloakUserId)}/reset-password")
+        {
+            Content = JsonContent.Create(new
+            {
+                type = "password",
+                temporary = false,
+                value = password
+            })
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode != HttpStatusCode.NoContent)
+        {
+            throw new ValidationException($"Keycloak password reset failed with status {(int)response.StatusCode}.");
+        }
+    }
+
+    private async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
+    {
+        var tokenEndpoint = $"{_options.Authority}/protocol/openid-connect/token";
+        using var request = new HttpRequestMessage(HttpMethod.Post, tokenEndpoint)
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "client_credentials",
+                ["client_id"] = _options.ClientId,
+                ["client_secret"] = _options.ClientSecret
+            }!)
+        };
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new ValidationException($"Keycloak token request failed with status {(int)response.StatusCode}.");
+        }
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        var accessToken = document.RootElement.GetProperty("access_token").GetString();
+
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            throw new ValidationException("Keycloak access token response was empty.");
+        }
+
+        return accessToken;
+    }
+
+    private string BuildAdminUsersUrl() => $"{_options.BaseUrl.TrimEnd('/')}/admin/realms/{_options.Realm}/users";
+
+    private string BuildAdminUserUrl(string keycloakUserId) => $"{BuildAdminUsersUrl()}/{keycloakUserId}";
+}

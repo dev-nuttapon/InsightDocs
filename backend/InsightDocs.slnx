@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/InsightDocs.Api/InsightDocs.Api.csproj" />
+    <Project Path="src/InsightDocs.Application/InsightDocs.Application.csproj" />
+    <Project Path="src/InsightDocs.Domain/InsightDocs.Domain.csproj" />
+    <Project Path="src/InsightDocs.Infrastructure/InsightDocs.Infrastructure.csproj" />
+  </Folder>
+</Solution>
