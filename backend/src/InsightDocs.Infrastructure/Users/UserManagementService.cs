@@ -22,7 +22,7 @@ public sealed class UserManagementService(
             .OrderBy(user => user.Username)
             .ToListAsync(cancellationToken);
 
-        return users.Select(MapSummary()).ToArray();
+        return await MapSummariesAsync(users, cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<UserSummaryDto>> GetSignersAsync(CancellationToken cancellationToken)
@@ -34,16 +34,16 @@ public sealed class UserManagementService(
             .Where(user =>
                 user.Status == UserStatus.Active &&
                 user.UserRoles.Any(userRole => userRole.Role.NormalizedName == BusinessRoles.Signer.ToUpperInvariant()))
-            .OrderBy(user => user.DisplayName)
+            .OrderBy(user => user.Username)
             .ToListAsync(cancellationToken);
 
-        return users.Select(MapSummary()).ToArray();
+        return await MapSummariesAsync(users, cancellationToken);
     }
 
     public async Task<UserDetailDto> GetUserAsync(Guid id, CancellationToken cancellationToken)
     {
         var user = await LoadUserAsync(id, cancellationToken);
-        return MapDetail(user);
+        return await MapDetailAsync(user, cancellationToken);
     }
 
     public async Task<UserDetailDto> CreateUserAsync(CreateUserCommand command, CancellationToken cancellationToken)
@@ -55,7 +55,7 @@ public sealed class UserManagementService(
         dbContext.Users.Add(user);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return MapDetail(user);
+        return await MapDetailAsync(user, cancellationToken);
     }
 
     public async Task<UserDetailDto> UpdateUserAsync(Guid id, UpdateUserCommand command, CancellationToken cancellationToken)
@@ -66,7 +66,7 @@ public sealed class UserManagementService(
         user.UpdateProfile(command.KeycloakUserId, command.Username, command.Email, command.DisplayName);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return MapDetail(user);
+        return await MapDetailAsync(user, cancellationToken);
     }
 
     public async Task<UserDetailDto> AssignRoleAsync(Guid id, string roleName, CancellationToken cancellationToken)
@@ -81,7 +81,7 @@ public sealed class UserManagementService(
         }
 
         user = await LoadUserAsync(id, cancellationToken);
-        return MapDetail(user);
+        return await MapDetailAsync(user, cancellationToken);
     }
 
     public async Task RemoveRoleAsync(Guid id, string roleName, CancellationToken cancellationToken)
@@ -128,7 +128,7 @@ public sealed class UserManagementService(
             cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return MapDetail(user);
+        return await MapDetailAsync(user, cancellationToken);
     }
 
     public async Task<UserDetailDto> DisableUserAsync(Guid id, CancellationToken cancellationToken)
@@ -138,7 +138,7 @@ public sealed class UserManagementService(
         await keycloakAdminService.SetUserEnabledAsync(user.KeycloakUserId, false, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return MapDetail(user);
+        return await MapDetailAsync(user, cancellationToken);
     }
 
     public async Task<UserDetailDto> EnableUserAsync(Guid id, CancellationToken cancellationToken)
@@ -148,7 +148,7 @@ public sealed class UserManagementService(
         await keycloakAdminService.SetUserEnabledAsync(user.KeycloakUserId, true, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return MapDetail(user);
+        return await MapDetailAsync(user, cancellationToken);
     }
 
     private async Task<User> LoadUserAsync(Guid id, CancellationToken cancellationToken)
@@ -196,13 +196,46 @@ public sealed class UserManagementService(
 
     private static string NormalizeRoleName(string roleName) => roleName.Trim().ToUpperInvariant();
 
-    private static Func<User, UserSummaryDto> MapSummary() =>
-        user => new UserSummaryDto(
+    private async Task<IReadOnlyCollection<UserSummaryDto>> MapSummariesAsync(IReadOnlyCollection<User> users, CancellationToken cancellationToken)
+    {
+        var profiles = await LoadKeycloakProfilesAsync(users.Select(user => user.KeycloakUserId), cancellationToken);
+
+        return users
+            .Select(user => MapSummary(user, profiles.GetValueOrDefault(user.KeycloakUserId)))
+            .ToArray();
+    }
+
+    private async Task<UserDetailDto> MapDetailAsync(User user, CancellationToken cancellationToken)
+    {
+        var profile = await keycloakAdminService.GetUserProfileAsync(user.KeycloakUserId, cancellationToken);
+        return MapDetail(user, profile);
+    }
+
+    private async Task<Dictionary<string, KeycloakUserProfile?>> LoadKeycloakProfilesAsync(IEnumerable<string> keycloakUserIds, CancellationToken cancellationToken)
+    {
+        var ids = keycloakUserIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        var lookups = await Task.WhenAll(ids.Select(async id => new
+        {
+            Id = id,
+            Profile = await keycloakAdminService.GetUserProfileAsync(id, cancellationToken)
+        }));
+
+        return lookups.ToDictionary(item => item.Id, item => item.Profile, StringComparer.Ordinal);
+    }
+
+    private static UserSummaryDto MapSummary(User user, KeycloakUserProfile? profile) =>
+        new(
             user.Id,
             user.KeycloakUserId,
             user.Username,
             user.Email,
             user.DisplayName,
+            profile?.FirstName,
+            profile?.LastName,
             user.Status,
             user.CreatedAt,
             user.ApprovedAt,
@@ -212,13 +245,15 @@ public sealed class UserManagementService(
                 .OrderBy(name => name)
                 .ToArray());
 
-    private static UserDetailDto MapDetail(User user) =>
+    private static UserDetailDto MapDetail(User user, KeycloakUserProfile? profile) =>
         new(
             user.Id,
             user.KeycloakUserId,
             user.Username,
             user.Email,
             user.DisplayName,
+            profile?.FirstName,
+            profile?.LastName,
             user.Status,
             user.CreatedAt,
             user.ApprovedAt,

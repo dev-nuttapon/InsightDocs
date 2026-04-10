@@ -6,6 +6,8 @@ export type AppUser = {
   username: string;
   email: string;
   displayName: string;
+  firstName: string | null;
+  lastName: string | null;
   status: UserStatus;
   createdAt: string;
   approvedAt: string | null;

@@ -63,6 +63,30 @@ public sealed class KeycloakAdminService(
         return keycloakUserId;
     }
 
+    public async Task<KeycloakUserProfile?> GetUserProfileAsync(string keycloakUserId, CancellationToken cancellationToken)
+    {
+        var accessToken = await GetAccessTokenAsync(cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Get, BuildAdminUserUrl(keycloakUserId));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new ValidationException($"Keycloak user lookup failed with status {(int)response.StatusCode}.");
+        }
+
+        var payload = await response.Content.ReadFromJsonAsync<KeycloakAdminUserResponse>(cancellationToken);
+        return payload is null
+            ? null
+            : new KeycloakUserProfile(payload.FirstName, payload.LastName);
+    }
+
     public async Task DeleteUserAsync(string keycloakUserId, CancellationToken cancellationToken)
     {
         var accessToken = await GetAccessTokenAsync(cancellationToken);
@@ -152,4 +176,8 @@ public sealed class KeycloakAdminService(
     private string BuildAdminUsersUrl() => $"{_options.BaseUrl.TrimEnd('/')}/admin/realms/{_options.Realm}/users";
 
     private string BuildAdminUserUrl(string keycloakUserId) => $"{BuildAdminUsersUrl()}/{keycloakUserId}";
+
+    private sealed record KeycloakAdminUserResponse(
+        string? FirstName,
+        string? LastName);
 }

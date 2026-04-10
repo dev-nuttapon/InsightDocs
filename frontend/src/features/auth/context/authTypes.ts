@@ -1,5 +1,6 @@
 export type CurrentUser = {
   subject: string | null;
+  displayName: string | null;
   username: string | null;
   email: string | null;
   roles: string[];

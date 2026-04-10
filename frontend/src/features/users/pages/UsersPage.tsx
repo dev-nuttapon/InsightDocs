@@ -120,9 +120,8 @@ export function UsersPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>Username</th>
-                <th>Display Name</th>
-                <th>Email</th>
+                <th>Name</th>
+                <th>Sign-in Email</th>
                 <th>Status</th>
                 <th>Roles</th>
               </tr>
@@ -130,8 +129,9 @@ export function UsersPage() {
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td><Link to={`/users/${user.id}`}>{user.username}</Link></td>
-                  <td>{user.displayName}</td>
+                  <td>
+                    <Link to={`/users/${user.id}`}>{formatUserName(user)}</Link>
+                  </td>
                   <td>{user.email}</td>
                   <td>{user.status}</td>
                   <td>{user.roles.join(', ') || 'No roles'}</td>
@@ -143,4 +143,13 @@ export function UsersPage() {
       )}
     </section>
   );
+}
+
+function formatUserName(user: AppUser) {
+  const fullName = [user.firstName, user.lastName]
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    .join(' ')
+    .trim();
+
+  return fullName || user.username;
 }

@@ -9,60 +9,62 @@ export function CurrentUserPage() {
   const access = buildAccessProfile(roles);
 
   return (
-    <section className="panel stack">
-      <div>
-        <span className="sidebar__eyebrow">User Information</span>
-        <h2>My Profile</h2>
-        <p className="muted">
-          หน้าแรกหลัง login จะแสดงข้อมูลผู้ใช้งานและสิทธิ์ที่ระบบอ่านได้จาก session ปัจจุบัน
-        </p>
+    <section className="stack stack--xl">
+      <div className="panel panel--hero stack">
+        <div className="section-heading">
+          <span className="sidebar__eyebrow">User Information</span>
+          <h2>My Profile</h2>
+          <p className="muted">
+            Review the identity claims and access scope that the current session exposes to the InsightDocs workspace.
+          </p>
+        </div>
+        <div className="detail-grid">
+          <article className="metric-panel metric-panel--left">
+            <span className="card__label">Identity</span>
+            <strong>{user?.username ?? 'Unavailable'}</strong>
+            <span className="muted">{user?.email ?? 'No email claim'}</span>
+            <span className="muted">Subject: {user?.subject ?? 'Unavailable'}</span>
+          </article>
+          <article className="metric-panel metric-panel--left">
+            <span className="card__label">Access Scope</span>
+            <strong>{access.normalizedRoles.length > 0 ? access.normalizedRoles.map(formatRoleLabel).join(', ') : 'No mapped roles'}</strong>
+            <span className="muted">Approvals: {access.canReviewDocuments ? 'Enabled' : 'Not assigned'}</span>
+            <span className="muted">Signatures: {access.canSignDocuments ? 'Enabled' : 'Not assigned'}</span>
+            <span className="muted">Admin: {access.isAdmin ? 'Enabled' : 'Not assigned'}</span>
+          </article>
+        </div>
       </div>
 
-      <div className="hero-grid">
-        <article className="card">
-          <span className="card__label">Identity</span>
-          <div className="stack">
-            <div>Username: {user?.username ?? 'Unavailable'}</div>
-            <div>Email: {user?.email ?? 'Unavailable'}</div>
-            <div>Subject: {user?.subject ?? 'Unavailable'}</div>
+      <div className="split-layout">
+        <article className="panel stack">
+          <div className="section-heading">
+            <span className="sidebar__eyebrow">Documents</span>
+            <h3>Open the governed workspace</h3>
           </div>
-        </article>
-
-        <article className="card">
-          <span className="card__label">Access Scope</span>
-          <div className="stack">
-            <div>Roles: {access.normalizedRoles.length > 0 ? access.normalizedRoles.map(formatRoleLabel).join(', ') : 'No mapped roles'}</div>
-            <div>Approvals: {access.canReviewDocuments ? 'Enabled' : 'Not assigned'}</div>
-            <div>Signatures: {access.canSignDocuments ? 'Enabled' : 'Not assigned'}</div>
-            <div>Admin: {access.isAdmin ? 'Enabled' : 'Not assigned'}</div>
-          </div>
-        </article>
-      </div>
-
-      <div className="hero-grid">
-        <article className="card card--interactive">
-          <span className="card__label">Documents</span>
-          <h3>Open document workspace</h3>
-          <p className="muted">ไปยัง registry เอกสารเพื่อดูรายการ, เวอร์ชัน, และงานเอกสารที่เกี่ยวข้อง</p>
+          <p className="muted">Move to the document registry to inspect records, open versions, and continue control work.</p>
           <div className="actions">
             <Link className="button" to="/documents">Open Documents</Link>
           </div>
         </article>
 
         {access.canReviewDocuments ? (
-          <article className="card card--interactive">
-            <span className="card__label">Approvals</span>
-            <h3>Review pending work</h3>
-            <p className="muted">เปิดรายการเอกสารที่รอการอนุมัติจากบทบาทของคุณ</p>
+          <article className="panel stack">
+            <div className="section-heading">
+              <span className="sidebar__eyebrow">Approvals</span>
+              <h3>Review pending work</h3>
+            </div>
+            <p className="muted">Open the approval queue assigned to your role and clear decisions from a single operational view.</p>
             <div className="actions">
               <Link className="button" to="/approvals">Open Approvals</Link>
             </div>
           </article>
         ) : (
-          <article className="card">
-            <span className="card__label">Status</span>
-            <h3>No approval queue</h3>
-            <p className="muted">บัญชีนี้ยังไม่มีบทบาทที่ต้องตรวจอนุมัติเอกสาร</p>
+          <article className="panel stack">
+            <div className="section-heading">
+              <span className="sidebar__eyebrow">Status</span>
+              <h3>No approval queue assigned</h3>
+            </div>
+            <p className="muted">This account is authenticated, but there is no approval responsibility mapped to the current role set.</p>
           </article>
         )}
       </div>

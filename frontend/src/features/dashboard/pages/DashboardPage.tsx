@@ -119,61 +119,85 @@ export function DashboardPage() {
   ];
 
   if (!summary && !error) {
-    return <StatePanel eyebrow="Dashboard" title="Loading dashboard" description="Collecting current metrics, recent documents, and operational activity." />;
+    return <StatePanel eyebrow="Dashboard" title="Loading dashboard" description="Collecting current metrics, recent documents, and operational activity." busy />;
   }
 
   return (
-    <section className="panel stack">
-      <div className="dashboard-hero">
-        <div>
-          <span className="sidebar__eyebrow">Operational Dashboard</span>
-          <h2>Enterprise document operations</h2>
-          <p className="muted dashboard-hero__lead">
-            Use this dashboard to monitor controlled document activity, route to queues that need attention, and present the current operational state during demos or reviews.
-          </p>
+    <section className="stack stack--xl">
+      <div className="panel panel--hero stack">
+        <div className="dashboard-hero">
+          <div>
+            <span className="sidebar__eyebrow">Operational Dashboard</span>
+            <h2>Enterprise document operations</h2>
+            <p className="muted dashboard-hero__lead">
+              Monitor controlled document activity, route yourself to the next queue, and present the current operational state without hunting across modules.
+            </p>
+          </div>
+          <div className="dashboard-badges">
+            <span className="status-pill">Active workspace</span>
+            <span className="status-pill status-pill--subtle">{user?.username ?? 'Authenticated user'}</span>
+          </div>
         </div>
-        <div className="dashboard-badges">
-          <span className="status-pill">Active workspace</span>
-          <span className="status-pill status-pill--subtle">{user?.username ?? 'Authenticated user'}</span>
+
+        {error ? <div className="callout callout--danger">{error}</div> : null}
+
+        <div className="dashboard-summary-grid dashboard-summary-grid--hero">
+          {summaryCards.map((card) => (
+            <article key={card.label} className="metric-panel">
+              <span className="card__label">{card.label}</span>
+              <strong className="metric-value">{card.value}</strong>
+            </article>
+          ))}
         </div>
       </div>
 
-      {error ? <div className="callout callout--danger">{error}</div> : null}
-
-      <div className="dashboard-summary-grid">
-        {summaryCards.map((card) => (
-          <article key={card.label} className="card card--interactive">
-            <span className="card__label">{card.label}</span>
-            <strong className="metric-value">{card.value}</strong>
-          </article>
-        ))}
-      </div>
-
-      <div className="hero-grid">
-        <article className="card stack">
-          <span className="card__label">Quick Actions</span>
-          {quickActions.map((action) => (
-            <div key={action.to} className="stack stack--compact">
-              <strong>{action.label}</strong>
-              <span className="muted">{action.description}</span>
-              <div className="actions actions--compact">
+      <div className="split-layout">
+        <section className="panel stack">
+          <div className="section-heading">
+            <span className="sidebar__eyebrow">Quick Actions</span>
+            <h3>Continue the next operational step</h3>
+          </div>
+          <div className="action-list">
+            {quickActions.map((action) => (
+              <div key={action.to} className="action-row">
+                <div className="action-row__copy">
+                  <strong>{action.label}</strong>
+                  <span className="muted">{action.description}</span>
+                </div>
                 <Link className="button" to={action.to}>Open</Link>
               </div>
-            </div>
-          ))}
-        </article>
+            ))}
+          </div>
+        </section>
 
-        <article className="card stack">
-          <span className="card__label">Current Session</span>
-          <div>Username: {user?.username ?? 'Unavailable'}</div>
-          <div>Email: {user?.email ?? 'Unavailable'}</div>
-          <div>Roles: {access.normalizedRoles.length > 0 ? access.normalizedRoles.map(formatRoleLabel).join(', ') : 'No mapped roles'}</div>
-        </article>
+        <section className="panel stack">
+          <div className="section-heading">
+            <span className="sidebar__eyebrow">Current Session</span>
+            <h3>Identity and access snapshot</h3>
+          </div>
+          <dl className="detail-list">
+            <div>
+              <dt>Username</dt>
+              <dd>{user?.username ?? 'Unavailable'}</dd>
+            </div>
+            <div>
+              <dt>Email</dt>
+              <dd>{user?.email ?? 'Unavailable'}</dd>
+            </div>
+            <div>
+              <dt>Roles</dt>
+              <dd>{access.normalizedRoles.length > 0 ? access.normalizedRoles.map(formatRoleLabel).join(', ') : 'No mapped roles'}</dd>
+            </div>
+          </dl>
+        </section>
       </div>
 
-      <div className="hero-grid">
-        <article className="card stack">
-          <span className="card__label">Recent Documents</span>
+      <div className="split-layout split-layout--wide">
+        <section className="panel stack">
+          <div className="section-heading">
+            <span className="sidebar__eyebrow">Recent Documents</span>
+            <h3>Latest governed content</h3>
+          </div>
           <div className="table-wrap">
             <table className="table">
               <thead>
@@ -206,32 +230,37 @@ export function DashboardPage() {
               </tbody>
             </table>
           </div>
-        </article>
+        </section>
 
-        <article className="card stack">
-          <span className="card__label">Recent Activities</span>
+        <section className="panel stack">
+          <div className="section-heading">
+            <span className="sidebar__eyebrow">Recent Activities</span>
+            <h3>Latest operational events</h3>
+          </div>
           {recentActivities.length === 0 ? (
             <p className="muted">No recent activities available.</p>
           ) : (
-            recentActivities.map((activity) => (
-              <div key={activity.id} className="comment-block">
-                <strong>{activity.action}</strong>
-                <div className="muted">
-                  {activity.actorDisplayName ?? activity.actorUsername ?? 'System'} • {new Date(activity.timestamp).toLocaleString()}
+            <div className="timeline-list">
+              {recentActivities.map((activity) => (
+                <div key={activity.id} className="timeline-item">
+                  <strong>{activity.action}</strong>
+                  <div className="muted">
+                    {activity.actorDisplayName ?? activity.actorUsername ?? 'System'} • {new Date(activity.timestamp).toLocaleString()}
+                  </div>
+                  <div className="muted">
+                    {activity.relatedDocumentId ? (
+                      <Link to={`/documents/${activity.relatedDocumentId}`}>
+                        {activity.relatedDocumentTitle ?? 'Open related document'}
+                      </Link>
+                    ) : (
+                      activity.entityType
+                    )}
+                  </div>
                 </div>
-                <div className="muted">
-                  {activity.relatedDocumentId ? (
-                    <Link to={`/documents/${activity.relatedDocumentId}`}>
-                      {activity.relatedDocumentTitle ?? 'Open related document'}
-                    </Link>
-                  ) : (
-                    activity.entityType
-                  )}
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
-        </article>
+        </section>
       </div>
     </section>
   );

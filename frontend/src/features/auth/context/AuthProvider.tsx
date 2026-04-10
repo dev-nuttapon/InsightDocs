@@ -74,44 +74,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return Math.max(5000, refreshAtMs - Date.now());
     };
 
-    const buildFallbackUser = async (): Promise<CurrentUser | null> => {
+    const buildUser = async (): Promise<CurrentUser | null> => {
+      const accessToken = getAccessToken();
       const tokenParsed = getTokenParsed();
+
       if (!tokenParsed) {
         return null;
       }
 
-      try {
-        const profile = await getUserProfile();
+      const profile = await getUserProfile().catch(() => null);
+      const keycloakDisplayName = resolveDisplayName(profile?.firstName, profile?.lastName, tokenParsed);
 
+      if (!accessToken) {
         return {
           subject: typeof tokenParsed.sub === 'string' ? tokenParsed.sub : null,
+          displayName: keycloakDisplayName,
           username:
             profile?.username ??
             (typeof tokenParsed.preferred_username === 'string' ? tokenParsed.preferred_username : null),
           email: profile?.email ?? (typeof tokenParsed.email === 'string' ? tokenParsed.email : null),
           roles: extractRoles(tokenParsed),
         };
-      } catch {
-        return {
-          subject: typeof tokenParsed.sub === 'string' ? tokenParsed.sub : null,
-          username: typeof tokenParsed.preferred_username === 'string' ? tokenParsed.preferred_username : null,
-          email: typeof tokenParsed.email === 'string' ? tokenParsed.email : null,
-          roles: extractRoles(tokenParsed),
-        };
-      }
-    };
-
-    const buildUser = async (): Promise<CurrentUser | null> => {
-      const accessToken = getAccessToken();
-
-      if (!accessToken) {
-        return await buildFallbackUser();
       }
 
       try {
-        return await getCurrentUser(accessToken);
+        const apiUser = await getCurrentUser(accessToken);
+
+        return {
+          ...apiUser,
+          displayName: keycloakDisplayName ?? apiUser.displayName ?? null,
+          username:
+            apiUser.username ??
+            profile?.username ??
+            (typeof tokenParsed.preferred_username === 'string' ? tokenParsed.preferred_username : null),
+          email: apiUser.email ?? profile?.email ?? (typeof tokenParsed.email === 'string' ? tokenParsed.email : null),
+          subject: apiUser.subject ?? (typeof tokenParsed.sub === 'string' ? tokenParsed.sub : null),
+          roles: apiUser.roles.length > 0 ? apiUser.roles : extractRoles(tokenParsed),
+        };
       } catch {
-        return await buildFallbackUser();
+        return {
+          subject: typeof tokenParsed.sub === 'string' ? tokenParsed.sub : null,
+          displayName: keycloakDisplayName,
+          username:
+            profile?.username ??
+            (typeof tokenParsed.preferred_username === 'string' ? tokenParsed.preferred_username : null),
+          email: profile?.email ?? (typeof tokenParsed.email === 'string' ? tokenParsed.email : null),
+          roles: extractRoles(tokenParsed),
+        };
       }
     };
 
@@ -228,4 +237,33 @@ function extractRoles(tokenParsed: Record<string, unknown>) {
   }
 
   return Array.from(roles);
+}
+
+function resolveDisplayName(
+  firstName: string | null | undefined,
+  lastName: string | null | undefined,
+  tokenParsed: Record<string, unknown>,
+) {
+  const fullName = [firstName, lastName].filter((value) => typeof value === 'string' && value.trim()).join(' ').trim();
+
+  if (fullName) {
+    return fullName;
+  }
+
+  if (typeof tokenParsed.name === 'string' && tokenParsed.name.trim()) {
+    return tokenParsed.name.trim();
+  }
+
+  if (typeof tokenParsed.given_name === 'string' || typeof tokenParsed.family_name === 'string') {
+    const tokenName = [tokenParsed.given_name, tokenParsed.family_name]
+      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      .join(' ')
+      .trim();
+
+    if (tokenName) {
+      return tokenName;
+    }
+  }
+
+  return null;
 }
