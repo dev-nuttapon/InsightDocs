@@ -6,7 +6,7 @@ import { useAuth } from '../../../features/auth/context/useAuth';
 import { buildAccessProfile, formatRoleLabel } from '../../auth/authorization';
 
 export function AppShell() {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [openSection, setOpenSection] = useState<'workspace' | 'actions' | 'admin'>('workspace');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const access = buildAccessProfile(user?.roles ?? []);
@@ -97,9 +97,9 @@ export function AppShell() {
             <span className="muted">
               Roles: {access.normalizedRoles.length > 0 ? access.normalizedRoles.map(formatRoleLabel).join(', ') : 'No roles'}
             </span>
-            <button className="button button--secondary" type="button" onClick={() => void logout()}>
+            <NavLink className="button button--secondary" to="/logout">
               Logout
-            </button>
+            </NavLink>
           </section>
         ) : null}
       </aside>
@@ -133,9 +133,9 @@ export function AppShell() {
                       <span className="topbar__menu-label">Theme</span>
                       <ThemeToggle variant="menu" />
                     </div>
-                    <button className="topbar__menu-link topbar__menu-link--button" type="button" onClick={() => void logout()}>
+                    <NavLink className="topbar__menu-link" to="/logout" onClick={() => setIsUserMenuOpen(false)}>
                       Logout
-                    </button>
+                    </NavLink>
                   </div>
                 ) : null}
               </div>

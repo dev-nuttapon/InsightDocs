@@ -333,10 +333,19 @@ textarea {
   box-shadow: 0 20px 60px var(--color-shadow);
 }
 
+.state-screen {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
 .panel--busy {
   display: grid;
-  justify-items: start;
+  justify-items: center;
+  text-align: center;
   gap: 12px;
+  width: min(560px, 100%);
 }
 
 .spinner {

@@ -86,7 +86,7 @@ export async function login(redirectPath = '/dashboard') {
 
 export async function logout() {
   await keycloak.logout({
-    redirectUri: `${window.location.origin}/login`,
+    redirectUri: `${window.location.origin}/`,
   });
 }
 

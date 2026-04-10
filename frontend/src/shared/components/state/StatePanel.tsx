@@ -8,11 +8,13 @@ type StatePanelProps = {
 
 export function StatePanel({ eyebrow = 'Status', title, description, busy = false, tone = 'default' }: StatePanelProps) {
   return (
-    <section className={`panel${busy ? ' panel--busy' : ''}`}>
-      <span className="sidebar__eyebrow">{eyebrow}</span>
-      {busy ? <span className="spinner" aria-hidden="true" /> : null}
-      <h2>{title}</h2>
-      <p className={tone === 'danger' ? 'callout callout--danger' : 'muted'}>{description}</p>
-    </section>
+    <div className={busy ? 'state-screen' : undefined}>
+      <section className={`panel${busy ? ' panel--busy' : ''}`}>
+        <span className="sidebar__eyebrow">{eyebrow}</span>
+        {busy ? <span className="spinner" aria-hidden="true" /> : null}
+        <h2>{title}</h2>
+        <p className={tone === 'danger' ? 'callout callout--danger' : 'muted'}>{description}</p>
+      </section>
+    </div>
   );
 }
