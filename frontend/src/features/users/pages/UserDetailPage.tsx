@@ -8,7 +8,7 @@ import {
   enableUser,
   getUser,
 } from '../api/usersApi';
-import { formatBusinessRole, type AppUser } from '../types';
+import { getProjectRoles, type AppUser } from '../types';
 
 export function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -46,6 +46,7 @@ export function UserDetailPage() {
   }, [accessToken, id]);
 
   const resolvedName = useMemo(() => (user ? formatUserName(user) : 'User'), [user]);
+  const projectRoles = useMemo(() => getProjectRoles(user?.roles ?? []), [user?.roles]);
 
   async function runMutation(action: () => Promise<AppUser | void>, successMessage: string) {
     try {
@@ -92,16 +93,16 @@ export function UserDetailPage() {
       {notice ? <div className="callout">{notice}</div> : null}
 
       <div className="card stack">
-        <span className="card__label">Keycloak Roles</span>
+        <span className="card__label">Project Roles</span>
         <div className="actions">
-          {user.roles.length > 0 ? (
-            user.roles.map((role) => (
+          {projectRoles.length > 0 ? (
+            projectRoles.map((role) => (
               <span key={role} className="button button--secondary">
-                {formatBusinessRole(role)}
+                {role}
               </span>
             ))
           ) : (
-            <span className="muted">No Keycloak roles mapped to this account.</span>
+            <span className="muted">No InsightDocs project roles mapped to this account.</span>
           )}
         </div>
       </div>

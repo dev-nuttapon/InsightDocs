@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { createUser, getUsers } from '../api/usersApi';
-import { formatBusinessRole, type AppUser, type CreateUserInput } from '../types';
+import { getProjectRoles, type AppUser, type CreateUserInput } from '../types';
 
 const initialForm: CreateUserInput = {
   id: '',
@@ -112,7 +112,7 @@ export function UsersPage() {
                   </td>
                   <td>{user.email}</td>
                   <td>{user.status}</td>
-                  <td>{user.roles.map(formatBusinessRole).join(', ') || 'No roles'}</td>
+                  <td>{getProjectRoles(user.roles).join(', ') || 'No project roles'}</td>
                 </tr>
               ))}
             </tbody>

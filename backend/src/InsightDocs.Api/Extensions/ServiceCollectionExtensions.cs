@@ -36,11 +36,28 @@ public static class ServiceCollectionExtensions
         {
             options.AddPolicy("Frontend", policy =>
             {
+                var configuredOrigins = configuration
+                    .GetSection("Application:AllowedOrigins")
+                    .Get<string[]>()
+                    ?.Where(origin => !string.IsNullOrWhiteSpace(origin))
+                    .Select(origin => origin.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                if (configuredOrigins is { Length: > 0 })
+                {
+                    policy.WithOrigins(configuredOrigins)
+                        .AllowCredentials()
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                    return;
+                }
+
                 var frontendUrl = configuration["Application:FrontendUrl"];
 
                 if (!string.IsNullOrWhiteSpace(frontendUrl))
                 {
-                    policy.WithOrigins(frontendUrl)
+                    policy.WithOrigins(frontendUrl.Trim())
                         .AllowCredentials()
                         .AllowAnyHeader()
                         .AllowAnyMethod();
