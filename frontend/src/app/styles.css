@@ -319,6 +319,7 @@ textarea {
 [data-theme="dark"] .topbar__menu-theme,
 [data-theme="dark"] .panel,
 [data-theme="dark"] .metric-panel,
+[data-theme="dark"] .modal-card,
 [data-theme="dark"] .action-row,
 [data-theme="dark"] .timeline-item,
 [data-theme="dark"] .audit-metadata,
@@ -875,6 +876,11 @@ textarea {
   color: var(--color-text);
 }
 
+.button--danger {
+  background: linear-gradient(135deg, #d95468, #b23a48);
+  color: #fff7f8;
+}
+
 .callout {
   margin-top: 18px;
   padding: 14px 16px;
@@ -1015,6 +1021,26 @@ textarea {
 .theme-toggle__option--active {
   background: var(--color-primary-soft);
   color: var(--color-primary);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(8, 17, 28, 0.56);
+  backdrop-filter: blur(8px);
+}
+
+.modal-card {
+  width: min(520px, 100%);
+  padding: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-surface-strong);
+  box-shadow: 0 24px 70px var(--color-shadow);
 }
 
 @media (max-width: 900px) {

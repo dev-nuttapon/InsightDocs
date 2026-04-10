@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
+import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 import { createUser } from '../api/usersApi';
 import { AVAILABLE_PROJECT_ROLES, formatBusinessRole, formatBusinessRoleDescription, type CreateUserInput } from '../types';
 
@@ -79,8 +80,6 @@ export function CreateUserPage() {
         <h2>Create User</h2>
         <p className="muted">สร้างบัญชีผู้ใช้งานจาก InsightDocs แล้ว provision ไปยัง Keycloak พร้อมสร้าง access record ในระบบให้อัตโนมัติ</p>
       </div>
-
-      {error ? <div className="callout callout--danger">{error}</div> : null}
 
       <div className="stack user-form-panel">
         <form className="form-grid" onSubmit={handleSubmit}>
@@ -184,6 +183,8 @@ export function CreateUserPage() {
           </div>
         </form>
       </div>
+
+      <ErrorModal message={error} onClose={() => setError(null)} />
     </section>
   );
 }

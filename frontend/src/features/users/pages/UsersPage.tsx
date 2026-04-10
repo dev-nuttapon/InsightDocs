@@ -2,8 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
+import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 import { deleteUser, disableUser, enableUser, getUsers } from '../api/usersApi';
 import { canDisableUser, canEnableUser, formatUserStatus, getProjectRoleLabels, type AppUser } from '../types';
+
+type PendingAction =
+  | {
+      type: 'enable' | 'disable' | 'delete';
+      user: AppUser;
+    }
+  | null;
 
 export function UsersPage() {
   const { accessToken } = useAuth();
@@ -14,6 +22,7 @@ export function UsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
   const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -87,11 +96,6 @@ export function UsersPage() {
       return;
     }
 
-    const confirmed = window.confirm(`ยืนยันการลบผู้ใช้งาน ${formatUserName(user)} ออกจาก InsightDocs และ Keycloak?`);
-    if (!confirmed) {
-      return;
-    }
-
     await runRowAction(
       user.id,
       () => deleteUser(user.id, accessToken),
@@ -101,11 +105,6 @@ export function UsersPage() {
   }
 
   async function handleDisable(user: AppUser) {
-    const confirmed = window.confirm(`ยืนยันการปิดการใช้งานผู้ใช้ ${formatUserName(user)} ?`);
-    if (!confirmed) {
-      return;
-    }
-
     await runRowAction(
       user.id,
       () => disableUser(user.id, accessToken!),
@@ -114,17 +113,35 @@ export function UsersPage() {
   }
 
   async function handleEnable(user: AppUser) {
-    const confirmed = window.confirm(`ยืนยันการเปิดการใช้งานผู้ใช้ ${formatUserName(user)} ?`);
-    if (!confirmed) {
-      return;
-    }
-
     await runRowAction(
       user.id,
       () => enableUser(user.id, accessToken!),
       'เปิดการใช้งานผู้ใช้สำเร็จ',
     );
   }
+
+  async function handleConfirmAction() {
+    if (!pendingAction) {
+      return;
+    }
+
+    const { type, user } = pendingAction;
+    setPendingAction(null);
+
+    if (type === 'disable') {
+      await handleDisable(user);
+      return;
+    }
+
+    if (type === 'enable') {
+      await handleEnable(user);
+      return;
+    }
+
+    await handleDelete(user);
+  }
+
+  const pendingActionCopy = getPendingActionCopy(pendingAction);
 
   return (
     <section className="panel panel--full stack">
@@ -134,7 +151,6 @@ export function UsersPage() {
         <p className="muted">สร้างผู้ใช้งานจากระบบนี้ แล้ว provision บัญชีไปยัง Keycloak พร้อมสร้าง access record ใน InsightDocs ให้เชื่อมกันอัตโนมัติ</p>
       </div>
 
-      {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
 
       <div className="actions">
@@ -188,7 +204,10 @@ export function UsersPage() {
                               className="topbar__menu-link topbar__menu-link--button"
                               disabled={busyUserId === user.id}
                               type="button"
-                              onClick={() => void handleDisable(user)}
+                              onClick={() => {
+                                setOpenMenuUserId(null);
+                                setPendingAction({ type: 'disable', user });
+                              }}
                             >
                               ปิดการใช้งาน
                             </button>
@@ -198,7 +217,10 @@ export function UsersPage() {
                               className="topbar__menu-link topbar__menu-link--button"
                               disabled={busyUserId === user.id}
                               type="button"
-                              onClick={() => void handleEnable(user)}
+                              onClick={() => {
+                                setOpenMenuUserId(null);
+                                setPendingAction({ type: 'enable', user });
+                              }}
                             >
                               เปิดการใช้งาน
                             </button>
@@ -207,7 +229,10 @@ export function UsersPage() {
                             className="topbar__menu-link topbar__menu-link--button"
                             disabled={busyUserId === user.id}
                             type="button"
-                            onClick={() => void handleDelete(user)}
+                            onClick={() => {
+                              setOpenMenuUserId(null);
+                              setPendingAction({ type: 'delete', user });
+                            }}
                           >
                             ลบ
                           </button>
@@ -221,6 +246,44 @@ export function UsersPage() {
           </table>
         </div>
       )}
+
+      {pendingAction && pendingActionCopy ? (
+        <div className="modal-backdrop" role="presentation" onClick={() => setPendingAction(null)}>
+          <div
+            aria-labelledby="users-action-modal-title"
+            aria-modal="true"
+            className="modal-card stack"
+            role="dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="stack stack--compact">
+              <span className="sidebar__eyebrow">Confirm</span>
+              <h3 id="users-action-modal-title">{pendingActionCopy.title}</h3>
+              <p className="muted">{pendingActionCopy.message}</p>
+            </div>
+            <div className="actions actions--compact">
+              <button
+                className={`button ${pendingActionCopy.tone === 'danger' ? 'button--danger' : ''}`}
+                disabled={busyUserId === pendingAction.user.id}
+                type="button"
+                onClick={() => void handleConfirmAction()}
+              >
+                {busyUserId === pendingAction.user.id ? 'กำลังบันทึก...' : pendingActionCopy.confirmLabel}
+              </button>
+              <button
+                className="button button--secondary"
+                disabled={busyUserId === pendingAction.user.id}
+                type="button"
+                onClick={() => setPendingAction(null)}
+              >
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <ErrorModal message={error} onClose={() => setError(null)} />
     </section>
   );
 }
@@ -232,4 +295,38 @@ function formatUserName(user: AppUser) {
     .trim();
 
   return fullName || user.username;
+}
+
+function getPendingActionCopy(pendingAction: PendingAction) {
+  if (!pendingAction) {
+    return null;
+  }
+
+  const userName = formatUserName(pendingAction.user);
+
+  switch (pendingAction.type) {
+    case 'disable':
+      return {
+        title: 'ยืนยันการปิดการใช้งานผู้ใช้',
+        message: `ต้องการปิดการใช้งาน ${userName} ใช่หรือไม่ ผู้ใช้นี้จะไม่สามารถเข้าสู่ระบบได้จนกว่าจะเปิดใช้งานอีกครั้ง`,
+        confirmLabel: 'ยืนยันการปิดการใช้งาน',
+        tone: 'default' as const,
+      };
+    case 'enable':
+      return {
+        title: 'ยืนยันการเปิดการใช้งานผู้ใช้',
+        message: `ต้องการเปิดการใช้งาน ${userName} ใช่หรือไม่ ผู้ใช้นี้จะสามารถกลับเข้าสู่ระบบได้อีกครั้ง`,
+        confirmLabel: 'ยืนยันการเปิดการใช้งาน',
+        tone: 'default' as const,
+      };
+    case 'delete':
+      return {
+        title: 'ยืนยันการลบผู้ใช้',
+        message: `ต้องการลบ ${userName} ออกจาก InsightDocs และ Keycloak ใช่หรือไม่ การดำเนินการนี้ไม่สามารถย้อนกลับได้`,
+        confirmLabel: 'ยืนยันการลบ',
+        tone: 'danger' as const,
+      };
+    default:
+      return null;
+  }
 }

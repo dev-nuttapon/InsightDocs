@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
+import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 import {
   approveUser,
   deleteUser,
@@ -100,6 +101,7 @@ export function UserDetailPage() {
     return (
       <section className="panel">
         <p className="muted">{error ?? 'Loading user...'}</p>
+        <ErrorModal message={error} onClose={() => setError(null)} />
       </section>
     );
   }
@@ -120,7 +122,6 @@ export function UserDetailPage() {
         Identity details and business roles are sourced from Keycloak. This access record is bound to the same UUID as the Keycloak account and cannot be edited separately.
       </div>
 
-      {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
 
       <div className="card stack">
@@ -156,6 +157,8 @@ export function UserDetailPage() {
           {isDeleting ? 'Deleting...' : 'Delete User'}
         </button>
       </div>
+
+      <ErrorModal message={error} onClose={() => setError(null)} />
     </section>
   );
 }
