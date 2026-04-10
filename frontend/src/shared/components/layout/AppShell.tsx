@@ -37,6 +37,7 @@ export function AppShell() {
         label: 'Administration',
         links: [
           ...(access.canAccessUsers ? [{ to: '/users', label: 'Users & Access' }] : []),
+          ...(access.canAccessUsers ? [{ to: '/users/new', label: 'Invite User' }] : []),
           ...(access.canAccessPasswordResetAdmin ? [{ to: '/admin/password-reset-requests', label: 'Password Reset Requests' }] : []),
           ...(access.canAccessAuditLogs ? [{ to: '/audit-logs', label: 'Audit Logs' }] : []),
         ],
@@ -177,6 +178,14 @@ function resolvePageMeta(pathname: string) {
       eyebrow: 'Signature Queue',
       title: 'Complete signing steps',
       description: 'See pending signature work, move through sequential sign-off, and keep document execution on track.',
+    };
+  }
+
+  if (pathname === '/users/new') {
+    return {
+      eyebrow: 'Administration',
+      title: 'Invite new user',
+      description: 'Create a new user profile and provision their identity across the platform services.',
     };
   }
 

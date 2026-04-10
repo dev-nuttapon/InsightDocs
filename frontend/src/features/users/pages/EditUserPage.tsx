@@ -93,8 +93,8 @@ export function EditUserPage() {
         password: form.password?.trim() ? form.password : undefined,
         roles: form.roles,
       };
-      const updated = await updateUser(id, payload, accessToken);
-      navigate(`/users/${updated.id}`, {
+      await updateUser(id, payload, accessToken);
+      navigate('/users', {
         replace: true,
         state: {
           notice: 'อัปเดตข้อมูลผู้ใช้งานสำเร็จ',
@@ -119,13 +119,20 @@ export function EditUserPage() {
   return (
     <section className="panel panel--full stack">
       <div className="actions">
-        <Link className="button button--secondary" to={`/users/${id}`}>Back to user detail</Link>
+        <Link className="button button--secondary" to="/users">กลับไปรายการผู้ใช้</Link>
       </div>
 
       <div>
-        <span className="sidebar__eyebrow">Edit User</span>
+        <span className="sidebar__eyebrow">จัดการผู้ใช้งาน</span>
         <h2>{resolvedName}</h2>
         <p className="muted">Status: {formatUserStatus(user.status)} | Approved by: {user.approvedBy ?? 'Not approved yet'}</p>
+      </div>
+
+      <div className="card stack">
+        <span className="card__label">ข้อมูลปัจจุบัน</span>
+        <div>Username: {user.username}</div>
+        <div>Email: {user.email}</div>
+        <div>Display name: {user.displayName}</div>
       </div>
 
       <div className="stack user-form-panel">
@@ -226,7 +233,7 @@ export function EditUserPage() {
             <button className="button" disabled={isSaving} type="submit">
               {isSaving ? 'Saving...' : 'บันทึกการแก้ไข'}
             </button>
-            <Link className="button button--secondary" to={`/users/${id}`}>ยกเลิก</Link>
+            <Link className="button button--secondary" to="/users">ยกเลิก</Link>
           </div>
         </form>
       </div>

@@ -95,6 +95,11 @@ export function DashboardPage() {
     if (access.isAdmin) {
       actions.push(
         {
+          to: '/users/new',
+          label: 'Invite new user',
+          description: 'Provision a new identity to Keycloak and grant initial access roles in InsightDocs.',
+        },
+        {
           to: '/users',
           label: 'Review users and access',
           description: 'Inspect Keycloak-backed identity, local access state, and approval controls from the admin workspace.',

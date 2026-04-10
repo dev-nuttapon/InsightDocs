@@ -154,7 +154,7 @@ export function UsersPage() {
       {notice ? <div className="callout">{notice}</div> : null}
 
       <div className="actions">
-        <Link className="button" to="/users/new">Create User</Link>
+        <Link className="button" to="/users/new">Invite User</Link>
       </div>
 
       {isLoading ? (
@@ -175,7 +175,7 @@ export function UsersPage() {
               {users.map((user) => (
                 <tr key={user.id}>
                   <td>
-                    <Link to={`/users/${user.id}`}>{formatUserName(user)}</Link>
+                    <Link to={`/users/${user.id}/edit`}>{formatUserName(user)}</Link>
                   </td>
                   <td>{user.email}</td>
                   <td>{formatUserStatus(user.status, user.approvedAt)}</td>

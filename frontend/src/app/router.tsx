@@ -21,7 +21,6 @@ import { SignaturesPage } from '../features/signatures/pages/SignaturesPage';
 import { CurrentUserPage } from '../features/users/pages/CurrentUserPage';
 import { CreateUserPage } from '../features/users/pages/CreateUserPage';
 import { EditUserPage } from '../features/users/pages/EditUserPage';
-import { UserDetailPage } from '../features/users/pages/UserDetailPage';
 import { UsersPage } from '../features/users/pages/UsersPage';
 import { RoleRoute } from '../shared/routing/RoleRoute';
 
@@ -115,10 +114,6 @@ export const router = createBrowserRouter([
               {
                 path: 'users/new',
                 element: <CreateUserPage />,
-              },
-              {
-                path: 'users/:id',
-                element: <UserDetailPage />,
               },
               {
                 path: 'users/:id/edit',

@@ -77,7 +77,7 @@ export function CreateUserPage() {
 
       <div>
         <span className="sidebar__eyebrow">Admin</span>
-        <h2>Create User</h2>
+        <h2>Invite User</h2>
         <p className="muted">สร้างบัญชีผู้ใช้งานจาก InsightDocs แล้ว provision ไปยัง Keycloak พร้อมสร้าง access record ในระบบให้อัตโนมัติ</p>
       </div>
 
@@ -177,7 +177,7 @@ export function CreateUserPage() {
           </fieldset>
           <div className="actions">
             <button className="button" disabled={isSubmitting} type="submit">
-              {isSubmitting ? 'Creating...' : 'Create User'}
+              {isSubmitting ? 'Inviting...' : 'Invite User'}
             </button>
             <Link className="button button--secondary" to="/users">Cancel</Link>
           </div>

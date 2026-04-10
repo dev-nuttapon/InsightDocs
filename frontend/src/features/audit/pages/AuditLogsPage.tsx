@@ -145,7 +145,7 @@ export function AuditLogsPage() {
                   <td>
                     <div className="stack stack--compact">
                       {item.relatedDocumentId ? <Link to={`/documents/${item.relatedDocumentId}`}>Document</Link> : null}
-                      {item.actorUserId ? <Link to={`/users/${item.actorUserId}`}>User</Link> : null}
+                      {item.actorUserId ? <Link to={`/users/${item.actorUserId}/edit`}>User</Link> : null}
                     </div>
                   </td>
                 </tr>
