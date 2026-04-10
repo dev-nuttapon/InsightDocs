@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { ThemeToggle } from '../../../components/ThemeToggle';
 import { useAuth } from '../../../features/auth/context/useAuth';
-import { buildAccessProfile, formatRoleLabel } from '../../auth/authorization';
+import { buildAccessProfile } from '../../auth/authorization';
 
 export function AppShell() {
   const { user, isAuthenticated } = useAuth();
