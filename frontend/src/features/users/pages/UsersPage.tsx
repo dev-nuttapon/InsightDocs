@@ -46,7 +46,7 @@ export function UsersPage() {
   }, [accessToken]);
 
   return (
-    <section className="panel stack">
+    <section className="panel panel--full stack">
       <div>
         <span className="sidebar__eyebrow">Admin</span>
         <h2>Users & Access</h2>
@@ -71,6 +71,7 @@ export function UsersPage() {
                 <th>Sign-in Email</th>
                 <th>Status</th>
                 <th>Roles</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -82,6 +83,13 @@ export function UsersPage() {
                   <td>{user.email}</td>
                   <td>{formatUserStatus(user.status)}</td>
                   <td>{getProjectRoleLabels(user.roles).join(', ') || 'ไม่มีบทบาทในระบบ'}</td>
+                  <td>
+                    <div className="actions actions--compact">
+                      <Link className="button button--secondary" to={`/users/${user.id}`}>
+                        แก้ไข
+                      </Link>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

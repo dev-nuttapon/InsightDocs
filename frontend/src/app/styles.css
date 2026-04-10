@@ -513,6 +513,11 @@ textarea {
   box-shadow: 0 20px 60px var(--color-shadow);
 }
 
+.panel--full {
+  width: 100%;
+  max-width: none;
+}
+
 .panel--hero {
   position: relative;
   overflow: hidden;

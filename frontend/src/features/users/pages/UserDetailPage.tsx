@@ -22,6 +22,7 @@ export function UserDetailPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -40,6 +41,7 @@ export function UserDetailPage() {
             email: payload.email,
             displayName: payload.displayName,
           });
+          setIsEditing(false);
           setError(null);
         }
       } catch (loadError) {
@@ -87,6 +89,12 @@ export function UserDetailPage() {
       setIsSaving(true);
       const updated = await updateUser(id, form, accessToken);
       setUser(updated);
+      setForm({
+        username: updated.username,
+        email: updated.email,
+        displayName: updated.displayName,
+      });
+      setIsEditing(false);
       setNotice('อัปเดตข้อมูลผู้ใช้งานสำเร็จ');
       setError(null);
     } catch (saveError) {
@@ -95,6 +103,34 @@ export function UserDetailPage() {
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function handleStartEditing() {
+    if (!user) {
+      return;
+    }
+
+    setForm({
+      username: user.username,
+      email: user.email,
+      displayName: user.displayName,
+    });
+    setIsEditing(true);
+    setNotice(null);
+    setError(null);
+  }
+
+  function handleCancelEditing() {
+    if (!user) {
+      return;
+    }
+
+    setForm({
+      username: user.username,
+      email: user.email,
+      displayName: user.displayName,
+    });
+    setIsEditing(false);
   }
 
   async function handleDelete() {
@@ -132,6 +168,8 @@ export function UserDetailPage() {
     );
   }
 
+  const currentUser = user;
+
   return (
     <section className="panel stack">
       <div className="actions">
@@ -141,7 +179,7 @@ export function UserDetailPage() {
       <div>
         <span className="sidebar__eyebrow">User Detail</span>
         <h2>{resolvedName}</h2>
-        <p className="muted">Status: {formatUserStatus(user.status)} | Approved by: {user.approvedBy ?? 'Not approved yet'}</p>
+        <p className="muted">Status: {formatUserStatus(currentUser.status)} | Approved by: {currentUser.approvedBy ?? 'Not approved yet'}</p>
       </div>
 
       <div className="callout">
@@ -151,32 +189,47 @@ export function UserDetailPage() {
       {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
 
-      <form className="form-grid" onSubmit={handleSave}>
-        <input
-          className="input"
-          placeholder="Username"
-          value={form.username}
-          onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
-        />
-        <input
-          className="input"
-          placeholder="Email"
-          type="email"
-          value={form.email}
-          onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-        />
-        <input
-          className="input"
-          placeholder="Display name"
-          value={form.displayName}
-          onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))}
-        />
+      <div className="card stack">
+        <span className="card__label">ข้อมูลผู้ใช้งาน</span>
+        <div>Username: {currentUser.username}</div>
+        <div>Email: {currentUser.email}</div>
+        <div>Display name: {currentUser.displayName}</div>
         <div className="actions">
-          <button className="button" disabled={isSaving} type="submit">
-            {isSaving ? 'Saving...' : 'Save User'}
-          </button>
+          {!isEditing ? <button className="button" type="button" onClick={handleStartEditing}>แก้ไขผู้ใช้งาน</button> : null}
         </div>
-      </form>
+      </div>
+
+      {isEditing ? (
+        <form className="form-grid" onSubmit={handleSave}>
+          <input
+            className="input"
+            placeholder="Username"
+            value={form.username}
+            onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
+          />
+          <input
+            className="input"
+            placeholder="Email"
+            type="email"
+            value={form.email}
+            onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+          />
+          <input
+            className="input"
+            placeholder="Display name"
+            value={form.displayName}
+            onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))}
+          />
+          <div className="actions">
+            <button className="button" disabled={isSaving} type="submit">
+              {isSaving ? 'Saving...' : 'บันทึกการแก้ไข'}
+            </button>
+            <button className="button button--secondary" type="button" onClick={handleCancelEditing}>
+              ยกเลิก
+            </button>
+          </div>
+        </form>
+      ) : null}
 
       <div className="card stack">
         <span className="card__label">Project Roles</span>
