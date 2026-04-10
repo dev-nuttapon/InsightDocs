@@ -1,4 +1,5 @@
 using InsightDocs.Application.Dashboard;
+using InsightDocs.Application.Identity;
 using InsightDocs.Application.Users;
 using InsightDocs.Domain.Documents;
 using InsightDocs.Domain.Users;
@@ -7,7 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InsightDocs.Infrastructure.Dashboard;
 
-internal sealed class DashboardService(InsightDocsDbContext dbContext) : IDashboardService
+internal sealed class DashboardService(
+    InsightDocsDbContext dbContext,
+    IKeycloakAdminService keycloakAdminService) : IDashboardService
 {
     private static readonly string[] AdminRoles = [BusinessRoles.Admin, "admin", "realm-admin", "insightdocs-admin"];
 
@@ -53,20 +56,38 @@ internal sealed class DashboardService(InsightDocsDbContext dbContext) : IDashbo
 
     public async Task<IReadOnlyCollection<RecentDashboardDocumentDto>> GetRecentDocumentsAsync(CancellationToken cancellationToken)
     {
-        return await dbContext.Documents
+        var documents = await dbContext.Documents
             .AsNoTracking()
             .OrderByDescending(document => document.UpdatedAt ?? document.CreatedAt)
             .Take(8)
+            .Select(document => new
+            {
+                document.Id,
+                document.Title,
+                document.Category,
+                Status = document.Status.ToString(),
+                CurrentVersionNumber = document.Versions.Where(version => version.IsCurrent).Select(version => (int?)version.VersionNumber).FirstOrDefault(),
+                OwnerKeycloakUserId = document.OwnerUser != null ? document.OwnerUser.KeycloakUserId : null,
+                ControllerKeycloakUserId = document.ControllerUser != null ? document.ControllerUser.KeycloakUserId : null,
+                LastActivityAt = document.UpdatedAt ?? document.CreatedAt
+            })
+            .ToArrayAsync(cancellationToken);
+
+        var identities = await LoadIdentitiesAsync(
+            documents.SelectMany(document => new[] { document.OwnerKeycloakUserId, document.ControllerKeycloakUserId }),
+            cancellationToken);
+
+        return documents
             .Select(document => new RecentDashboardDocumentDto(
                 document.Id,
                 document.Title,
                 document.Category,
-                document.Status.ToString(),
-                document.Versions.Where(version => version.IsCurrent).Select(version => (int?)version.VersionNumber).FirstOrDefault(),
-                document.OwnerUser != null ? document.OwnerUser.DisplayName : null,
-                document.ControllerUser != null ? document.ControllerUser.DisplayName : null,
-                document.UpdatedAt ?? document.CreatedAt))
-            .ToArrayAsync(cancellationToken);
+                document.Status,
+                document.CurrentVersionNumber,
+                ResolveDisplayName(identities.GetValueOrDefault(document.OwnerKeycloakUserId ?? string.Empty)),
+                ResolveDisplayName(identities.GetValueOrDefault(document.ControllerKeycloakUserId ?? string.Empty)),
+                document.LastActivityAt))
+            .ToArray();
     }
 
     public async Task<IReadOnlyCollection<RecentDashboardActivityDto>> GetRecentActivitiesAsync(string? actorIdentifier, IReadOnlyCollection<string> roles, CancellationToken cancellationToken)
@@ -118,23 +139,47 @@ internal sealed class DashboardService(InsightDocsDbContext dbContext) : IDashbo
             auditLogs = auditLogs.Where(log => allowedActions.Contains(log.Action));
         }
 
-        return await auditLogs
+        var items = await auditLogs
             .OrderByDescending(log => log.Timestamp)
             .Take(12)
-            .Select(log => new RecentDashboardActivityDto(
+            .Select(log => new
+            {
                 log.Id,
                 log.Action,
                 log.EntityType,
                 log.EntityId,
                 log.RelatedDocumentId,
                 log.RelatedVersionId,
-                log.RelatedDocumentId.HasValue
+                RelatedDocumentTitle = log.RelatedDocumentId.HasValue
                     ? dbContext.Documents.Where(document => document.Id == log.RelatedDocumentId.Value).Select(document => document.Title).FirstOrDefault()
                     : null,
-                log.ActorUser != null ? log.ActorUser.DisplayName : null,
-                log.ActorUser != null ? log.ActorUser.Username : null,
-                log.Timestamp))
+                ActorKeycloakUserId = log.ActorUser != null ? log.ActorUser.KeycloakUserId : null,
+                log.Timestamp
+            })
             .ToArrayAsync(cancellationToken);
+
+        var identities = await LoadIdentitiesAsync(items.Select(item => item.ActorKeycloakUserId), cancellationToken);
+
+        return items
+            .Select(item =>
+            {
+                var identity = item.ActorKeycloakUserId is not null
+                    ? identities.GetValueOrDefault(item.ActorKeycloakUserId)
+                    : null;
+
+                return new RecentDashboardActivityDto(
+                    item.Id,
+                    item.Action,
+                    item.EntityType,
+                    item.EntityId,
+                    item.RelatedDocumentId,
+                    item.RelatedVersionId,
+                    item.RelatedDocumentTitle,
+                    ResolveDisplayName(identity),
+                    identity?.Username,
+                    item.Timestamp);
+            })
+            .ToArray();
     }
 
     private async Task<int> CountPendingSignaturesForActorAsync(Task<Guid?> actorIdTask, CancellationToken cancellationToken)
@@ -160,8 +205,34 @@ internal sealed class DashboardService(InsightDocsDbContext dbContext) : IDashbo
         var normalized = actorIdentifier.Trim();
 
         return dbContext.Users
-            .Where(user => user.KeycloakUserId == normalized || user.Username == normalized)
+            .Where(user => user.KeycloakUserId == normalized)
             .Select(user => (Guid?)user.Id)
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private async Task<Dictionary<string, KeycloakUserIdentity?>> LoadIdentitiesAsync(IEnumerable<string?> keycloakUserIds, CancellationToken cancellationToken)
+    {
+        var ids = keycloakUserIds.Where(id => !string.IsNullOrWhiteSpace(id)).Cast<string>().Distinct(StringComparer.Ordinal).ToArray();
+        var pairs = await Task.WhenAll(ids.Select(async id => new
+        {
+            Id = id,
+            Identity = await keycloakAdminService.GetUserIdentityAsync(id, cancellationToken)
+        }));
+
+        return pairs.ToDictionary(item => item.Id, item => item.Identity, StringComparer.Ordinal);
+    }
+
+    private static string? ResolveDisplayName(KeycloakUserIdentity? identity)
+    {
+        if (identity is null)
+        {
+            return null;
+        }
+
+        var fullName = string.Join(" ", new[] { identity.FirstName, identity.LastName }
+            .Where(value => !string.IsNullOrWhiteSpace(value)))
+            .Trim();
+
+        return !string.IsNullOrWhiteSpace(fullName) ? fullName : identity.Username ?? identity.Email;
     }
 }

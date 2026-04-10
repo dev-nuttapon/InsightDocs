@@ -15,18 +15,6 @@ public sealed class RegistrationService(
 {
     public async Task<RegistrationResultDto> RegisterAsync(RegisterUserCommand command, CancellationToken cancellationToken)
     {
-        var normalizedUsername = command.Username.Trim().ToUpperInvariant();
-        var normalizedEmail = command.Email.Trim().ToUpperInvariant();
-
-        var exists = await dbContext.Users.AnyAsync(user =>
-            user.Username.ToUpper() == normalizedUsername ||
-            user.Email.ToUpper() == normalizedEmail, cancellationToken);
-
-        if (exists)
-        {
-            throw new ConflictException("A user with the same username or email already exists.");
-        }
-
         string? keycloakUserId = null;
 
         try
@@ -39,7 +27,7 @@ public sealed class RegistrationService(
                 enabled: false,
                 cancellationToken);
 
-            var user = new User(keycloakUserId, command.Username, command.Email, command.DisplayName);
+            var user = new User(keycloakUserId);
 
             dbContext.Users.Add(user);
             await auditLogService.WriteAsync(
@@ -48,18 +36,18 @@ public sealed class RegistrationService(
                     "User",
                     user.Id,
                     ActorUserId: null,
-                    Metadata: new
-                    {
-                        user.KeycloakUserId,
-                        user.Username,
-                        user.Email,
-                        user.DisplayName,
-                        Status = user.Status.ToString()
-                    }),
+                Metadata: new
+                {
+                    user.KeycloakUserId,
+                    command.Username,
+                    command.Email,
+                    command.DisplayName,
+                    Status = user.Status.ToString()
+                }),
                 cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            return new RegistrationResultDto(user.Id, user.KeycloakUserId, user.Username, user.Email, user.DisplayName, user.Status);
+            return new RegistrationResultDto(user.Id, user.KeycloakUserId, command.Username, command.Email, command.DisplayName, user.Status);
         }
         catch
         {

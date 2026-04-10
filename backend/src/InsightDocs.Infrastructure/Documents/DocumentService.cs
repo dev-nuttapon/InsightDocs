@@ -29,9 +29,9 @@ internal sealed class DocumentService(
                 document.Description,
                 document.Category,
                 document.OwnerUserId,
-                document.OwnerUser != null ? document.OwnerUser.DisplayName : null,
+                document.OwnerUser != null ? document.OwnerUser.KeycloakUserId : null,
                 document.ControllerUserId,
-                document.ControllerUser != null ? document.ControllerUser.DisplayName : null,
+                document.ControllerUser != null ? document.ControllerUser.KeycloakUserId : null,
                 document.Status,
                 document.Versions.Count,
                 document.Versions.Where(version => version.IsCurrent).Select(version => (int?)version.VersionNumber).FirstOrDefault(),
@@ -52,9 +52,9 @@ internal sealed class DocumentService(
                 entity.Description,
                 entity.Category,
                 entity.OwnerUserId,
-                entity.OwnerUser != null ? entity.OwnerUser.DisplayName : null,
+                entity.OwnerUser != null ? entity.OwnerUser.KeycloakUserId : null,
                 entity.ControllerUserId,
-                entity.ControllerUser != null ? entity.ControllerUser.DisplayName : null,
+                entity.ControllerUser != null ? entity.ControllerUser.KeycloakUserId : null,
                 entity.Status,
                 entity.Versions.Count,
                 entity.Versions.Where(version => version.IsCurrent).Select(version => (int?)version.VersionNumber).FirstOrDefault(),
@@ -595,6 +595,7 @@ internal sealed class DocumentService(
             ?? throw new NotFoundException($"Document '{documentId}' was not found.");
 
         var actor = await ResolveUserAsync(actorIdentifier, cancellationToken);
+        var actorIdentity = await keycloakAdminService.GetUserIdentityAsync(actor.KeycloakUserId, cancellationToken);
 
         if (actor.Id != request.SignerUserId && !await HasAdministrativeRoleAsync(actor, cancellationToken))
         {
@@ -611,7 +612,11 @@ internal sealed class DocumentService(
         var signedPdf = await pdfDigitalSignatureService.ApplySignatureAsync(
             sourcePdf,
             new PdfSignaturePlacement(request.PageNumber, request.PositionX, request.PositionY, request.Width, request.Height),
-            new PdfSignatureAppearance(actor.DisplayName, actor.Username, signedAt, command.Comment),
+            new PdfSignatureAppearance(
+                ResolveDisplayName(actorIdentity, actor.KeycloakUserId),
+                actorIdentity?.Username ?? actor.KeycloakUserId,
+                signedAt,
+                command.Comment),
             cancellationToken);
 
         var storedSignedObject = await objectStorage.UploadGeneratedPdfAsync(
@@ -622,7 +627,7 @@ internal sealed class DocumentService(
             cancellationToken);
 
         request.DocumentVersion.SetSignedObjectKey(storedSignedObject.ObjectKey);
-        request.MarkSigned(actor.Username, storedSignedObject.ObjectKey, command.Comment);
+        request.MarkSigned(actorIdentity?.Username ?? actor.KeycloakUserId, storedSignedObject.ObjectKey, command.Comment);
         await auditLogService.WriteAsync(
             new WriteAuditLogEntry(
                 "document.signature.signed",
@@ -672,7 +677,8 @@ internal sealed class DocumentService(
 
         EnsureSignatureWorkflow(document, request);
         await EnsureSigningOrderSatisfiedAsync(request, cancellationToken);
-        request.MarkRejected(actor.Username, command.Comment);
+        var actorIdentity = await keycloakAdminService.GetUserIdentityAsync(actor.KeycloakUserId, cancellationToken);
+        request.MarkRejected(actorIdentity?.Username ?? actor.KeycloakUserId, command.Comment);
         await auditLogService.WriteAsync(
             new WriteAuditLogEntry(
                 "document.signature.rejected",
@@ -833,10 +839,7 @@ internal sealed class DocumentService(
     private async Task<User> ResolveUserAsync(string actorIdentifier, CancellationToken cancellationToken)
     {
         var actor = await dbContext.Users
-            .FirstOrDefaultAsync(user =>
-                user.KeycloakUserId == actorIdentifier ||
-                user.Username == actorIdentifier,
-                cancellationToken);
+            .FirstOrDefaultAsync(user => user.KeycloakUserId == actorIdentifier, cancellationToken);
 
         if (actor is null)
         {
@@ -855,6 +858,17 @@ internal sealed class DocumentService(
     {
         var identity = await keycloakAdminService.GetUserIdentityAsync(user.KeycloakUserId, cancellationToken);
         return HasRole(identity?.Roles, BusinessRoles.Admin);
+    }
+
+    private static string ResolveDisplayName(KeycloakUserIdentity? identity, string fallback)
+    {
+        var fullName = string.Join(" ", new[] { identity?.FirstName, identity?.LastName }
+            .Where(value => !string.IsNullOrWhiteSpace(value)))
+            .Trim();
+
+        return !string.IsNullOrWhiteSpace(fullName)
+            ? fullName
+            : identity?.Username ?? identity?.Email ?? fallback;
     }
 
     private static bool HasRole(IReadOnlyCollection<string>? roles, string roleName) =>
@@ -911,8 +925,8 @@ internal sealed class DocumentService(
             request.DocumentId,
             request.DocumentVersionId,
             request.SignerUserId,
-            request.SignerUser.Username,
-            request.SignerUser.DisplayName,
+            request.SignerUser.KeycloakUserId,
+            request.SignerUser.KeycloakUserId,
             request.SigningOrder,
             request.Status,
             request.PageNumber,

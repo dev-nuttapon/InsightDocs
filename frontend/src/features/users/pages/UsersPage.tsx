@@ -7,9 +7,6 @@ import { formatBusinessRole, type AppUser, type CreateUserInput } from '../types
 
 const initialForm: CreateUserInput = {
   keycloakUserId: '',
-  username: '',
-  email: '',
-  displayName: '',
 };
 
 export function UsersPage() {
@@ -62,7 +59,7 @@ export function UsersPage() {
     try {
       setIsSubmitting(true);
       const created = await createUser(form, accessToken);
-      setUsers((current) => [...current, created].sort((left, right) => left.username.localeCompare(right.username)));
+      setUsers((current) => [...current, created].sort((left, right) => left.keycloakUserId.localeCompare(right.keycloakUserId)));
       setForm(initialForm);
       setError(null);
     } catch (submitError) {
@@ -88,25 +85,6 @@ export function UsersPage() {
           placeholder="Keycloak User Id"
           value={form.keycloakUserId}
           onChange={(event) => setForm((current) => ({ ...current, keycloakUserId: event.target.value }))}
-        />
-        <input
-          className="input"
-          placeholder="Username"
-          value={form.username}
-          onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
-        />
-        <input
-          className="input"
-          placeholder="Email"
-          type="email"
-          value={form.email}
-          onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-        />
-        <input
-          className="input"
-          placeholder="Display Name"
-          value={form.displayName}
-          onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))}
         />
         <button className="button" disabled={isSubmitting} type="submit">
           {isSubmitting ? 'Creating...' : 'Create Access Record'}

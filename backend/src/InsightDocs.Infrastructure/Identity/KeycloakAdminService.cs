@@ -88,13 +88,50 @@ public sealed class KeycloakAdminService(
         }
 
         var roles = await GetUserRolesAsync(keycloakUserId, accessToken, cancellationToken);
-        return new KeycloakUserIdentity(
-            payload.Username,
-            payload.Email,
-            payload.FirstName,
-            payload.LastName,
-            payload.Enabled,
-            roles);
+        return MapIdentity(payload, roles);
+    }
+
+    public async Task<KeycloakUserIdentity?> FindUserByUsernameOrEmailAsync(string lookup, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(lookup))
+        {
+            return null;
+        }
+
+        var results = await SearchUsersAsync(lookup.Trim(), cancellationToken);
+        return results.FirstOrDefault(identity =>
+            string.Equals(identity.Username, lookup, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(identity.Email, lookup, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<IReadOnlyCollection<KeycloakUserIdentity>> SearchUsersAsync(string searchTerm, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            return [];
+        }
+
+        var accessToken = await GetAccessTokenAsync(cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{BuildAdminUsersUrl()}?search={Uri.EscapeDataString(searchTerm.Trim())}&max=50");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new ValidationException($"Keycloak user search failed with status {(int)response.StatusCode}.");
+        }
+
+        var payload = await response.Content.ReadFromJsonAsync<List<KeycloakAdminUserResponse>>(cancellationToken) ?? [];
+        var identities = await Task.WhenAll(payload
+            .Where(user => !string.IsNullOrWhiteSpace(user.Id))
+            .Select(async user =>
+            {
+                var roles = await GetUserRolesAsync(user.Id!, accessToken, cancellationToken);
+                return MapIdentity(user, roles)!;
+            }));
+
+        return identities;
     }
 
     public async Task DeleteUserAsync(string keycloakUserId, CancellationToken cancellationToken)
@@ -224,7 +261,25 @@ public sealed class KeycloakAdminService(
         return roles ?? [];
     }
 
+    private static KeycloakUserIdentity? MapIdentity(KeycloakAdminUserResponse? payload, IReadOnlyCollection<string> roles)
+    {
+        if (payload is null || string.IsNullOrWhiteSpace(payload.Id))
+        {
+            return null;
+        }
+
+        return new KeycloakUserIdentity(
+            payload.Id,
+            payload.Username,
+            payload.Email,
+            payload.FirstName,
+            payload.LastName,
+            payload.Enabled,
+            roles);
+    }
+
     private sealed record KeycloakAdminUserResponse(
+        string? Id,
         string? Username,
         string? Email,
         string? FirstName,

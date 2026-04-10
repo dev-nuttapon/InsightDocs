@@ -33,9 +33,6 @@ export function UserDetailPage() {
           setUser(payload);
           setForm({
             keycloakUserId: payload.keycloakUserId,
-            username: payload.username,
-            email: payload.email,
-            displayName: payload.displayName,
           });
           setError(null);
         }
@@ -62,9 +59,6 @@ export function UserDetailPage() {
         setUser(result);
         setForm({
           keycloakUserId: result.keycloakUserId,
-          username: result.username,
-          email: result.email,
-          displayName: result.displayName,
         });
       } else if (id && accessToken) {
         const refreshed = await getUser(id, accessToken);
@@ -113,9 +107,6 @@ export function UserDetailPage() {
         }}
       >
         <input className="input" value={form.keycloakUserId} onChange={(event) => setForm((current) => current ? { ...current, keycloakUserId: event.target.value } : current)} />
-        <input className="input" value={form.username} onChange={(event) => setForm((current) => current ? { ...current, username: event.target.value } : current)} />
-        <input className="input" type="email" value={form.email} onChange={(event) => setForm((current) => current ? { ...current, email: event.target.value } : current)} />
-        <input className="input" value={form.displayName} onChange={(event) => setForm((current) => current ? { ...current, displayName: event.target.value } : current)} />
         <button className="button" type="submit">Save Access Record</button>
       </form>
 

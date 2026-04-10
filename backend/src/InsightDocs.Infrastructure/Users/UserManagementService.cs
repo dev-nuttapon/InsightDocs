@@ -17,7 +17,7 @@ public sealed class UserManagementService(
     {
         var users = await dbContext.Users
             .AsNoTracking()
-            .OrderBy(user => user.Username)
+            .OrderBy(user => user.KeycloakUserId)
             .ToListAsync(cancellationToken);
 
         return await MapSummariesAsync(users, cancellationToken);
@@ -28,7 +28,7 @@ public sealed class UserManagementService(
         var users = await dbContext.Users
             .AsNoTracking()
             .Where(user => user.Status == UserStatus.Active)
-            .OrderBy(user => user.Username)
+            .OrderBy(user => user.KeycloakUserId)
             .ToListAsync(cancellationToken);
 
         var identities = await LoadKeycloakIdentitiesAsync(users.Select(user => user.KeycloakUserId), cancellationToken);
@@ -47,9 +47,9 @@ public sealed class UserManagementService(
 
     public async Task<UserDetailDto> CreateUserAsync(CreateUserCommand command, CancellationToken cancellationToken)
     {
-        await EnsureUniqueUserAsync(command.KeycloakUserId, command.Username, command.Email, null, cancellationToken);
+        await EnsureUniqueUserAsync(command.KeycloakUserId, null, cancellationToken);
 
-        var user = new User(command.KeycloakUserId, command.Username, command.Email, command.DisplayName);
+        var user = new User(command.KeycloakUserId);
 
         dbContext.Users.Add(user);
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -60,9 +60,9 @@ public sealed class UserManagementService(
     public async Task<UserDetailDto> UpdateUserAsync(Guid id, UpdateUserCommand command, CancellationToken cancellationToken)
     {
         var user = await LoadUserAsync(id, cancellationToken);
-        await EnsureUniqueUserAsync(command.KeycloakUserId, command.Username, command.Email, id, cancellationToken);
+        await EnsureUniqueUserAsync(command.KeycloakUserId, id, cancellationToken);
 
-        user.UpdateProfile(command.KeycloakUserId, command.Username, command.Email, command.DisplayName);
+        user.UpdateKeycloakUser(command.KeycloakUserId);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return await MapDetailAsync(user, cancellationToken);
@@ -87,9 +87,6 @@ public sealed class UserManagementService(
                 Metadata: new
                 {
                     user.KeycloakUserId,
-                    user.Username,
-                    user.Email,
-                    user.DisplayName,
                     ApprovedBy = approvedBy,
                     Status = user.Status.ToString()
                 }),
@@ -127,21 +124,17 @@ public sealed class UserManagementService(
         return user ?? throw new NotFoundException($"User '{id}' was not found.");
     }
 
-    private async Task EnsureUniqueUserAsync(string keycloakUserId, string username, string email, Guid? currentUserId, CancellationToken cancellationToken)
+    private async Task EnsureUniqueUserAsync(string keycloakUserId, Guid? currentUserId, CancellationToken cancellationToken)
     {
         var normalizedKeycloakUserId = keycloakUserId.Trim();
-        var normalizedUsername = username.Trim().ToUpperInvariant();
-        var normalizedEmail = email.Trim().ToUpperInvariant();
 
         var duplicateExists = await dbContext.Users.AnyAsync(user =>
             user.Id != currentUserId &&
-            (user.KeycloakUserId == normalizedKeycloakUserId ||
-             user.Username.ToUpper() == normalizedUsername ||
-             user.Email.ToUpper() == normalizedEmail), cancellationToken);
+            user.KeycloakUserId == normalizedKeycloakUserId, cancellationToken);
 
         if (duplicateExists)
         {
-            throw new ConflictException("A user with the same Keycloak user id, username, or email already exists.");
+            throw new ConflictException("A user with the same Keycloak user id already exists.");
         }
     }
 
@@ -180,8 +173,8 @@ public sealed class UserManagementService(
         new(
             user.Id,
             user.KeycloakUserId,
-            identity?.Username ?? user.Username,
-            identity?.Email ?? user.Email,
+            identity?.Username ?? user.KeycloakUserId,
+            identity?.Email ?? string.Empty,
             ResolveDisplayName(user, identity),
             identity?.FirstName,
             identity?.LastName,
@@ -197,8 +190,8 @@ public sealed class UserManagementService(
         new(
             user.Id,
             user.KeycloakUserId,
-            identity?.Username ?? user.Username,
-            identity?.Email ?? user.Email,
+            identity?.Username ?? user.KeycloakUserId,
+            identity?.Email ?? string.Empty,
             ResolveDisplayName(user, identity),
             identity?.FirstName,
             identity?.LastName,
@@ -221,7 +214,7 @@ public sealed class UserManagementService(
             return fullName;
         }
 
-        return user.DisplayName;
+        return identity?.Username ?? user.KeycloakUserId;
     }
 
     private static bool HasRole(IReadOnlyCollection<string>? roles, string roleName) =>

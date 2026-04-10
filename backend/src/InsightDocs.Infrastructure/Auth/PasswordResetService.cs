@@ -25,12 +25,14 @@ public sealed class PasswordResetService(
     public async Task<ForgotPasswordResultDto> CreateRequestAsync(ForgotPasswordCommand command, CancellationToken cancellationToken)
     {
         var lookup = command.UsernameOrEmail.Trim();
-        var normalizedLookup = lookup.ToUpperInvariant();
+        var identity = await keycloakAdminService.FindUserByUsernameOrEmailAsync(lookup, cancellationToken);
+        if (identity is null)
+        {
+            return new ForgotPasswordResultDto(Guid.Empty, PasswordResetRequestStatus.Pending.ToString(), DateTimeOffset.UtcNow);
+        }
 
         var user = await dbContext.Users
-            .FirstOrDefaultAsync(entity =>
-                entity.Username.ToUpper() == normalizedLookup ||
-                entity.Email.ToUpper() == normalizedLookup, cancellationToken);
+            .FirstOrDefaultAsync(entity => entity.KeycloakUserId == identity.KeycloakUserId, cancellationToken);
 
         if (user is null)
         {
@@ -64,8 +66,11 @@ public sealed class PasswordResetService(
             .Include(request => request.User)
             .OrderByDescending(request => request.RequestedAt)
             .ToListAsync(cancellationToken);
+        var identities = await LoadIdentitiesAsync(requests.Select(request => request.User.KeycloakUserId), cancellationToken);
 
-        return requests.Select(Map).ToArray();
+        return requests
+            .Select(request => Map(request, identities.GetValueOrDefault(request.User.KeycloakUserId)))
+            .ToArray();
     }
 
     public async Task<PasswordResetRequestDto> ApproveAsync(Guid id, string reviewedBy, string comment, CancellationToken cancellationToken)
@@ -98,7 +103,8 @@ public sealed class PasswordResetService(
             cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return Map(request);
+        var identity = await keycloakAdminService.GetUserIdentityAsync(request.User.KeycloakUserId, cancellationToken);
+        return Map(request, identity);
     }
 
     public async Task<PasswordResetRequestDto> RejectAsync(Guid id, string reviewedBy, string comment, CancellationToken cancellationToken)
@@ -126,7 +132,8 @@ public sealed class PasswordResetService(
             cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return Map(request);
+        var identity = await keycloakAdminService.GetUserIdentityAsync(request.User.KeycloakUserId, cancellationToken);
+        return Map(request, identity);
     }
 
     public async Task ResetPasswordAsync(ResetPasswordCommand command, CancellationToken cancellationToken)
@@ -173,7 +180,19 @@ public sealed class PasswordResetService(
         return request ?? throw new NotFoundException($"Password reset request '{id}' was not found.");
     }
 
-    private PasswordResetRequestDto Map(PasswordResetRequest request)
+    private async Task<Dictionary<string, KeycloakUserIdentity?>> LoadIdentitiesAsync(IEnumerable<string> keycloakUserIds, CancellationToken cancellationToken)
+    {
+        var ids = keycloakUserIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal).ToArray();
+        var pairs = await Task.WhenAll(ids.Select(async id => new
+        {
+            Id = id,
+            Identity = await keycloakAdminService.GetUserIdentityAsync(id, cancellationToken)
+        }));
+
+        return pairs.ToDictionary(item => item.Id, item => item.Identity, StringComparer.Ordinal);
+    }
+
+    private PasswordResetRequestDto Map(PasswordResetRequest request, KeycloakUserIdentity? identity)
     {
         string? resetUrl = null;
 
@@ -187,9 +206,9 @@ public sealed class PasswordResetService(
         return new PasswordResetRequestDto(
             request.Id,
             request.UserId,
-            request.User.Username,
-            request.User.Email,
-            request.User.DisplayName,
+            identity?.Username ?? request.User.KeycloakUserId,
+            identity?.Email ?? string.Empty,
+            ResolveDisplayName(identity),
             request.Status,
             request.RequestedByIdentifier,
             request.RequestedAt,
@@ -199,5 +218,16 @@ public sealed class PasswordResetService(
             request.ResetTokenExpiresAt,
             resetUrl,
             request.CompletedAt);
+    }
+
+    private static string ResolveDisplayName(KeycloakUserIdentity? identity)
+    {
+        var fullName = string.Join(" ", new[] { identity?.FirstName, identity?.LastName }
+            .Where(value => !string.IsNullOrWhiteSpace(value)))
+            .Trim();
+
+        return !string.IsNullOrWhiteSpace(fullName)
+            ? fullName
+            : identity?.Username ?? identity?.Email ?? "Unknown user";
     }
 }

@@ -426,16 +426,6 @@ partial class InsightDocsDbContextModelSnapshot : ModelSnapshot
             b.Property<DateTimeOffset>("CreatedAt")
                 .HasColumnType("timestamp with time zone");
 
-            b.Property<string>("DisplayName")
-                .IsRequired()
-                .HasMaxLength(200)
-                .HasColumnType("character varying(200)");
-
-            b.Property<string>("Email")
-                .IsRequired()
-                .HasMaxLength(256)
-                .HasColumnType("character varying(256)");
-
             b.Property<string>("KeycloakUserId")
                 .IsRequired()
                 .HasMaxLength(128)
@@ -446,20 +436,9 @@ partial class InsightDocsDbContextModelSnapshot : ModelSnapshot
                 .HasMaxLength(20)
                 .HasColumnType("character varying(20)");
 
-            b.Property<string>("Username")
-                .IsRequired()
-                .HasMaxLength(100)
-                .HasColumnType("character varying(100)");
-
             b.HasKey("Id");
 
-            b.HasIndex("Email")
-                .IsUnique();
-
             b.HasIndex("KeycloakUserId")
-                .IsUnique();
-
-            b.HasIndex("Username")
                 .IsUnique();
 
             b.ToTable("users", (string)null!);

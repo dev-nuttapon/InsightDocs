@@ -1,12 +1,15 @@
 using System.Text.Json;
 using InsightDocs.Application.Audit;
 using InsightDocs.Application.Common;
+using InsightDocs.Application.Identity;
 using InsightDocs.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace InsightDocs.Infrastructure.Audit;
 
-internal sealed class AuditLogService(InsightDocsDbContext dbContext) : IAuditLogService
+internal sealed class AuditLogService(
+    InsightDocsDbContext dbContext,
+    IKeycloakAdminService keycloakAdminService) : IAuditLogService
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -44,13 +47,12 @@ internal sealed class AuditLogService(InsightDocsDbContext dbContext) : IAuditLo
         {
             var actor = query.Actor.Trim();
             var actorGuid = Guid.TryParse(actor, out var parsedActorId) ? parsedActorId : (Guid?)null;
+            var matchingKeycloakUsers = await keycloakAdminService.SearchUsersAsync(actor, cancellationToken);
+            var matchingKeycloakUserIds = matchingKeycloakUsers.Select(user => user.KeycloakUserId).ToArray();
 
             auditLogs = auditLogs.Where(auditLog =>
                 (actorGuid.HasValue && auditLog.ActorUserId == actorGuid.Value) ||
-                (auditLog.ActorUser != null && (
-                    EF.Functions.ILike(auditLog.ActorUser.Username, $"%{actor}%") ||
-                    EF.Functions.ILike(auditLog.ActorUser.DisplayName, $"%{actor}%") ||
-                    EF.Functions.ILike(auditLog.ActorUser.Email, $"%{actor}%"))));
+                (auditLog.ActorUser != null && matchingKeycloakUserIds.Contains(auditLog.ActorUser.KeycloakUserId)));
         }
 
         if (!string.IsNullOrWhiteSpace(query.Action))
@@ -80,20 +82,42 @@ internal sealed class AuditLogService(InsightDocsDbContext dbContext) : IAuditLo
             .OrderByDescending(auditLog => auditLog.Timestamp)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(auditLog => new AuditLogListItemDto(
+            .Select(auditLog => new
+            {
                 auditLog.Id,
                 auditLog.ActorUserId,
-                auditLog.ActorUser != null ? auditLog.ActorUser.Username : null,
-                auditLog.ActorUser != null ? auditLog.ActorUser.DisplayName : null,
+                ActorKeycloakUserId = auditLog.ActorUser != null ? auditLog.ActorUser.KeycloakUserId : null,
                 auditLog.Action,
                 auditLog.EntityType,
                 auditLog.EntityId,
                 auditLog.RelatedDocumentId,
                 auditLog.RelatedVersionId,
-                auditLog.Timestamp))
+                auditLog.Timestamp
+            })
             .ToArrayAsync(cancellationToken);
 
-        return new AuditLogListResultDto(items, page, pageSize, totalCount);
+        var identities = await LoadIdentitiesAsync(items.Select(item => item.ActorKeycloakUserId), cancellationToken);
+
+        var mappedItems = items.Select(item =>
+        {
+            var identity = item.ActorKeycloakUserId is not null
+                ? identities.GetValueOrDefault(item.ActorKeycloakUserId)
+                : null;
+
+            return new AuditLogListItemDto(
+                item.Id,
+                item.ActorUserId,
+                identity?.Username,
+                ResolveDisplayName(identity),
+                item.Action,
+                item.EntityType,
+                item.EntityId,
+                item.RelatedDocumentId,
+                item.RelatedVersionId,
+                item.Timestamp);
+        }).ToArray();
+
+        return new AuditLogListResultDto(mappedItems, page, pageSize, totalCount);
     }
 
     public async Task<AuditLogDetailDto> GetAuditLogAsync(Guid id, CancellationToken cancellationToken)
@@ -102,21 +126,42 @@ internal sealed class AuditLogService(InsightDocsDbContext dbContext) : IAuditLo
             .AsNoTracking()
             .Include(entity => entity.ActorUser)
             .Where(entity => entity.Id == id)
-            .Select(entity => new AuditLogDetailDto(
+            .Select(entity => new
+            {
                 entity.Id,
                 entity.ActorUserId,
-                entity.ActorUser != null ? entity.ActorUser.Username : null,
-                entity.ActorUser != null ? entity.ActorUser.DisplayName : null,
+                ActorKeycloakUserId = entity.ActorUser != null ? entity.ActorUser.KeycloakUserId : null,
                 entity.Action,
                 entity.EntityType,
                 entity.EntityId,
                 entity.RelatedDocumentId,
                 entity.RelatedVersionId,
                 entity.Timestamp,
-                entity.MetadataJson))
+                entity.MetadataJson
+            })
             .FirstOrDefaultAsync(cancellationToken);
 
-        return auditLog ?? throw new NotFoundException($"Audit log '{id}' was not found.");
+        if (auditLog is null)
+        {
+            throw new NotFoundException($"Audit log '{id}' was not found.");
+        }
+
+        var identity = auditLog.ActorKeycloakUserId is not null
+            ? await keycloakAdminService.GetUserIdentityAsync(auditLog.ActorKeycloakUserId, cancellationToken)
+            : null;
+
+        return new AuditLogDetailDto(
+            auditLog.Id,
+            auditLog.ActorUserId,
+            identity?.Username,
+            ResolveDisplayName(identity),
+            auditLog.Action,
+            auditLog.EntityType,
+            auditLog.EntityId,
+            auditLog.RelatedDocumentId,
+            auditLog.RelatedVersionId,
+            auditLog.Timestamp,
+            auditLog.MetadataJson);
     }
 
     private async Task<Guid?> ResolveActorUserIdAsync(string? actorIdentifier, CancellationToken cancellationToken)
@@ -129,8 +174,34 @@ internal sealed class AuditLogService(InsightDocsDbContext dbContext) : IAuditLo
         var normalized = actorIdentifier.Trim();
 
         return await dbContext.Users
-            .Where(user => user.KeycloakUserId == normalized || user.Username == normalized)
+            .Where(user => user.KeycloakUserId == normalized)
             .Select(user => (Guid?)user.Id)
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private async Task<Dictionary<string, KeycloakUserIdentity?>> LoadIdentitiesAsync(IEnumerable<string?> keycloakUserIds, CancellationToken cancellationToken)
+    {
+        var ids = keycloakUserIds.Where(id => !string.IsNullOrWhiteSpace(id)).Cast<string>().Distinct(StringComparer.Ordinal).ToArray();
+        var pairs = await Task.WhenAll(ids.Select(async id => new
+        {
+            Id = id,
+            Identity = await keycloakAdminService.GetUserIdentityAsync(id, cancellationToken)
+        }));
+
+        return pairs.ToDictionary(item => item.Id, item => item.Identity, StringComparer.Ordinal);
+    }
+
+    private static string? ResolveDisplayName(KeycloakUserIdentity? identity)
+    {
+        if (identity is null)
+        {
+            return null;
+        }
+
+        var fullName = string.Join(" ", new[] { identity.FirstName, identity.LastName }
+            .Where(value => !string.IsNullOrWhiteSpace(value)))
+            .Trim();
+
+        return !string.IsNullOrWhiteSpace(fullName) ? fullName : identity.Username ?? identity.Email;
     }
 }

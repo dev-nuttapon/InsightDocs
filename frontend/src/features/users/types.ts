@@ -17,9 +17,6 @@ export type AppUser = {
 
 export type CreateUserInput = {
   keycloakUserId: string;
-  username: string;
-  email: string;
-  displayName: string;
 };
 
 export type UpdateUserInput = CreateUserInput;
