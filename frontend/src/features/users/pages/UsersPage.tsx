@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { createUser, getUsers } from '../api/usersApi';
-import type { AppUser, CreateUserInput } from '../types';
+import { formatBusinessRole, type AppUser, type CreateUserInput } from '../types';
 
 const initialForm: CreateUserInput = {
   keycloakUserId: '',
@@ -76,8 +76,8 @@ export function UsersPage() {
     <section className="panel stack">
       <div>
         <span className="sidebar__eyebrow">Admin</span>
-        <h2>Users & Roles</h2>
-        <p className="muted">Manage application-specific profiles and business role mappings stored in PostgreSQL.</p>
+        <h2>Users & Access</h2>
+        <p className="muted">Review local access records while identity details and business roles are resolved from Keycloak.</p>
       </div>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
@@ -109,7 +109,7 @@ export function UsersPage() {
           onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))}
         />
         <button className="button" disabled={isSubmitting} type="submit">
-          {isSubmitting ? 'Creating...' : 'Create User'}
+          {isSubmitting ? 'Creating...' : 'Create Access Record'}
         </button>
       </form>
 
@@ -134,7 +134,7 @@ export function UsersPage() {
                   </td>
                   <td>{user.email}</td>
                   <td>{user.status}</td>
-                  <td>{user.roles.join(', ') || 'No roles'}</td>
+                  <td>{user.roles.map(formatBusinessRole).join(', ') || 'No roles'}</td>
                 </tr>
               ))}
             </tbody>

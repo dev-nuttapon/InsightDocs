@@ -27,7 +27,7 @@ This backend is a `.NET 10` Web API scaffolded for clean architecture and enterp
 - CORS baseline for the frontend URL
 - configuration sections for `ConnectionStrings`, `Keycloak`, `Redis`, `SecurityAccess`, and `Minio`
 - Keycloak integration placeholders without mock endpoints
-- EF Core PostgreSQL persistence for application-owned users and business roles
+- EF Core PostgreSQL persistence for application-owned user status and workflow records
 
 ## Identity And Authentication
 
@@ -45,9 +45,9 @@ Public lifecycle endpoints:
 - `POST /api/auth/forgot-password`
 - `POST /api/auth/reset-password`
 
-## User And Role Management
+## User And Access Management
 
-Application-specific user management is stored in PostgreSQL and remains separate from Keycloak authentication credentials.
+Keycloak is the source of truth for identity and role membership. PostgreSQL stores the local application access record, approval state, and workflow metadata that InsightDocs owns.
 
 Admin APIs:
 
@@ -55,13 +55,11 @@ Admin APIs:
 - `GET /api/users/{id}`
 - `POST /api/users`
 - `PUT /api/users/{id}`
-- `POST /api/users/{id}/roles`
-- `DELETE /api/users/{id}/roles/{roleName}`
 - `POST /api/users/{id}/approve`
 - `POST /api/users/{id}/disable`
 - `POST /api/users/{id}/enable`
 
-Database-backed business roles are merged into the authenticated principal during claims transformation. This allows authorization policies to use application roles such as `Admin` in addition to any Keycloak token roles.
+Authorization policies use roles issued by Keycloak. User admin pages surface Keycloak roles for visibility but do not manage role assignment inside the application database.
 
 ## Registration And Password Reset
 
@@ -174,7 +172,7 @@ Recommended Keycloak setup:
 - API client or audience reference: `insightdocs-admin-api`
 - SPA redirect URIs: `http://localhost:5173/*`
 - SPA web origins: `http://localhost:5173`
-- test user assigned at least one role such as `admin` or `insightdocs-admin` to verify admin policy behavior
+- test user assigned at least one role such as `insightdocs:admin` to verify admin policy behavior
 
 ## Run
 

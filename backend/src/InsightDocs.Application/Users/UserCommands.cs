@@ -37,9 +37,3 @@ public sealed record UpdateUserCommand
     [MinLength(2)]
     public string DisplayName { get; init; } = string.Empty;
 }
-
-public sealed record AssignRoleCommand
-{
-    [Required]
-    public string RoleName { get; init; } = string.Empty;
-}

@@ -17,8 +17,6 @@ public sealed class UserManagementService(
     {
         var users = await dbContext.Users
             .AsNoTracking()
-            .Include(user => user.UserRoles)
-            .ThenInclude(userRole => userRole.Role)
             .OrderBy(user => user.Username)
             .ToListAsync(cancellationToken);
 
@@ -29,15 +27,16 @@ public sealed class UserManagementService(
     {
         var users = await dbContext.Users
             .AsNoTracking()
-            .Include(user => user.UserRoles)
-            .ThenInclude(userRole => userRole.Role)
-            .Where(user =>
-                user.Status == UserStatus.Active &&
-                user.UserRoles.Any(userRole => userRole.Role.NormalizedName == BusinessRoles.Signer.ToUpperInvariant()))
+            .Where(user => user.Status == UserStatus.Active)
             .OrderBy(user => user.Username)
             .ToListAsync(cancellationToken);
 
-        return await MapSummariesAsync(users, cancellationToken);
+        var identities = await LoadKeycloakIdentitiesAsync(users.Select(user => user.KeycloakUserId), cancellationToken);
+
+        return users
+            .Where(user => HasRole(identities.GetValueOrDefault(user.KeycloakUserId)?.Roles, BusinessRoles.Signer))
+            .Select(user => MapSummary(user, identities.GetValueOrDefault(user.KeycloakUserId)))
+            .ToArray();
     }
 
     public async Task<UserDetailDto> GetUserAsync(Guid id, CancellationToken cancellationToken)
@@ -67,37 +66,6 @@ public sealed class UserManagementService(
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return await MapDetailAsync(user, cancellationToken);
-    }
-
-    public async Task<UserDetailDto> AssignRoleAsync(Guid id, string roleName, CancellationToken cancellationToken)
-    {
-        var user = await LoadUserAsync(id, cancellationToken);
-        var role = await FindRoleAsync(roleName, cancellationToken);
-
-        if (user.UserRoles.All(userRole => userRole.RoleId != role.Id))
-        {
-            dbContext.UserRoles.Add(new UserRole(user.Id, role.Id));
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
-
-        user = await LoadUserAsync(id, cancellationToken);
-        return await MapDetailAsync(user, cancellationToken);
-    }
-
-    public async Task RemoveRoleAsync(Guid id, string roleName, CancellationToken cancellationToken)
-    {
-        var user = await LoadUserAsync(id, cancellationToken);
-        var normalizedRoleName = NormalizeRoleName(roleName);
-
-        var userRole = user.UserRoles.FirstOrDefault(item => item.Role.NormalizedName == normalizedRoleName);
-
-        if (userRole is null)
-        {
-            throw new NotFoundException($"Role '{roleName}' is not assigned to the user.");
-        }
-
-        dbContext.UserRoles.Remove(userRole);
-        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<UserDetailDto> ApproveUserAsync(Guid id, string approvedBy, CancellationToken cancellationToken)
@@ -154,26 +122,9 @@ public sealed class UserManagementService(
     private async Task<User> LoadUserAsync(Guid id, CancellationToken cancellationToken)
     {
         var user = await dbContext.Users
-            .Include(entity => entity.UserRoles)
-            .ThenInclude(entity => entity.Role)
             .FirstOrDefaultAsync(entity => entity.Id == id, cancellationToken);
 
         return user ?? throw new NotFoundException($"User '{id}' was not found.");
-    }
-
-    private async Task<Role> FindRoleAsync(string roleName, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(roleName))
-        {
-            throw new ValidationException("Role name is required.");
-        }
-
-        var normalizedRoleName = NormalizeRoleName(roleName);
-
-        var role = await dbContext.Roles
-            .FirstOrDefaultAsync(entity => entity.NormalizedName == normalizedRoleName, cancellationToken);
-
-        return role ?? throw new NotFoundException($"Role '{roleName}' was not found.");
     }
 
     private async Task EnsureUniqueUserAsync(string keycloakUserId, string username, string email, Guid? currentUserId, CancellationToken cancellationToken)
@@ -194,24 +145,22 @@ public sealed class UserManagementService(
         }
     }
 
-    private static string NormalizeRoleName(string roleName) => roleName.Trim().ToUpperInvariant();
-
     private async Task<IReadOnlyCollection<UserSummaryDto>> MapSummariesAsync(IReadOnlyCollection<User> users, CancellationToken cancellationToken)
     {
-        var profiles = await LoadKeycloakProfilesAsync(users.Select(user => user.KeycloakUserId), cancellationToken);
+        var identities = await LoadKeycloakIdentitiesAsync(users.Select(user => user.KeycloakUserId), cancellationToken);
 
         return users
-            .Select(user => MapSummary(user, profiles.GetValueOrDefault(user.KeycloakUserId)))
+            .Select(user => MapSummary(user, identities.GetValueOrDefault(user.KeycloakUserId)))
             .ToArray();
     }
 
     private async Task<UserDetailDto> MapDetailAsync(User user, CancellationToken cancellationToken)
     {
-        var profile = await keycloakAdminService.GetUserProfileAsync(user.KeycloakUserId, cancellationToken);
-        return MapDetail(user, profile);
+        var identity = await keycloakAdminService.GetUserIdentityAsync(user.KeycloakUserId, cancellationToken);
+        return MapDetail(user, identity);
     }
 
-    private async Task<Dictionary<string, KeycloakUserProfile?>> LoadKeycloakProfilesAsync(IEnumerable<string> keycloakUserIds, CancellationToken cancellationToken)
+    private async Task<Dictionary<string, KeycloakUserIdentity?>> LoadKeycloakIdentitiesAsync(IEnumerable<string> keycloakUserIds, CancellationToken cancellationToken)
     {
         var ids = keycloakUserIds
             .Where(id => !string.IsNullOrWhiteSpace(id))
@@ -221,45 +170,60 @@ public sealed class UserManagementService(
         var lookups = await Task.WhenAll(ids.Select(async id => new
         {
             Id = id,
-            Profile = await keycloakAdminService.GetUserProfileAsync(id, cancellationToken)
+            Identity = await keycloakAdminService.GetUserIdentityAsync(id, cancellationToken)
         }));
 
-        return lookups.ToDictionary(item => item.Id, item => item.Profile, StringComparer.Ordinal);
+        return lookups.ToDictionary(item => item.Id, item => item.Identity, StringComparer.Ordinal);
     }
 
-    private static UserSummaryDto MapSummary(User user, KeycloakUserProfile? profile) =>
+    private static UserSummaryDto MapSummary(User user, KeycloakUserIdentity? identity) =>
         new(
             user.Id,
             user.KeycloakUserId,
-            user.Username,
-            user.Email,
-            user.DisplayName,
-            profile?.FirstName,
-            profile?.LastName,
+            identity?.Username ?? user.Username,
+            identity?.Email ?? user.Email,
+            ResolveDisplayName(user, identity),
+            identity?.FirstName,
+            identity?.LastName,
             user.Status,
             user.CreatedAt,
             user.ApprovedAt,
             user.ApprovedBy,
-            user.UserRoles
-                .Select(userRole => userRole.Role.Name)
+            (identity?.Roles ?? [])
                 .OrderBy(name => name)
                 .ToArray());
 
-    private static UserDetailDto MapDetail(User user, KeycloakUserProfile? profile) =>
+    private static UserDetailDto MapDetail(User user, KeycloakUserIdentity? identity) =>
         new(
             user.Id,
             user.KeycloakUserId,
-            user.Username,
-            user.Email,
-            user.DisplayName,
-            profile?.FirstName,
-            profile?.LastName,
+            identity?.Username ?? user.Username,
+            identity?.Email ?? user.Email,
+            ResolveDisplayName(user, identity),
+            identity?.FirstName,
+            identity?.LastName,
             user.Status,
             user.CreatedAt,
             user.ApprovedAt,
             user.ApprovedBy,
-            user.UserRoles
-                .Select(userRole => userRole.Role.Name)
+            (identity?.Roles ?? [])
                 .OrderBy(name => name)
                 .ToArray());
+
+    private static string ResolveDisplayName(User user, KeycloakUserIdentity? identity)
+    {
+        var fullName = string.Join(" ", new[] { identity?.FirstName, identity?.LastName }
+            .Where(value => !string.IsNullOrWhiteSpace(value)))
+            .Trim();
+
+        if (!string.IsNullOrWhiteSpace(fullName))
+        {
+            return fullName;
+        }
+
+        return user.DisplayName;
+    }
+
+    private static bool HasRole(IReadOnlyCollection<string>? roles, string roleName) =>
+        roles?.Any(role => string.Equals(role, roleName, StringComparison.OrdinalIgnoreCase)) == true;
 }

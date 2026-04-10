@@ -96,8 +96,8 @@ export function DashboardPage() {
       actions.push(
         {
           to: '/users',
-          label: 'Review users and roles',
-          description: 'Manage business roles and application profiles from the admin workspace.',
+          label: 'Review users and access',
+          description: 'Inspect Keycloak-backed identity, local access state, and approval controls from the admin workspace.',
         },
         {
           to: '/audit-logs',
@@ -186,7 +186,7 @@ export function DashboardPage() {
             </div>
             <div>
               <dt>Roles</dt>
-              <dd>{access.normalizedRoles.length > 0 ? access.normalizedRoles.map(formatRoleLabel).join(', ') : 'No mapped roles'}</dd>
+              <dd>{access.normalizedRoles.length > 0 ? access.normalizedRoles.map(formatRoleLabel).join(', ') : 'No Keycloak roles'}</dd>
             </div>
           </dl>
         </section>

@@ -46,22 +46,6 @@ public sealed class UsersController(
         return Ok(ApiResponse<UserDetailDto>.Ok(user, HttpContext.TraceIdentifier));
     }
 
-    [HttpPost("{id:guid}/roles")]
-    [ProducesResponseType(typeof(ApiResponse<UserDetailDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<ApiResponse<UserDetailDto>>> AssignRole(Guid id, [FromBody] AssignRoleCommand command, CancellationToken cancellationToken)
-    {
-        var user = await userManagementService.AssignRoleAsync(id, command.RoleName, cancellationToken);
-        return Ok(ApiResponse<UserDetailDto>.Ok(user, HttpContext.TraceIdentifier));
-    }
-
-    [HttpDelete("{id:guid}/roles/{roleName}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> RemoveRole(Guid id, string roleName, CancellationToken cancellationToken)
-    {
-        await userManagementService.RemoveRoleAsync(id, roleName, cancellationToken);
-        return NoContent();
-    }
-
     [HttpPost("{id:guid}/approve")]
     [ProducesResponseType(typeof(ApiResponse<UserDetailDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<UserDetailDto>>> ApproveUser(Guid id, CancellationToken cancellationToken)

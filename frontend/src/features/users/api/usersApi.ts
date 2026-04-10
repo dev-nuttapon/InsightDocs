@@ -1,4 +1,4 @@
-import { deleteRequest, getJson, postJson, putJson } from '../../../shared/api/http';
+import { getJson, postJson, putJson } from '../../../shared/api/http';
 import type { AppUser, CreateUserInput, UpdateUserInput } from '../types';
 
 export function getUsers(accessToken: string) {
@@ -15,14 +15,6 @@ export function createUser(input: CreateUserInput, accessToken: string) {
 
 export function updateUser(id: string, input: UpdateUserInput, accessToken: string) {
   return putJson<AppUser>(`/api/users/${id}`, input, { accessToken });
-}
-
-export function assignRole(id: string, roleName: string, accessToken: string) {
-  return postJson<AppUser>(`/api/users/${id}/roles`, { roleName }, { accessToken });
-}
-
-export function removeRole(id: string, roleName: string, accessToken: string) {
-  return deleteRequest<void>(`/api/users/${id}/roles/${encodeURIComponent(roleName)}`, { accessToken });
 }
 
 export function approveUser(id: string, accessToken: string) {

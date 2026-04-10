@@ -27,7 +27,7 @@ export function CurrentUserPage() {
           </article>
           <article className="metric-panel metric-panel--left">
             <span className="card__label">Access Scope</span>
-            <strong>{access.normalizedRoles.length > 0 ? access.normalizedRoles.map(formatRoleLabel).join(', ') : 'No mapped roles'}</strong>
+            <strong>{access.normalizedRoles.length > 0 ? access.normalizedRoles.map(formatRoleLabel).join(', ') : 'No Keycloak roles'}</strong>
             <span className="muted">Approvals: {access.canReviewDocuments ? 'Enabled' : 'Not assigned'}</span>
             <span className="muted">Signatures: {access.canSignDocuments ? 'Enabled' : 'Not assigned'}</span>
             <span className="muted">Admin: {access.isAdmin ? 'Enabled' : 'Not assigned'}</span>

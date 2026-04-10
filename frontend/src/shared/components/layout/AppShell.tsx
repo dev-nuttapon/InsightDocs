@@ -37,7 +37,7 @@ export function AppShell() {
         label: 'Administration',
         links: access.canAccessAdmin
           ? [
-              { to: '/users', label: 'Users & Roles' },
+              { to: '/users', label: 'Users & Access' },
               { to: '/admin/password-reset-requests', label: 'Password Reset Requests' },
               { to: '/audit-logs', label: 'Audit Logs' },
             ]
@@ -115,7 +115,7 @@ export function AppShell() {
                 ))}
               </div>
             ) : (
-              <span className="muted">No mapped roles</span>
+              <span className="muted">No Keycloak roles</span>
             )}
             <NavLink className="button button--secondary" to="/logout">
               Logout
@@ -203,7 +203,7 @@ function resolvePageMeta(pathname: string) {
     return {
       eyebrow: 'Administration',
       title: 'Manage access and oversight',
-      description: 'Control business roles, review privileged requests, and inspect audit history from the admin workspace.',
+      description: 'Review Keycloak-backed access, handle privileged requests, and inspect audit history from the admin workspace.',
     };
   }
 

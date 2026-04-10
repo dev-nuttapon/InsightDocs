@@ -24,4 +24,19 @@ export type CreateUserInput = {
 
 export type UpdateUserInput = CreateUserInput;
 
-export const businessRoles = ['Admin', 'DocumentController', 'Manager', 'Signer', 'Viewer'] as const;
+export function formatBusinessRole(role: string) {
+  switch (role) {
+    case 'insightdocs:admin':
+      return 'Admin';
+    case 'insightdocs:document_controller':
+      return 'Document Controller';
+    case 'insightdocs:manager':
+      return 'Manager';
+    case 'insightdocs:signer':
+      return 'Signer';
+    case 'insightdocs:viewer':
+      return 'Viewer';
+    default:
+      return role;
+  }
+}

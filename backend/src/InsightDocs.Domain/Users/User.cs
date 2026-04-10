@@ -2,8 +2,6 @@ namespace InsightDocs.Domain.Users;
 
 public sealed class User
 {
-    private readonly List<UserRole> _userRoles = [];
-
     public Guid Id { get; private set; } = Guid.NewGuid();
     public string KeycloakUserId { get; private set; } = string.Empty;
     public string Username { get; private set; } = string.Empty;
@@ -13,8 +11,6 @@ public sealed class User
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? ApprovedAt { get; private set; }
     public string? ApprovedBy { get; private set; }
-
-    public IReadOnlyCollection<UserRole> UserRoles => _userRoles;
 
     private User()
     {

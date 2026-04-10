@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using InsightDocs.Application.Audit;
 using InsightDocs.Application.Common;
 using InsightDocs.Application.Documents;
+using InsightDocs.Application.Identity;
 using InsightDocs.Application.Users;
 using InsightDocs.Domain.Documents;
 using InsightDocs.Domain.Users;
@@ -15,7 +16,8 @@ internal sealed class DocumentService(
     InsightDocsDbContext dbContext,
     IDocumentObjectStorage objectStorage,
     IPdfDigitalSignatureService pdfDigitalSignatureService,
-    IAuditLogService auditLogService) : IDocumentService
+    IAuditLogService auditLogService,
+    IKeycloakAdminService keycloakAdminService) : IDocumentService
 {
     public async Task<IReadOnlyCollection<DocumentSummaryDto>> GetDocumentsAsync(CancellationToken cancellationToken)
     {
@@ -497,8 +499,6 @@ internal sealed class DocumentService(
             ?? throw new ConflictException("The document must have a current version before signatures can be assigned.");
 
         var signer = await dbContext.Users
-            .Include(user => user.UserRoles)
-            .ThenInclude(userRole => userRole.Role)
             .FirstOrDefaultAsync(user => user.Id == command.SignerUserId, cancellationToken)
             ?? throw new NotFoundException($"Signer '{command.SignerUserId}' was not found.");
 
@@ -507,7 +507,8 @@ internal sealed class DocumentService(
             throw new ConflictException("Only active users can be assigned as signers.");
         }
 
-        var hasSignerRole = signer.UserRoles.Any(userRole => string.Equals(userRole.Role.Name, BusinessRoles.Signer, StringComparison.OrdinalIgnoreCase));
+        var signerIdentity = await keycloakAdminService.GetUserIdentityAsync(signer.KeycloakUserId, cancellationToken);
+        var hasSignerRole = HasRole(signerIdentity?.Roles, BusinessRoles.Signer);
 
         if (!hasSignerRole)
         {
@@ -595,7 +596,7 @@ internal sealed class DocumentService(
 
         var actor = await ResolveUserAsync(actorIdentifier, cancellationToken);
 
-        if (actor.Id != request.SignerUserId && !HasAdministrativeRole(actor))
+        if (actor.Id != request.SignerUserId && !await HasAdministrativeRoleAsync(actor, cancellationToken))
         {
             throw new ConflictException("Only the assigned signer can sign this document.");
         }
@@ -664,7 +665,7 @@ internal sealed class DocumentService(
 
         var actor = await ResolveUserAsync(actorIdentifier, cancellationToken);
 
-        if (actor.Id != request.SignerUserId && !HasAdministrativeRole(actor))
+        if (actor.Id != request.SignerUserId && !await HasAdministrativeRoleAsync(actor, cancellationToken))
         {
             throw new ConflictException("Only the assigned signer can reject this signature request.");
         }
@@ -832,8 +833,6 @@ internal sealed class DocumentService(
     private async Task<User> ResolveUserAsync(string actorIdentifier, CancellationToken cancellationToken)
     {
         var actor = await dbContext.Users
-            .Include(user => user.UserRoles)
-            .ThenInclude(userRole => userRole.Role)
             .FirstOrDefaultAsync(user =>
                 user.KeycloakUserId == actorIdentifier ||
                 user.Username == actorIdentifier,
@@ -852,8 +851,14 @@ internal sealed class DocumentService(
         return actor;
     }
 
-    private static bool HasAdministrativeRole(User user) =>
-        user.UserRoles.Any(userRole => string.Equals(userRole.Role.Name, BusinessRoles.Admin, StringComparison.OrdinalIgnoreCase));
+    private async Task<bool> HasAdministrativeRoleAsync(User user, CancellationToken cancellationToken)
+    {
+        var identity = await keycloakAdminService.GetUserIdentityAsync(user.KeycloakUserId, cancellationToken);
+        return HasRole(identity?.Roles, BusinessRoles.Admin);
+    }
+
+    private static bool HasRole(IReadOnlyCollection<string>? roles, string roleName) =>
+        roles?.Any(role => string.Equals(role, roleName, StringComparison.OrdinalIgnoreCase)) == true;
 
     private async Task<DocumentSignatureRequestDto> GetSignatureAsync(Guid documentId, Guid signatureRequestId, CancellationToken cancellationToken)
     {

@@ -127,7 +127,6 @@ public static class DependencyInjection
         services.AddScoped<IPasswordResetService, PasswordResetService>();
         services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<IDashboardService, DashboardService>();
-        services.AddScoped<IBusinessRoleLookup, BusinessRoleLookup>();
         services.AddScoped<IUserManagementService, UserManagementService>();
         services.AddScoped<IDocumentObjectStorage, MinioDocumentObjectStorage>();
         services.AddScoped<IPdfDigitalSignatureService, PdfSharpDigitalSignatureService>();

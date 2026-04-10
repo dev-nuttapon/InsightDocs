@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using System.Text.Json;
-using InsightDocs.Application.Users;
 using InsightDocs.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
@@ -8,24 +7,19 @@ using Microsoft.Extensions.Options;
 namespace InsightDocs.Infrastructure.Authentication;
 
 public sealed class KeycloakClaimsTransformation(
-    IOptions<KeycloakOptions> keycloakOptions,
-    IBusinessRoleLookup businessRoleLookup) : IClaimsTransformation
+    IOptions<KeycloakOptions> keycloakOptions) : IClaimsTransformation
 {
-    public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
+    public Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {
         if (principal.Identity is not ClaimsIdentity identity || !identity.IsAuthenticated)
         {
-            return principal;
+            return Task.FromResult(principal);
         }
 
         AddRoleClaims(identity, ReadRolesFromRealmAccess(identity));
         AddRoleClaims(identity, ReadRolesFromResourceAccess(identity, keycloakOptions.Value.RoleClientId));
-        AddRoleClaims(identity, await businessRoleLookup.GetRolesForUserAsync(
-            keycloakUserId: identity.FindFirst("sub")?.Value,
-            username: identity.FindFirst("preferred_username")?.Value,
-            cancellationToken: CancellationToken.None));
 
-        return principal;
+        return Task.FromResult(principal);
     }
 
     private static void AddRoleClaims(ClaimsIdentity identity, IEnumerable<string> roles)

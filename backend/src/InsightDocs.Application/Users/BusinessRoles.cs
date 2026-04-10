@@ -2,11 +2,11 @@ namespace InsightDocs.Application.Users;
 
 public static class BusinessRoles
 {
-    public const string Admin = "Admin";
-    public const string DocumentController = "DocumentController";
-    public const string Manager = "Manager";
-    public const string Signer = "Signer";
-    public const string Viewer = "Viewer";
+    public const string Admin = "insightdocs:admin";
+    public const string DocumentController = "insightdocs:document_controller";
+    public const string Manager = "insightdocs:manager";
+    public const string Signer = "insightdocs:signer";
+    public const string Viewer = "insightdocs:viewer";
 
     public static readonly string[] DefaultRoles =
     [

@@ -63,7 +63,7 @@ public sealed class KeycloakAdminService(
         return keycloakUserId;
     }
 
-    public async Task<KeycloakUserProfile?> GetUserProfileAsync(string keycloakUserId, CancellationToken cancellationToken)
+    public async Task<KeycloakUserIdentity?> GetUserIdentityAsync(string keycloakUserId, CancellationToken cancellationToken)
     {
         var accessToken = await GetAccessTokenAsync(cancellationToken);
         using var request = new HttpRequestMessage(HttpMethod.Get, BuildAdminUserUrl(keycloakUserId));
@@ -82,9 +82,19 @@ public sealed class KeycloakAdminService(
         }
 
         var payload = await response.Content.ReadFromJsonAsync<KeycloakAdminUserResponse>(cancellationToken);
-        return payload is null
-            ? null
-            : new KeycloakUserProfile(payload.FirstName, payload.LastName);
+        if (payload is null)
+        {
+            return null;
+        }
+
+        var roles = await GetUserRolesAsync(keycloakUserId, accessToken, cancellationToken);
+        return new KeycloakUserIdentity(
+            payload.Username,
+            payload.Email,
+            payload.FirstName,
+            payload.LastName,
+            payload.Enabled,
+            roles);
     }
 
     public async Task DeleteUserAsync(string keycloakUserId, CancellationToken cancellationToken)
@@ -177,7 +187,57 @@ public sealed class KeycloakAdminService(
 
     private string BuildAdminUserUrl(string keycloakUserId) => $"{BuildAdminUsersUrl()}/{keycloakUserId}";
 
+    private async Task<IReadOnlyCollection<string>> GetUserRolesAsync(string keycloakUserId, string accessToken, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{BuildAdminUserUrl(keycloakUserId)}/role-mappings");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return [];
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new ValidationException($"Keycloak role lookup failed with status {(int)response.StatusCode}.");
+        }
+
+        var payload = await response.Content.ReadFromJsonAsync<KeycloakRoleMappingsResponse>(cancellationToken);
+        if (payload is null)
+        {
+            return [];
+        }
+
+        var roles = payload.RealmMappings?
+            .Select(mapping => mapping.Name)
+            .Concat(payload.ClientMappings?.Values
+                .SelectMany(clientMapping => clientMapping.Mappings ?? [])
+                .Select(mapping => mapping.Name) ?? [])
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return roles ?? [];
+    }
+
     private sealed record KeycloakAdminUserResponse(
+        string? Username,
+        string? Email,
         string? FirstName,
-        string? LastName);
+        string? LastName,
+        bool? Enabled);
+
+    private sealed record KeycloakRoleMappingsResponse(
+        List<KeycloakRoleMapping>? RealmMappings,
+        Dictionary<string, KeycloakClientRoleMappings>? ClientMappings);
+
+    private sealed record KeycloakClientRoleMappings(
+        List<KeycloakRoleMapping>? Mappings);
+
+    private sealed record KeycloakRoleMapping(
+        string? Name);
 }

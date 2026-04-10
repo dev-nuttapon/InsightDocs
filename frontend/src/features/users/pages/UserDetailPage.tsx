@@ -4,21 +4,18 @@ import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../../auth/context/useAuth';
 import {
   approveUser,
-  assignRole,
   disableUser,
   enableUser,
   getUser,
-  removeRole,
   updateUser,
 } from '../api/usersApi';
-import { businessRoles, type AppUser, type UpdateUserInput } from '../types';
+import { formatBusinessRole, type AppUser, type UpdateUserInput } from '../types';
 
 export function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { accessToken } = useAuth();
   const [user, setUser] = useState<AppUser | null>(null);
   const [form, setForm] = useState<UpdateUserInput | null>(null);
-  const [roleName, setRoleName] = useState<string>(businessRoles[0]);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -56,10 +53,7 @@ export function UserDetailPage() {
     };
   }, [accessToken, id]);
 
-  const availableRoles = useMemo(
-    () => businessRoles.filter((role) => !user?.roles.includes(role)),
-    [user],
-  );
+  const resolvedName = useMemo(() => (user ? formatUserName(user) : 'User'), [user]);
 
   async function runMutation(action: () => Promise<AppUser | void>, successMessage: string) {
     try {
@@ -100,8 +94,12 @@ export function UserDetailPage() {
 
       <div>
         <span className="sidebar__eyebrow">User Detail</span>
-        <h2>{user.displayName}</h2>
+        <h2>{resolvedName}</h2>
         <p className="muted">Status: {user.status} | Approved by: {user.approvedBy ?? 'Not approved yet'}</p>
+      </div>
+
+      <div className="callout">
+        Identity details and business roles are sourced from Keycloak. This page only updates the local application access record.
       </div>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
@@ -118,39 +116,21 @@ export function UserDetailPage() {
         <input className="input" value={form.username} onChange={(event) => setForm((current) => current ? { ...current, username: event.target.value } : current)} />
         <input className="input" type="email" value={form.email} onChange={(event) => setForm((current) => current ? { ...current, email: event.target.value } : current)} />
         <input className="input" value={form.displayName} onChange={(event) => setForm((current) => current ? { ...current, displayName: event.target.value } : current)} />
-        <button className="button" type="submit">Save User</button>
+        <button className="button" type="submit">Save Access Record</button>
       </form>
 
       <div className="card stack">
-        <span className="card__label">Assigned Roles</span>
+        <span className="card__label">Keycloak Roles</span>
         <div className="actions">
-          {user.roles.map((role) => (
-            <button
-              key={role}
-              className="button button--secondary"
-              type="button"
-              onClick={() => void runMutation(async () => {
-                await removeRole(id, role, accessToken);
-              }, `Removed role ${role}.`)}
-            >
-              Remove {role}
-            </button>
-          ))}
-        </div>
-        <div className="actions">
-          <select className="input input--select" value={roleName} onChange={(event) => setRoleName(event.target.value)}>
-            {availableRoles.map((role) => (
-              <option key={role} value={role}>{role}</option>
-            ))}
-          </select>
-          <button
-            className="button"
-            disabled={availableRoles.length === 0}
-            type="button"
-            onClick={() => void runMutation(() => assignRole(id, roleName, accessToken), `Assigned role ${roleName}.`)}
-          >
-            Assign Role
-          </button>
+          {user.roles.length > 0 ? (
+            user.roles.map((role) => (
+              <span key={role} className="button button--secondary">
+                {formatBusinessRole(role)}
+              </span>
+            ))
+          ) : (
+            <span className="muted">No Keycloak roles mapped to this account.</span>
+          )}
         </div>
       </div>
 
@@ -161,4 +141,13 @@ export function UserDetailPage() {
       </div>
     </section>
   );
+}
+
+function formatUserName(user: AppUser) {
+  const fullName = [user.firstName, user.lastName]
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    .join(' ')
+    .trim();
+
+  return fullName || user.displayName || user.username;
 }

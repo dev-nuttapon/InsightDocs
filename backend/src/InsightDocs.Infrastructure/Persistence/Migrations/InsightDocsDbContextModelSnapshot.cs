@@ -410,65 +410,6 @@ partial class InsightDocsDbContextModelSnapshot : ModelSnapshot
             b.ToTable("password_reset_requests", (string)null!);
         });
 
-        modelBuilder.Entity("InsightDocs.Domain.Users.Role", b =>
-        {
-            b.Property<Guid>("Id")
-                .ValueGeneratedOnAdd()
-                .HasColumnType("uuid");
-
-            b.Property<string>("Name")
-                .IsRequired()
-                .HasMaxLength(80)
-                .HasColumnType("character varying(80)");
-
-            b.Property<string>("NormalizedName")
-                .IsRequired()
-                .HasMaxLength(80)
-                .HasColumnType("character varying(80)");
-
-            b.HasKey("Id");
-
-            b.HasIndex("Name")
-                .IsUnique();
-
-            b.HasIndex("NormalizedName")
-                .IsUnique();
-
-            b.ToTable("roles", (string)null!);
-
-            b.HasData(
-                new
-                {
-                    Id = Guid.Parse("1f2b89c4-1b79-4b8e-8f1c-f5d579c16c01"),
-                    Name = "Admin",
-                    NormalizedName = "ADMIN"
-                },
-                new
-                {
-                    Id = Guid.Parse("4ab7e42c-4f6f-4f86-b795-0b9f2c77d202"),
-                    Name = "DocumentController",
-                    NormalizedName = "DOCUMENTCONTROLLER"
-                },
-                new
-                {
-                    Id = Guid.Parse("6925d514-5ec0-44b3-b7fa-2d50b3419303"),
-                    Name = "Manager",
-                    NormalizedName = "MANAGER"
-                },
-                new
-                {
-                    Id = Guid.Parse("7fd5a482-bf42-4284-9e14-b395e7de7f04"),
-                    Name = "Signer",
-                    NormalizedName = "SIGNER"
-                },
-                new
-                {
-                    Id = Guid.Parse("eb88502b-bb9f-40f8-8d65-f3a02ec3c405"),
-                    Name = "Viewer",
-                    NormalizedName = "VIEWER"
-                });
-        });
-
         modelBuilder.Entity("InsightDocs.Domain.Users.User", b =>
         {
             b.Property<Guid>("Id")
@@ -523,37 +464,6 @@ partial class InsightDocsDbContextModelSnapshot : ModelSnapshot
 
             b.ToTable("users", (string)null!);
         });
-
-        modelBuilder.Entity("InsightDocs.Domain.Users.UserRole", b =>
-        {
-            b.Property<Guid>("UserId")
-                .HasColumnType("uuid");
-
-            b.Property<Guid>("RoleId")
-                .HasColumnType("uuid");
-
-            b.HasKey("UserId", "RoleId");
-
-            b.HasIndex("RoleId");
-
-            b.ToTable("user_roles", (string)null!);
-        });
-
-        modelBuilder.Entity("InsightDocs.Domain.Users.UserRole", b =>
-        {
-            b.HasOne("InsightDocs.Domain.Users.Role", "Role")
-                .WithMany("UserRoles")
-                .HasForeignKey("RoleId")
-                .OnDelete(DeleteBehavior.Cascade)
-                .IsRequired();
-
-            b.HasOne("InsightDocs.Domain.Users.User", "User")
-                .WithMany("UserRoles")
-                .HasForeignKey("UserId")
-                .OnDelete(DeleteBehavior.Cascade)
-                .IsRequired();
-        });
-
         modelBuilder.Entity("InsightDocs.Domain.Auth.PasswordResetRequest", b =>
         {
             b.HasOne("InsightDocs.Domain.Users.User", "User")
