@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
+import { PageHeader } from '../../../shared/components/layout/PageHeader';
+
+
 import { useAuth } from '../../auth/context/useAuth';
 import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 import { deleteUser, disableUser, enableUser, getUsers } from '../api/usersApi';
@@ -144,18 +147,16 @@ export function UsersPage() {
   const pendingActionCopy = getPendingActionCopy(pendingAction);
 
   return (
-    <section className="panel panel--full stack">
-      <div>
-        <span className="sidebar__eyebrow">Admin</span>
-        <h2>Users & Access</h2>
-        <p className="muted">สร้างผู้ใช้งานจากระบบนี้ แล้ว provision บัญชีไปยัง Keycloak พร้อมสร้าง access record ใน InsightDocs ให้เชื่อมกันอัตโนมัติ</p>
-      </div>
+    <div className="stack stack--xl">
+      <PageHeader
+        title="Users & Access"
+        eyebrow="Administration"
+        description="สร้างผู้ใช้งานจากระบบนี้ แล้ว provision บัญชีไปยัง Keycloak พร้อมสร้าง access record ใน InsightDocs ให้เชื่อมกันอัตโนมัติ"
+        actions={<Link className="button" to="/users/new">Invite User</Link>}
+      />
 
-      {notice ? <div className="callout">{notice}</div> : null}
+      <section className="panel panel--full stack">
 
-      <div className="actions">
-        <Link className="button" to="/users/new">Invite User</Link>
-      </div>
 
       {isLoading ? (
         <p className="muted">Loading users...</p>

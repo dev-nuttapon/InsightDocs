@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { PageHeader } from '../../../shared/components/layout/PageHeader';
+import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
+import { EmptyState } from '../../../shared/components/ui/EmptyState';
+
+
+
 import { useAuth } from '../../auth/context/useAuth';
 import { approveDocument, getPendingApprovals, rejectDocument } from '../../documents/api/documentsApi';
 import type { PendingApproval } from '../../documents/types';
@@ -63,12 +69,15 @@ export function ApprovalsPage() {
   }
 
   return (
-    <section className="panel stack">
-      <div>
-        <span className="sidebar__eyebrow">Approvals</span>
-        <h2>Pending approval queue</h2>
-        <p className="muted">Managers review documents that have been submitted by DocumentControllers.</p>
-      </div>
+    <div className="stack stack--xl">
+      <PageHeader
+        title="Pending approval queue"
+        eyebrow="Approvals"
+        description="Managers review documents that have been submitted by DocumentControllers."
+      />
+
+      <section className="panel stack">
+
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
@@ -92,7 +101,9 @@ export function ApprovalsPage() {
                   <Link to={`/documents/${item.documentId}`}>{item.documentTitle}</Link>
                   <div className="muted">By {item.submittedBy}</div>
                 </td>
-                <td>{item.status}</td>
+                <td>
+                  <StatusBadge status={item.status} />
+                </td>
                 <td>{item.currentVersionNumber ? `v${item.currentVersionNumber}` : 'None'}</td>
                 <td>{new Date(item.submittedAt).toLocaleString()}</td>
                 <td>
@@ -117,9 +128,15 @@ export function ApprovalsPage() {
             ))}
             {items.length === 0 ? (
               <tr>
-                <td colSpan={6} className="muted">No documents are currently pending review.</td>
+                <td colSpan={6}>
+                  <EmptyState 
+                    title="Queue empty" 
+                    description="No documents are currently pending review." 
+                  />
+                </td>
               </tr>
             ) : null}
+
           </tbody>
         </table>
       </div>

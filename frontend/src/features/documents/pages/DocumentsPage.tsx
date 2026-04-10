@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { PageHeader } from '../../../shared/components/layout/PageHeader';
+import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
+import { EmptyState } from '../../../shared/components/ui/EmptyState';
+
+
+
 import { useAuth } from '../../auth/context/useAuth';
 import { buildAccessProfile } from '../../../shared/auth/authorization';
 import { createDocument, getDocuments } from '../api/documentsApi';
@@ -80,14 +86,15 @@ export function DocumentsPage() {
   }
 
   return (
-    <section className="panel stack">
-      <div>
-        <span className="sidebar__eyebrow">Documents</span>
-        <h2>Document registry</h2>
-        <p className="muted">
-          Manage enterprise PDFs and open a document to inspect or restore version history.
-        </p>
-      </div>
+    <div className="stack stack--xl">
+      <PageHeader
+        title="Document registry"
+        eyebrow="Documents"
+        description="Manage enterprise PDFs and open a document to inspect or restore version history."
+      />
+
+      <section className="panel stack">
+
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
@@ -135,13 +142,25 @@ export function DocumentsPage() {
                   <Link to={`/documents/${document.id}`}>{document.title}</Link>
                   <div className="muted">{document.description ?? 'No description'}</div>
                 </td>
-                <td>{document.status}</td>
+                <td>
+                  <StatusBadge status={document.status} />
+                </td>
                 <td>{document.category ?? 'Uncategorized'}</td>
                 <td>{document.currentVersionNumber ? `v${document.currentVersionNumber}` : 'None'}</td>
                 <td>{document.versionCount}</td>
                 <td>{new Date(document.createdAt).toLocaleString()}</td>
               </tr>
             ))}
+            {(documents?.length ?? 0) === 0 ? (
+              <tr>
+                <td colSpan={7}>
+                  <EmptyState 
+                    title="No documents" 
+                    description="The registry is currently empty. Upload your first PDF to get started." 
+                  />
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>

@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
+import { PageHeader } from '../../../shared/components/layout/PageHeader';
+
+
 import { useAuth } from '../../auth/context/useAuth';
 import { getAuditLog, getAuditLogs } from '../api/auditApi';
 import type { AuditLogDetail, AuditLogFilters, AuditLogListResponse } from '../types';
@@ -104,12 +107,15 @@ export function AuditLogsPage() {
   }, [selectedLog]);
 
   return (
-    <section className="panel stack">
-      <div>
-        <span className="sidebar__eyebrow">Audit</span>
-        <h2>Audit log</h2>
-        <p className="muted">Review append-only compliance events across registration, password reset, documents, approvals, and signatures.</p>
-      </div>
+    <div className="stack stack--xl">
+      <PageHeader
+        title="Audit log"
+        eyebrow="Audit"
+        description="Review append-only compliance events across registration, password reset, documents, approvals, and signatures."
+      />
+
+      <section className="panel stack">
+
 
       <div className="form-grid">
         <div className="hero-grid hero-grid--stacked">

@@ -2,6 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { StatePanel } from '../../../shared/components/state/StatePanel';
+import { PageHeader } from '../../../shared/components/layout/PageHeader';
+import { StatCard } from '../../../shared/components/ui/StatCard';
+import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
+import { EmptyState } from '../../../shared/components/ui/EmptyState';
+
+
 import { buildAccessProfile, formatRoleLabel } from '../../../shared/auth/authorization';
 import { useAuth } from '../../auth/context/useAuth';
 import {
@@ -129,31 +135,27 @@ export function DashboardPage() {
 
   return (
     <section className="stack stack--xl">
-      <div className="panel panel--hero stack">
-        <div className="dashboard-hero">
-          <div>
-            <span className="sidebar__eyebrow">Operational Dashboard</span>
-            <h2>Enterprise document operations</h2>
-            <p className="muted dashboard-hero__lead">
-              Monitor controlled document activity, route yourself to the next queue, and present the current operational state without hunting across modules.
-            </p>
-          </div>
+      <PageHeader
+        title="Enterprise document operations"
+        eyebrow="Operational Dashboard"
+        description="Monitor controlled document activity, route yourself to the next queue, and present the current operational state without hunting across modules."
+        actions={
           <div className="dashboard-badges">
             <span className="status-pill">Active workspace</span>
             <span className="status-pill status-pill--subtle">{user?.username ?? 'Authenticated user'}</span>
           </div>
-        </div>
+        }
+      />
 
-        {error ? <div className="callout callout--danger">{error}</div> : null}
+      {error ? <div className="callout callout--danger">{error}</div> : null}
 
+      <div className="panel panel--hero stack">
         <div className="dashboard-summary-grid dashboard-summary-grid--hero">
           {summaryCards.map((card) => (
-            <article key={card.label} className="metric-panel">
-              <span className="card__label">{card.label}</span>
-              <strong className="metric-value">{card.value}</strong>
-            </article>
+            <StatCard key={card.label} label={card.label} value={card.value} />
           ))}
         </div>
+
       </div>
 
       <div className="split-layout">
@@ -221,7 +223,10 @@ export function DashboardPage() {
                       <Link to={`/documents/${document.id}`}>{document.title}</Link>
                       <div className="muted">{document.category ?? 'Uncategorized'}</div>
                     </td>
-                    <td>{document.status}</td>
+                    <td>
+                      <StatusBadge status={document.status} />
+                    </td>
+
                     <td>{document.currentVersionNumber ? `v${document.currentVersionNumber}` : 'None'}</td>
                     <td>{document.ownerDisplayName ?? document.controllerDisplayName ?? 'Unassigned'}</td>
                     <td>{new Date(document.lastActivityAt).toLocaleString()}</td>
@@ -229,9 +234,15 @@ export function DashboardPage() {
                 ))}
                 {recentDocuments.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="muted">No recent documents available.</td>
+                    <td colSpan={5}>
+                      <EmptyState 
+                        title="No documents" 
+                        description="There are no documents in the system yet." 
+                      />
+                    </td>
                   </tr>
                 ) : null}
+
               </tbody>
             </table>
           </div>
@@ -243,7 +254,10 @@ export function DashboardPage() {
             <h3>Latest operational events</h3>
           </div>
           {recentActivities.length === 0 ? (
-            <p className="muted">No recent activities available.</p>
+            <EmptyState 
+              title="No activity" 
+              description="Recent operational events will appear here." 
+            />
           ) : (
             <div className="timeline-list">
               {recentActivities.map((activity) => (
@@ -265,6 +279,7 @@ export function DashboardPage() {
               ))}
             </div>
           )}
+
         </section>
       </div>
     </section>

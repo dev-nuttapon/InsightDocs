@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { PageHeader } from '../../../shared/components/layout/PageHeader';
+import { EmptyState } from '../../../shared/components/ui/EmptyState';
+
+
+
 import { useAuth } from '../../auth/context/useAuth';
 import { getPendingSignatures, rejectDocumentSignature, signDocumentSignature } from '../../documents/api/documentsApi';
 import type { PendingSignature } from '../../documents/types';
@@ -71,12 +76,15 @@ export function SignaturesPage() {
   }
 
   return (
-    <section className="panel stack">
-      <div>
-        <span className="sidebar__eyebrow">Signatures</span>
-        <h2>Pending signature queue</h2>
-        <p className="muted">Assigned signers complete PDF signature steps here in configured order.</p>
-      </div>
+    <div className="stack stack--xl">
+      <PageHeader
+        title="Pending signature queue"
+        eyebrow="Signatures"
+        description="Assigned signers complete PDF signature steps here in configured order."
+      />
+
+      <section className="panel stack">
+
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
@@ -126,9 +134,15 @@ export function SignaturesPage() {
             ))}
             {items.length === 0 ? (
               <tr>
-                <td colSpan={7} className="muted">No pending signatures assigned to you.</td>
+                <td colSpan={7}>
+                  <EmptyState 
+                    title="No pending signatures" 
+                    description="You have no documents assigned for signature at this time." 
+                  />
+                </td>
               </tr>
             ) : null}
+
           </tbody>
         </table>
       </div>

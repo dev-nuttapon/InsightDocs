@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
+import { PageHeader } from '../../../shared/components/layout/PageHeader';
+import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
+import { EmptyState } from '../../../shared/components/ui/EmptyState';
+
+
+
 import { useAuth } from '../../auth/context/useAuth';
 import { searchDocuments } from '../api/searchApi';
 import type { SearchDocumentsResponse, SearchFilters } from '../types';
@@ -79,12 +85,15 @@ export function SearchPage() {
   const totalPages = results ? Math.max(1, Math.ceil(results.totalCount / results.pageSize)) : 1;
 
   return (
-    <section className="panel stack">
-      <div>
-        <span className="sidebar__eyebrow">Search</span>
-        <h2>Document search</h2>
-        <p className="muted">Search document metadata and current signature state using PostgreSQL filters and full-text search.</p>
-      </div>
+    <div className="stack stack--xl">
+      <PageHeader
+        title="Document search"
+        eyebrow="Search"
+        description="Search document metadata and current signature state using PostgreSQL filters and full-text search."
+      />
+
+      <section className="panel stack">
+
 
       <div className="form-grid">
         <input className="input" placeholder="Keyword search" value={filters.query} onChange={(event) => updateFilters({ query: event.target.value, page: 1 })} />
@@ -131,7 +140,10 @@ export function SearchPage() {
                   <Link to={`/documents/${item.id}`}>{item.title}</Link>
                   <div className="muted">{item.description ?? 'No description'}</div>
                 </td>
-                <td>{item.status}</td>
+                <td>
+                  <StatusBadge status={item.status} />
+                </td>
+
                 <td>{item.category ?? 'Uncategorized'}</td>
                 <td>{item.ownerDisplayName ?? item.ownerUsername ?? 'Unassigned'}</td>
                 <td>{item.controllerDisplayName ?? item.controllerUsername ?? 'Unassigned'}</td>
@@ -146,9 +158,15 @@ export function SearchPage() {
             ))}
             {(results?.items.length ?? 0) === 0 ? (
               <tr>
-                <td colSpan={7} className="muted">No matching documents found.</td>
+                <td colSpan={7}>
+                  <EmptyState 
+                    title="No results" 
+                    description="No documents matched your search criteria. Try adjusting your filters." 
+                  />
+                </td>
               </tr>
             ) : null}
+
           </tbody>
         </table>
       </div>
