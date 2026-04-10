@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { getUsers } from '../api/usersApi';
-import { getProjectRoleLabels, type AppUser } from '../types';
+import { formatUserStatus, getProjectRoleLabels, type AppUser } from '../types';
 
 export function UsersPage() {
   const { accessToken } = useAuth();
@@ -80,7 +80,7 @@ export function UsersPage() {
                     <Link to={`/users/${user.id}`}>{formatUserName(user)}</Link>
                   </td>
                   <td>{user.email}</td>
-                  <td>{user.status}</td>
+                  <td>{formatUserStatus(user.status)}</td>
                   <td>{getProjectRoleLabels(user.roles).join(', ') || 'ไม่มีบทบาทในระบบ'}</td>
                 </tr>
               ))}

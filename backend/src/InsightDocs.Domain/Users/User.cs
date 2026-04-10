@@ -12,9 +12,10 @@ public sealed class User
     {
     }
 
-    public User(Guid id)
+    public User(Guid id, UserStatus status = UserStatus.Pending)
     {
         Id = id;
+        Status = status;
     }
 
     public void Approve(string approvedBy)
@@ -32,5 +33,10 @@ public sealed class User
     public void Enable()
     {
         Status = UserStatus.Active;
+    }
+
+    public void Delete()
+    {
+        Status = UserStatus.Deleted;
     }
 }

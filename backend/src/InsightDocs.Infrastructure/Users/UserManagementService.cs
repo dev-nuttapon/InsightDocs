@@ -17,6 +17,7 @@ public sealed class UserManagementService(
     {
         var users = await dbContext.Users
             .AsNoTracking()
+            .Where(user => user.Status != UserStatus.Deleted)
             .OrderBy(user => user.Id)
             .ToListAsync(cancellationToken);
 
@@ -66,7 +67,7 @@ public sealed class UserManagementService(
 
             await EnsureUniqueUserAsync(userId, null, cancellationToken);
 
-            var user = new User(userId);
+            var user = new User(userId, UserStatus.Disabled);
 
             dbContext.Users.Add(user);
             await auditLogService.WriteAsync(
@@ -97,6 +98,37 @@ public sealed class UserManagementService(
 
             throw;
         }
+    }
+
+    public async Task<UserDetailDto> UpdateUserAsync(Guid id, UpdateUserCommand command, CancellationToken cancellationToken)
+    {
+        var user = await LoadUserAsync(id, cancellationToken);
+        var currentIdentity = await keycloakAdminService.GetUserIdentityAsync(user.Id.ToString(), cancellationToken)
+            ?? throw new NotFoundException($"Keycloak user '{id}' was not found.");
+
+        await keycloakAdminService.UpdateUserAsync(
+            user.Id.ToString(),
+            command.Username.Trim(),
+            command.Email.Trim(),
+            command.DisplayName.Trim(),
+            currentIdentity.Enabled ?? user.Status != UserStatus.Disabled,
+            cancellationToken);
+
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "user.updated",
+                "User",
+                user.Id,
+                Metadata: new
+                {
+                    UserId = user.Id,
+                    command.Username,
+                    command.Email,
+                    command.DisplayName
+                }),
+            cancellationToken);
+
+        return await MapDetailAsync(user, cancellationToken);
     }
 
     public async Task<UserDetailDto> ApproveUserAsync(Guid id, string approvedBy, CancellationToken cancellationToken)
@@ -145,6 +177,25 @@ public sealed class UserManagementService(
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return await MapDetailAsync(user, cancellationToken);
+    }
+
+    public async Task DeleteUserAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var user = await LoadUserAsync(id, cancellationToken);
+
+        user.Delete();
+        await keycloakAdminService.SetUserEnabledAsync(user.Id.ToString(), false, cancellationToken);
+        await auditLogService.WriteAsync(
+            new WriteAuditLogEntry(
+                "user.deleted",
+                "User",
+                user.Id,
+                Metadata: new
+                {
+                    UserId = user.Id
+                }),
+            cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<User> LoadUserAsync(Guid id, CancellationToken cancellationToken)

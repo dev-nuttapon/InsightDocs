@@ -38,6 +38,14 @@ public sealed class UsersController(
         return CreatedAtAction(nameof(GetUser), new { id = user.Id }, ApiResponse<UserDetailDto>.Ok(user, HttpContext.TraceIdentifier));
     }
 
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<UserDetailDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<UserDetailDto>>> UpdateUser(Guid id, [FromBody] UpdateUserCommand command, CancellationToken cancellationToken)
+    {
+        var user = await userManagementService.UpdateUserAsync(id, command, cancellationToken);
+        return Ok(ApiResponse<UserDetailDto>.Ok(user, HttpContext.TraceIdentifier));
+    }
+
     [HttpPost("{id:guid}/approve")]
     [ProducesResponseType(typeof(ApiResponse<UserDetailDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<UserDetailDto>>> ApproveUser(Guid id, CancellationToken cancellationToken)
@@ -61,5 +69,13 @@ public sealed class UsersController(
     {
         var user = await userManagementService.EnableUserAsync(id, cancellationToken);
         return Ok(ApiResponse<UserDetailDto>.Ok(user, HttpContext.TraceIdentifier));
+    }
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<object?>>> DeleteUser(Guid id, CancellationToken cancellationToken)
+    {
+        await userManagementService.DeleteUserAsync(id, cancellationToken);
+        return Ok(ApiResponse<object?>.Ok(null, HttpContext.TraceIdentifier));
     }
 }

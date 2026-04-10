@@ -1,21 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
 import {
   approveUser,
+  deleteUser,
   disableUser,
   enableUser,
   getUser,
+  updateUser,
 } from '../api/usersApi';
-import { getProjectRoleLabels, type AppUser } from '../types';
+import { formatUserStatus, getProjectRoleLabels, type AppUser, type UpdateUserInput } from '../types';
 
 export function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { accessToken } = useAuth();
+  const navigate = useNavigate();
   const [user, setUser] = useState<AppUser | null>(null);
+  const [form, setForm] = useState<UpdateUserInput>({ username: '', email: '', displayName: '' });
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -29,6 +35,11 @@ export function UserDetailPage() {
         const payload = await getUser(id, accessToken);
         if (!ignore) {
           setUser(payload);
+          setForm({
+            username: payload.username,
+            email: payload.email,
+            displayName: payload.displayName,
+          });
           setError(null);
         }
       } catch (loadError) {
@@ -65,6 +76,54 @@ export function UserDetailPage() {
     }
   }
 
+  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!id || !accessToken) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const updated = await updateUser(id, form, accessToken);
+      setUser(updated);
+      setNotice('อัปเดตข้อมูลผู้ใช้งานสำเร็จ');
+      setError(null);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Unable to update user.');
+      setNotice(null);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!id || !accessToken) {
+      return;
+    }
+
+    const confirmed = window.confirm('ยืนยันการลบผู้ใช้งานนี้ออกจาก InsightDocs และ Keycloak?');
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await deleteUser(id, accessToken);
+      navigate('/users', {
+        replace: true,
+        state: {
+          notice: 'ลบผู้ใช้งานสำเร็จ',
+        },
+      });
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Unable to delete user.');
+      setNotice(null);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   if (!user || !accessToken || !id) {
     return (
       <section className="panel">
@@ -82,7 +141,7 @@ export function UserDetailPage() {
       <div>
         <span className="sidebar__eyebrow">User Detail</span>
         <h2>{resolvedName}</h2>
-        <p className="muted">Status: {user.status} | Approved by: {user.approvedBy ?? 'Not approved yet'}</p>
+        <p className="muted">Status: {formatUserStatus(user.status)} | Approved by: {user.approvedBy ?? 'Not approved yet'}</p>
       </div>
 
       <div className="callout">
@@ -91,6 +150,33 @@ export function UserDetailPage() {
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
+
+      <form className="form-grid" onSubmit={handleSave}>
+        <input
+          className="input"
+          placeholder="Username"
+          value={form.username}
+          onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
+        />
+        <input
+          className="input"
+          placeholder="Email"
+          type="email"
+          value={form.email}
+          onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+        />
+        <input
+          className="input"
+          placeholder="Display name"
+          value={form.displayName}
+          onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))}
+        />
+        <div className="actions">
+          <button className="button" disabled={isSaving} type="submit">
+            {isSaving ? 'Saving...' : 'Save User'}
+          </button>
+        </div>
+      </form>
 
       <div className="card stack">
         <span className="card__label">Project Roles</span>
@@ -111,6 +197,9 @@ export function UserDetailPage() {
         <button className="button" type="button" onClick={() => void runMutation(() => approveUser(id, accessToken), 'User approved.')}>Approve</button>
         <button className="button button--secondary" type="button" onClick={() => void runMutation(() => disableUser(id, accessToken), 'User disabled.')}>Disable</button>
         <button className="button button--secondary" type="button" onClick={() => void runMutation(() => enableUser(id, accessToken), 'User enabled.')}>Enable</button>
+        <button className="button button--secondary" disabled={isDeleting} type="button" onClick={() => void handleDelete()}>
+          {isDeleting ? 'Deleting...' : 'Delete User'}
+        </button>
       </div>
     </section>
   );

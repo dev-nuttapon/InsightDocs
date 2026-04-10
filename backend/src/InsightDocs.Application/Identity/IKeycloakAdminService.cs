@@ -3,6 +3,7 @@ namespace InsightDocs.Application.Identity;
 public interface IKeycloakAdminService
 {
     Task<string> CreateUserAsync(string username, string email, string displayName, string password, bool enabled, CancellationToken cancellationToken);
+    Task UpdateUserAsync(string keycloakUserId, string username, string email, string displayName, bool enabled, CancellationToken cancellationToken);
     Task<KeycloakUserIdentity?> GetUserIdentityAsync(string keycloakUserId, CancellationToken cancellationToken);
     Task<KeycloakUserIdentity?> FindUserByUsernameOrEmailAsync(string lookup, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<KeycloakUserIdentity>> SearchUsersAsync(string searchTerm, CancellationToken cancellationToken);

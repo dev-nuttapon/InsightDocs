@@ -63,6 +63,37 @@ public sealed class KeycloakAdminService(
         return keycloakUserId;
     }
 
+    public async Task UpdateUserAsync(string keycloakUserId, string username, string email, string displayName, bool enabled, CancellationToken cancellationToken)
+    {
+        var accessToken = await GetAccessTokenAsync(cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Put, BuildAdminUserUrl(keycloakUserId))
+        {
+            Content = JsonContent.Create(new
+            {
+                id = keycloakUserId,
+                username,
+                email,
+                enabled,
+                emailVerified = true,
+                firstName = displayName,
+                lastName = string.Empty
+            })
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.Conflict)
+        {
+            throw new ConflictException("A matching Keycloak user already exists.");
+        }
+
+        if (response.StatusCode != HttpStatusCode.NoContent)
+        {
+            throw new ValidationException($"Keycloak user update failed with status {(int)response.StatusCode}.");
+        }
+    }
+
     public async Task<KeycloakUserIdentity?> GetUserIdentityAsync(string keycloakUserId, CancellationToken cancellationToken)
     {
         var accessToken = await GetAccessTokenAsync(cancellationToken);

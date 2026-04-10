@@ -1,4 +1,4 @@
-export type UserStatus = 'Pending' | 'Active' | 'Disabled';
+export type UserStatus = 'Pending' | 'Active' | 'Disabled' | 'Deleted';
 
 export type AppUser = {
   id: string;
@@ -19,6 +19,12 @@ export type CreateUserInput = {
   email: string;
   displayName: string;
   password: string;
+};
+
+export type UpdateUserInput = {
+  username: string;
+  email: string;
+  displayName: string;
 };
 
 type ProjectRole =
@@ -44,6 +50,21 @@ export function getProjectRoles(roles: string[]) {
 
 export function getProjectRoleLabels(roles: string[]) {
   return getProjectRoles(roles).map(formatProjectRoleLabel);
+}
+
+export function formatUserStatus(status: UserStatus) {
+  switch (status) {
+    case 'Active':
+      return 'ใช้งาน';
+    case 'Disabled':
+      return 'ปิดการใช้งาน';
+    case 'Deleted':
+      return 'ลบ';
+    case 'Pending':
+      return 'ปิดการใช้งาน';
+    default:
+      return status;
+  }
 }
 
 function normalizeProjectRole(role: string) {
