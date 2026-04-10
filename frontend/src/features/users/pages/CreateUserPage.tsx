@@ -47,7 +47,7 @@ export function CreateUserPage() {
   }
 
   return (
-    <section className="panel stack">
+    <section className="panel panel--full stack">
       <div className="actions">
         <Link className="button button--secondary" to="/users">Back to users</Link>
       </div>
@@ -60,7 +60,7 @@ export function CreateUserPage() {
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
 
-      <div className="card stack user-form-card">
+      <div className="stack user-form-panel">
         <form className="form-grid" onSubmit={handleSubmit}>
           <label className="stack" htmlFor="create-user-email">
             <span>Email</span>

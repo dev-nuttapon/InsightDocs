@@ -86,7 +86,7 @@ export function EditUserPage() {
   }
 
   return (
-    <section className="panel stack">
+    <section className="panel panel--full stack">
       <div className="actions">
         <Link className="button button--secondary" to={`/users/${id}`}>Back to user detail</Link>
       </div>
@@ -114,7 +114,7 @@ export function EditUserPage() {
         </div>
       </div>
 
-      <div className="card stack user-form-card">
+      <div className="stack user-form-panel">
         <form className="form-grid" onSubmit={handleSubmit}>
           <label className="stack" htmlFor="edit-user-email">
             <span>Email</span>
