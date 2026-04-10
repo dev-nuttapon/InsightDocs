@@ -28,7 +28,11 @@ export function CreateUserPage() {
 
     try {
       setIsSubmitting(true);
-      const created = await createUser(form, accessToken);
+      const payload = {
+        ...form,
+        username: form.email.trim(),
+      };
+      const created = await createUser(payload, accessToken);
       navigate('/users', {
         replace: true,
         state: {
@@ -56,40 +60,51 @@ export function CreateUserPage() {
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
 
-      <form className="form-grid" onSubmit={handleSubmit}>
-        <input
-          className="input"
-          placeholder="Username"
-          value={form.username}
-          onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
-        />
-        <input
-          className="input"
-          placeholder="Email"
-          type="email"
-          value={form.email}
-          onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-        />
-        <input
-          className="input"
-          placeholder="Display name"
-          value={form.displayName}
-          onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))}
-        />
-        <input
-          className="input"
-          placeholder="Temporary password"
-          type="password"
-          value={form.password}
-          onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-        />
-        <div className="actions">
-          <button className="button" disabled={isSubmitting} type="submit">
-            {isSubmitting ? 'Creating...' : 'Create User'}
-          </button>
-          <Link className="button button--secondary" to="/users">Cancel</Link>
-        </div>
-      </form>
+      <div className="card stack user-form-card">
+        <form className="form-grid" onSubmit={handleSubmit}>
+          <label className="stack" htmlFor="create-user-email">
+            <span>Email</span>
+            <input
+              id="create-user-email"
+              className="input"
+              placeholder="Email"
+              type="email"
+              value={form.email}
+              onChange={(event) => {
+                const email = event.target.value;
+                setForm((current) => ({ ...current, email, username: email }));
+              }}
+            />
+          </label>
+          <label className="stack" htmlFor="create-user-display-name">
+            <span>Display Name</span>
+            <input
+              id="create-user-display-name"
+              className="input"
+              placeholder="Display name"
+              value={form.displayName}
+              onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))}
+            />
+          </label>
+          <label className="stack" htmlFor="create-user-password">
+            <span>Temporary Password</span>
+            <input
+              id="create-user-password"
+              className="input"
+              placeholder="Temporary password"
+              type="password"
+              value={form.password}
+              onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+            />
+          </label>
+          <div className="actions">
+            <button className="button" disabled={isSubmitting} type="submit">
+              {isSubmitting ? 'Creating...' : 'Create User'}
+            </button>
+            <Link className="button button--secondary" to="/users">Cancel</Link>
+          </div>
+        </form>
+      </div>
     </section>
   );
 }

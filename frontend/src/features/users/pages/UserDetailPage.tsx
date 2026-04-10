@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
 import {
@@ -8,21 +8,18 @@ import {
   disableUser,
   enableUser,
   getUser,
-  updateUser,
 } from '../api/usersApi';
-import { formatUserStatus, getProjectRoleLabels, type AppUser, type UpdateUserInput } from '../types';
+import { formatUserStatus, getProjectRoleLabels, type AppUser } from '../types';
 
 export function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { accessToken } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<AppUser | null>(null);
-  const [form, setForm] = useState<UpdateUserInput>({ username: '', email: '', displayName: '' });
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [notice, setNotice] = useState<string | null>((location.state as { notice?: string } | null)?.notice ?? null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -36,12 +33,6 @@ export function UserDetailPage() {
         const payload = await getUser(id, accessToken);
         if (!ignore) {
           setUser(payload);
-          setForm({
-            username: payload.username,
-            email: payload.email,
-            displayName: payload.displayName,
-          });
-          setIsEditing(false);
           setError(null);
         }
       } catch (loadError) {
@@ -76,61 +67,6 @@ export function UserDetailPage() {
       setError(mutationError instanceof Error ? mutationError.message : 'Action failed.');
       setNotice(null);
     }
-  }
-
-  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!id || !accessToken) {
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      const updated = await updateUser(id, form, accessToken);
-      setUser(updated);
-      setForm({
-        username: updated.username,
-        email: updated.email,
-        displayName: updated.displayName,
-      });
-      setIsEditing(false);
-      setNotice('อัปเดตข้อมูลผู้ใช้งานสำเร็จ');
-      setError(null);
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to update user.');
-      setNotice(null);
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  function handleStartEditing() {
-    if (!user) {
-      return;
-    }
-
-    setForm({
-      username: user.username,
-      email: user.email,
-      displayName: user.displayName,
-    });
-    setIsEditing(true);
-    setNotice(null);
-    setError(null);
-  }
-
-  function handleCancelEditing() {
-    if (!user) {
-      return;
-    }
-
-    setForm({
-      username: user.username,
-      email: user.email,
-      displayName: user.displayName,
-    });
-    setIsEditing(false);
   }
 
   async function handleDelete() {
@@ -168,8 +104,6 @@ export function UserDetailPage() {
     );
   }
 
-  const currentUser = user;
-
   return (
     <section className="panel stack">
       <div className="actions">
@@ -179,7 +113,7 @@ export function UserDetailPage() {
       <div>
         <span className="sidebar__eyebrow">User Detail</span>
         <h2>{resolvedName}</h2>
-        <p className="muted">Status: {formatUserStatus(currentUser.status)} | Approved by: {currentUser.approvedBy ?? 'Not approved yet'}</p>
+        <p className="muted">Status: {formatUserStatus(user.status)} | Approved by: {user.approvedBy ?? 'Not approved yet'}</p>
       </div>
 
       <div className="callout">
@@ -191,45 +125,13 @@ export function UserDetailPage() {
 
       <div className="card stack">
         <span className="card__label">ข้อมูลผู้ใช้งาน</span>
-        <div>Username: {currentUser.username}</div>
-        <div>Email: {currentUser.email}</div>
-        <div>Display name: {currentUser.displayName}</div>
+        <div>Username: {user.username}</div>
+        <div>Email: {user.email}</div>
+        <div>Display name: {user.displayName}</div>
         <div className="actions">
-          {!isEditing ? <button className="button" type="button" onClick={handleStartEditing}>แก้ไขผู้ใช้งาน</button> : null}
+          <Link className="button" to={`/users/${id}/edit`}>แก้ไขผู้ใช้งาน</Link>
         </div>
       </div>
-
-      {isEditing ? (
-        <form className="form-grid" onSubmit={handleSave}>
-          <input
-            className="input"
-            placeholder="Username"
-            value={form.username}
-            onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
-          />
-          <input
-            className="input"
-            placeholder="Email"
-            type="email"
-            value={form.email}
-            onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-          />
-          <input
-            className="input"
-            placeholder="Display name"
-            value={form.displayName}
-            onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))}
-          />
-          <div className="actions">
-            <button className="button" disabled={isSaving} type="submit">
-              {isSaving ? 'Saving...' : 'บันทึกการแก้ไข'}
-            </button>
-            <button className="button button--secondary" type="button" onClick={handleCancelEditing}>
-              ยกเลิก
-            </button>
-          </div>
-        </form>
-      ) : null}
 
       <div className="card stack">
         <span className="card__label">Project Roles</span>

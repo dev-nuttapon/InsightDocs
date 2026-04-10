@@ -14,7 +14,7 @@ export function ForgotPasswordPage() {
       <div>
         <span className="sidebar__eyebrow">Password Reset</span>
         <h2>Request a password reset</h2>
-        <p className="muted">An Admin reviews your request, approves or rejects it, then manually sends the generated reset link.</p>
+        <p className="muted">An Admin reviews your request, approves or rejects it, then manually sends the generated reset link. Use your email address as the username.</p>
       </div>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
@@ -38,7 +38,7 @@ export function ForgotPasswordPage() {
           }
         }}
       >
-        <input className="input" placeholder="Username or email" value={value} onChange={(event) => setValue(event.target.value)} />
+        <input className="input" placeholder="Email" type="email" value={value} onChange={(event) => setValue(event.target.value)} />
         <button className="button" disabled={isSubmitting} type="submit">{isSubmitting ? 'Submitting...' : 'Request Reset'}</button>
       </form>
 

@@ -85,7 +85,7 @@ export function UsersPage() {
                   <td>{getProjectRoleLabels(user.roles).join(', ') || 'ไม่มีบทบาทในระบบ'}</td>
                   <td>
                     <div className="actions actions--compact">
-                      <Link className="button button--secondary" to={`/users/${user.id}`}>
+                      <Link className="button button--secondary" to={`/users/${user.id}/edit`}>
                         แก้ไข
                       </Link>
                     </div>

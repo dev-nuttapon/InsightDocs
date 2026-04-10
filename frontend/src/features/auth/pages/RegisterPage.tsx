@@ -21,7 +21,7 @@ export function RegisterPage() {
       <div>
         <span className="sidebar__eyebrow">Registration</span>
         <h2>Request an account</h2>
-        <p className="muted">Your request creates a Keycloak user and an application profile with status Pending. An Admin must approve it before access is enabled.</p>
+        <p className="muted">Your request creates a Keycloak user and an application profile with status Pending. The account uses your email as the username for sign in, and an Admin must approve it before access is enabled.</p>
       </div>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
@@ -45,8 +45,21 @@ export function RegisterPage() {
           }
         }}
       >
-        <input className="input" placeholder="Username" value={form.username} onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))} />
-        <input className="input" placeholder="Email" type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} />
+        <label className="stack" htmlFor="register-email">
+          <span>Username = Email</span>
+          <input
+            id="register-email"
+            className="input"
+            placeholder="Email"
+            type="email"
+            value={form.email}
+            onChange={(event) => {
+              const email = event.target.value;
+              setForm((current) => ({ ...current, email, username: email }));
+            }}
+          />
+        </label>
+        <input className="input" placeholder="Username" value={form.username} disabled readOnly />
         <input className="input" placeholder="Display Name" value={form.displayName} onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))} />
         <input className="input" placeholder="Password" type="password" value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} />
         <button className="button" disabled={isSubmitting} type="submit">{isSubmitting ? 'Submitting...' : 'Submit Registration'}</button>
