@@ -3,7 +3,6 @@ import { Navigate, useLocation } from 'react-router-dom';
 
 import { buildAccessProfile, canAccessPath, resolveDefaultAuthorizedPath } from '../../../shared/auth/authorization';
 import { useAuth } from '../context/useAuth';
-import { resetLoginRedirectFlag } from '../services/oidcClient';
 
 export function LoginPage() {
   const location = useLocation();
@@ -16,11 +15,6 @@ export function LoginPage() {
   const authorizedTarget = hasMappedAccess && canAccessPath(access, redirectTarget)
     ? redirectTarget
     : resolveDefaultAuthorizedPath(access);
-
-  useEffect(() => {
-    resetLoginRedirectFlag();
-    loginStartedRef.current = false;
-  }, []);
 
   useEffect(() => {
     if (!isReady || isAuthenticated || entryError || loginStartedRef.current) {

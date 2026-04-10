@@ -62,7 +62,7 @@
 
                 <#assign appBase = properties.oiAppBaseUrl!'http://localhost:5173'>
                 <#assign registerUrl = appBase + '/register'>
-                <#assign forgotUrl = url.loginResetCredentialsUrl>
+                <#assign forgotUrl = appBase + '/forgot-password'>
                 <div id="oi-custom-links" class="oi-custom-links">
                   <a class="oi-custom-link" href="${registerUrl}" target="_self">${msg("registerOnApp")}</a>
                   <a class="oi-custom-link" href="${forgotUrl}" target="_self">${msg("forgotPasswordOnApp")}</a>

@@ -8,7 +8,14 @@ export function ProtectedRoute() {
   const { authState, isAuthenticated, isReady, error } = useAuth();
 
   if (!isReady) {
-    return <StatePanel eyebrow="Authentication" title="Checking your session" description="Validating your API session and loading your profile." />;
+    return (
+      <StatePanel
+        eyebrow="Authentication"
+        title="Checking your session"
+        description="กำลังตรวจสอบ token, session และโหลดข้อมูลสิทธิ์ของคุณ"
+        busy
+      />
+    );
   }
 
   if (authState === 'expired') {

@@ -20,7 +20,7 @@ Quick start:
 
 Custom links on login page:
 - Register: `http://localhost:5173/register`
-- Forgot password: Keycloak built-in reset credentials flow
+- Forgot password: `http://localhost:5173/forgot-password`
 - Configure base URL in: `login/theme.properties` (`oiAppBaseUrl`)
 
 Notes:

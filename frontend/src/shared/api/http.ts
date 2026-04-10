@@ -1,5 +1,4 @@
 import { apiBaseUrl, authRequestTimeoutMs } from '../../features/auth/config/authConfig';
-import { cookieSessionToken } from '../../features/auth/context/authTypes';
 
 type ApiEnvelope<T> = {
   success: boolean;
@@ -95,7 +94,7 @@ function buildHeaders(options?: RequestOptions) {
     headers.set('Content-Type', 'application/json');
   }
 
-  if (accessToken && accessToken !== cookieSessionToken) {
+  if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`);
   }
 

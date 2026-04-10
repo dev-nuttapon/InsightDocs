@@ -1,5 +1,4 @@
 import { apiBaseUrl } from '../../auth/config/authConfig';
-import { cookieSessionToken } from '../../auth/context/authTypes';
 import type {
   ApprovalActionInput,
   AssignDocumentSignatureInput,
@@ -27,7 +26,7 @@ async function request<T>(path: string, accessToken: string, init?: RequestInit)
     ...init,
     credentials: 'include',
     headers: {
-      ...(accessToken !== cookieSessionToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      Authorization: `Bearer ${accessToken}`,
       ...(init?.headers ?? {}),
     },
   });

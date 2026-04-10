@@ -1,9 +1,14 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using InsightDocs.Api.Models;
 using InsightDocs.Application.Auth;
 using InsightDocs.Application.Identity;
+using InsightDocs.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace InsightDocs.Api.Controllers;
 
@@ -13,14 +18,54 @@ public sealed class AuthController(
     ICurrentUser currentUser,
     IKeycloakBrowserAuthService keycloakBrowserAuthService,
     IRegistrationService registrationService,
-    IPasswordResetService passwordResetService) : ControllerBase
+    IPasswordResetService passwordResetService,
+    IOptions<ApplicationOptions> applicationOptions) : ControllerBase
 {
+    private const string AccessTokenCookieName = "insightdocs_access_token";
+    private const string LoginFlowCookieName = "insightdocs_login_flow";
+
     [AllowAnonymous]
     [HttpGet("login")]
     public IActionResult Login([FromQuery] BrowserLoginRequest request)
     {
-        var authorizationUrl = keycloakBrowserAuthService.BuildAuthorizationUrl(request.RedirectUri, request.State, request.CodeChallenge);
+        var loginFlow = CreateLoginFlow(request.ReturnTo, applicationOptions.Value.FrontendUrl, $"{Request.Scheme}://{Request.Host}");
+        Response.Cookies.Append(LoginFlowCookieName, SerializeLoginFlow(loginFlow), BuildLoginFlowCookieOptions());
+
+        var authorizationUrl = keycloakBrowserAuthService.BuildAuthorizationUrl(loginFlow.RedirectUri, loginFlow.State, loginFlow.CodeChallenge);
         return Redirect(authorizationUrl);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("callback")]
+    public async Task<IActionResult> Callback([FromQuery] string code, [FromQuery] string state, CancellationToken cancellationToken)
+    {
+        var loginFlow = ReadLoginFlow();
+
+        if (string.IsNullOrWhiteSpace(code) || loginFlow is null || !string.Equals(loginFlow.State, state, StringComparison.Ordinal))
+        {
+            Response.Cookies.Delete(LoginFlowCookieName, BuildLoginFlowCookieOptions());
+            return Redirect(BuildFrontendRedirect("/login", "Authentication callback is invalid or has expired."));
+        }
+
+        try
+        {
+            var tokens = await keycloakBrowserAuthService.ExchangeAuthorizationCodeAsync(
+                code,
+                loginFlow.CodeVerifier,
+                loginFlow.RedirectUri,
+                cancellationToken);
+
+            Response.Cookies.Append(AccessTokenCookieName, tokens.AccessToken, BuildCookieOptions(tokens.ExpiresIn));
+            Response.Cookies.Delete(LoginFlowCookieName, BuildLoginFlowCookieOptions());
+
+            return Redirect(BuildFrontendRedirect(loginFlow.ReturnTo));
+        }
+        catch
+        {
+            Response.Cookies.Delete(LoginFlowCookieName, BuildLoginFlowCookieOptions());
+            Response.Cookies.Delete(AccessTokenCookieName, BuildCookieOptions(0));
+            return Redirect(BuildFrontendRedirect("/login", "Unable to complete sign-in. Please try again."));
+        }
     }
 
     [AllowAnonymous]
@@ -28,19 +73,29 @@ public sealed class AuthController(
     [ProducesResponseType(typeof(ApiResponse<BrowserTokenExchangeResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<BrowserTokenExchangeResponse>>> Exchange([FromBody] BrowserTokenExchangeRequest request, CancellationToken cancellationToken)
     {
+        var loginFlow = ReadLoginFlow();
+
+        if (loginFlow is null || !string.Equals(loginFlow.State, request.State, StringComparison.Ordinal))
+        {
+            Response.Cookies.Delete(LoginFlowCookieName, BuildLoginFlowCookieOptions());
+            return Unauthorized(ErrorResponse.Validation("Login state is missing or invalid.", []));
+        }
+
         var tokens = await keycloakBrowserAuthService.ExchangeAuthorizationCodeAsync(
             request.Code,
-            request.CodeVerifier,
-            request.RedirectUri,
+            loginFlow.CodeVerifier,
+            loginFlow.RedirectUri,
             cancellationToken);
 
-        Response.Cookies.Append("insightdocs_access_token", tokens.AccessToken, BuildCookieOptions(tokens.ExpiresIn));
+        Response.Cookies.Append(AccessTokenCookieName, tokens.AccessToken, BuildCookieOptions(tokens.ExpiresIn));
+        Response.Cookies.Delete(LoginFlowCookieName, BuildLoginFlowCookieOptions());
 
         var response = new BrowserTokenExchangeResponse(
             "cookie-session",
             tokens.ExpiresIn,
             tokens.RefreshToken,
-            tokens.IdToken);
+            tokens.IdToken,
+            loginFlow.ReturnTo);
 
         return Ok(ApiResponse<BrowserTokenExchangeResponse>.Ok(response, HttpContext.TraceIdentifier));
     }
@@ -77,7 +132,7 @@ public sealed class AuthController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public IActionResult LogoutSession()
     {
-        Response.Cookies.Delete("insightdocs_access_token", BuildCookieOptions(0));
+        Response.Cookies.Delete(AccessTokenCookieName, BuildCookieOptions(0));
         return NoContent();
     }
 
@@ -85,7 +140,8 @@ public sealed class AuthController(
     [HttpGet("logout")]
     public IActionResult Logout([FromQuery] string? postLogoutRedirectUri = null)
     {
-        Response.Cookies.Delete("insightdocs_access_token", BuildCookieOptions(0));
+        Response.Cookies.Delete(AccessTokenCookieName, BuildCookieOptions(0));
+        Response.Cookies.Delete(LoginFlowCookieName, BuildLoginFlowCookieOptions());
 
         var redirectUri = string.IsNullOrWhiteSpace(postLogoutRedirectUri)
             ? $"{Request.Scheme}://{Request.Host}/login"
@@ -147,6 +203,98 @@ public sealed class AuthController(
         Path = "/",
         Expires = expiresInSeconds > 0 ? DateTimeOffset.UtcNow.AddSeconds(expiresInSeconds) : DateTimeOffset.UtcNow.AddDays(-1)
     };
+
+    private static CookieOptions BuildLoginFlowCookieOptions() => new()
+    {
+        HttpOnly = true,
+        IsEssential = true,
+        SameSite = SameSiteMode.Lax,
+        Secure = false,
+        Path = "/",
+        Expires = DateTimeOffset.UtcNow.AddMinutes(10)
+    };
+
+    private BrowserLoginFlow? ReadLoginFlow()
+    {
+        if (!Request.Cookies.TryGetValue(LoginFlowCookieName, out var payload) || string.IsNullOrWhiteSpace(payload))
+        {
+            return null;
+        }
+
+        try
+        {
+            var json = Encoding.UTF8.GetString(Convert.FromBase64String(payload));
+            return JsonSerializer.Deserialize<BrowserLoginFlow>(json);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string SerializeLoginFlow(BrowserLoginFlow loginFlow)
+    {
+        var json = JsonSerializer.Serialize(loginFlow);
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+    }
+
+    private static BrowserLoginFlow CreateLoginFlow(string? returnTo, string frontendUrl, string apiBaseUrl)
+    {
+        var codeVerifier = CreateCodeVerifier();
+        return new BrowserLoginFlow(
+            Guid.NewGuid().ToString(),
+            codeVerifier,
+            CreateCodeChallenge(codeVerifier),
+            $"{apiBaseUrl.TrimEnd('/')}/api/auth/callback",
+            NormalizeReturnTo(returnTo));
+    }
+
+    private static string NormalizeReturnTo(string? returnTo)
+    {
+        if (string.IsNullOrWhiteSpace(returnTo))
+        {
+            return "/dashboard";
+        }
+
+        if (!Uri.TryCreate(returnTo, UriKind.Relative, out var relativeUri))
+        {
+            return "/dashboard";
+        }
+
+        var normalized = relativeUri.ToString();
+        return normalized.StartsWith('/') ? normalized : $"/{normalized}";
+    }
+
+    private static string CreateCodeVerifier()
+    {
+        Span<byte> bytes = stackalloc byte[32];
+        RandomNumberGenerator.Fill(bytes);
+        return ToBase64Url(bytes);
+    }
+
+    private static string CreateCodeChallenge(string codeVerifier)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(codeVerifier));
+        return ToBase64Url(hash);
+    }
+
+    private static string ToBase64Url(ReadOnlySpan<byte> bytes) =>
+        Convert.ToBase64String(bytes)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+
+    private string BuildFrontendRedirect(string path, string? errorMessage = null)
+    {
+        var target = new Uri(new Uri(applicationOptions.Value.FrontendUrl.TrimEnd('/') + "/"), path.TrimStart('/'));
+
+        if (string.IsNullOrWhiteSpace(errorMessage))
+        {
+            return target.ToString();
+        }
+
+        return $"{target}?error={Uri.EscapeDataString(errorMessage)}";
+    }
 }
 
 public sealed record CurrentUserResponse(
@@ -156,20 +304,25 @@ public sealed record CurrentUserResponse(
     IReadOnlyCollection<string> Roles);
 
 public sealed record BrowserLoginRequest(
-    [property: Required] string RedirectUri,
-    [property: Required] string State,
-    [property: Required] string CodeChallenge);
+    string? ReturnTo);
 
 public sealed record BrowserTokenExchangeRequest(
     [property: Required] string Code,
-    [property: Required] string CodeVerifier,
-    [property: Required] string RedirectUri);
+    [property: Required] string State);
 
 public sealed record BrowserTokenExchangeResponse(
     string AccessToken,
     int ExpiresIn,
     string? RefreshToken,
-    string? IdToken);
+    string? IdToken,
+    string ReturnTo);
+
+public sealed record BrowserLoginFlow(
+    string State,
+    string CodeVerifier,
+    string CodeChallenge,
+    string RedirectUri,
+    string ReturnTo);
 
 public sealed record ProtectedResourceResponse(
     string Message,

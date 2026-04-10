@@ -84,6 +84,11 @@ export function AppShell() {
           </div>
           <div className="topbar__actions">
             <ThemeToggle />
+            {isAuthenticated ? (
+              <button className="button button--secondary" type="button" onClick={() => void logout()}>
+                Logout
+              </button>
+            ) : null}
             {user ? (
               <div className="topbar__profile">
                 <strong>{user.username ?? user.subject}</strong>

@@ -1,10 +1,11 @@
-import { Navigate, createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 
 import { AppShell } from '../shared/components/layout/AppShell';
 import { ApprovalsPage } from '../features/approvals/pages/ApprovalsPage';
 import { AuditLogsPage } from '../features/audit/pages/AuditLogsPage';
 import { AuthCallbackPage } from '../features/auth/pages/AuthCallbackPage';
 import { AdminPasswordResetRequestsPage } from '../features/auth/pages/AdminPasswordResetRequestsPage';
+import { AccessCheckPage } from '../features/auth/pages/AccessCheckPage';
 import { ForgotPasswordPage } from '../features/auth/pages/ForgotPasswordPage';
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { LogoutPage } from '../features/auth/pages/LogoutPage';
@@ -26,7 +27,7 @@ import { RoleRoute } from '../shared/routing/RoleRoute';
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate replace to="/login" />,
+    element: <AccessCheckPage />,
   },
   {
     path: '/login',

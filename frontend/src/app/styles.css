@@ -213,6 +213,31 @@ textarea {
   box-shadow: 0 20px 60px var(--color-shadow);
 }
 
+.panel--busy {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  animation: spinner-rotate 0.8s linear infinite;
+}
+
+@keyframes spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .panel h1,
 .panel h2 {
   margin-top: 0;
