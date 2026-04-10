@@ -179,63 +179,80 @@ export function UsersPage() {
                   </td>
                   <td>{user.email}</td>
                   <td>{formatUserStatus(user.status, user.approvedAt)}</td>
-                  <td>{getProjectRoleLabels(user.roles).join(', ') || 'ไม่มีบทบาทในระบบ'}</td>
+                  <td>
+                    {getProjectRoleLabels(user.roles).length > 0 ? (
+                      <div className="tag-list">
+                        {getProjectRoleLabels(user.roles).map((role) => (
+                          <span key={`${user.id}-${role}`} className="tag">
+                            {role}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      'ไม่มีบทบาทในระบบ'
+                    )}
+                  </td>
                   <td>
                     <div className="row-menu">
                       <button
-                        className="button button--secondary"
+                        className="button button--secondary row-menu__trigger"
+                        aria-label="ตัวเลือกการจัดการผู้ใช้"
                         disabled={busyUserId === user.id}
+                        title="ตัวเลือก"
                         type="button"
                         onClick={() => setOpenMenuUserId((current) => (current === user.id ? null : user.id))}
                       >
-                        {busyUserId === user.id ? 'กำลังบันทึก...' : 'ตัวเลือก'}
+                        <span className="row-menu__trigger-icon" aria-hidden="true">{busyUserId === user.id ? '⋮' : '⋯'}</span>
                       </button>
                       {openMenuUserId === user.id ? (
                         <div className="topbar__menu-panel row-menu__panel">
-                          <Link
-                            className="topbar__menu-link"
-                            to={`/users/${user.id}/edit`}
-                            onClick={() => setOpenMenuUserId(null)}
-                          >
-                            แก้ไข
-                          </Link>
-                          {canDisableUser(user.status, user.approvedAt) ? (
+                          <p className="row-menu__title">จัดการผู้ใช้</p>
+                          <div className="row-menu__actions">
+                            <Link
+                              className="topbar__menu-link"
+                              to={`/users/${user.id}/edit`}
+                              onClick={() => setOpenMenuUserId(null)}
+                            >
+                              แก้ไขข้อมูล
+                            </Link>
+                            {canDisableUser(user.status, user.approvedAt) ? (
+                              <button
+                                className="topbar__menu-link topbar__menu-link--button"
+                                disabled={busyUserId === user.id}
+                                type="button"
+                                onClick={() => {
+                                  setOpenMenuUserId(null);
+                                  setPendingAction({ type: 'disable', user });
+                                }}
+                              >
+                                ปิดการใช้งาน
+                              </button>
+                            ) : null}
+                            {canEnableUser(user.status, user.approvedAt) ? (
+                              <button
+                                className="topbar__menu-link topbar__menu-link--button"
+                                disabled={busyUserId === user.id}
+                                type="button"
+                                onClick={() => {
+                                  setOpenMenuUserId(null);
+                                  setPendingAction({ type: 'enable', user });
+                                }}
+                              >
+                                เปิดการใช้งาน
+                              </button>
+                            ) : null}
                             <button
-                              className="topbar__menu-link topbar__menu-link--button"
+                              className="topbar__menu-link topbar__menu-link--button row-menu__action--danger"
                               disabled={busyUserId === user.id}
                               type="button"
                               onClick={() => {
                                 setOpenMenuUserId(null);
-                                setPendingAction({ type: 'disable', user });
+                                setPendingAction({ type: 'delete', user });
                               }}
                             >
-                              ปิดการใช้งาน
+                              ลบผู้ใช้งาน
                             </button>
-                          ) : null}
-                          {canEnableUser(user.status, user.approvedAt) ? (
-                            <button
-                              className="topbar__menu-link topbar__menu-link--button"
-                              disabled={busyUserId === user.id}
-                              type="button"
-                              onClick={() => {
-                                setOpenMenuUserId(null);
-                                setPendingAction({ type: 'enable', user });
-                              }}
-                            >
-                              เปิดการใช้งาน
-                            </button>
-                          ) : null}
-                          <button
-                            className="topbar__menu-link topbar__menu-link--button"
-                            disabled={busyUserId === user.id}
-                            type="button"
-                            onClick={() => {
-                              setOpenMenuUserId(null);
-                              setPendingAction({ type: 'delete', user });
-                            }}
-                          >
-                            ลบ
-                          </button>
+                          </div>
                         </div>
                       ) : null}
                     </div>
