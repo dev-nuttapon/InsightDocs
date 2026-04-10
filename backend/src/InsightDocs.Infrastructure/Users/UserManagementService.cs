@@ -47,14 +47,56 @@ public sealed class UserManagementService(
 
     public async Task<UserDetailDto> CreateUserAsync(CreateUserCommand command, CancellationToken cancellationToken)
     {
-        await EnsureUniqueUserAsync(command.Id, null, cancellationToken);
+        string? keycloakUserId = null;
 
-        var user = new User(command.Id);
+        try
+        {
+            keycloakUserId = await keycloakAdminService.CreateUserAsync(
+                command.Username.Trim(),
+                command.Email.Trim(),
+                command.DisplayName.Trim(),
+                command.Password,
+                enabled: false,
+                cancellationToken);
 
-        dbContext.Users.Add(user);
-        await dbContext.SaveChangesAsync(cancellationToken);
+            if (!Guid.TryParse(keycloakUserId, out var userId))
+            {
+                throw new ValidationException("Keycloak returned a non-GUID user id.");
+            }
 
-        return await MapDetailAsync(user, cancellationToken);
+            await EnsureUniqueUserAsync(userId, null, cancellationToken);
+
+            var user = new User(userId);
+
+            dbContext.Users.Add(user);
+            await auditLogService.WriteAsync(
+                new WriteAuditLogEntry(
+                    "user.created",
+                    "User",
+                    user.Id,
+                    Metadata: new
+                    {
+                        UserId = user.Id,
+                        command.Username,
+                        command.Email,
+                        command.DisplayName,
+                        Status = user.Status.ToString(),
+                        ProvisionedInKeycloak = true
+                    }),
+                cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return await MapDetailAsync(user, cancellationToken);
+        }
+        catch
+        {
+            if (!string.IsNullOrWhiteSpace(keycloakUserId))
+            {
+                await keycloakAdminService.DeleteUserAsync(keycloakUserId, cancellationToken);
+            }
+
+            throw;
+        }
     }
 
     public async Task<UserDetailDto> ApproveUserAsync(Guid id, string approvedBy, CancellationToken cancellationToken)

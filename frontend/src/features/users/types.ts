@@ -15,7 +15,10 @@ export type AppUser = {
 };
 
 export type CreateUserInput = {
-  id: string;
+  username: string;
+  email: string;
+  displayName: string;
+  password: string;
 };
 
 type ProjectRole =
@@ -26,7 +29,7 @@ type ProjectRole =
   | 'insightdocs:viewer';
 
 export function formatBusinessRole(role: string) {
-  return normalizeProjectRole(role) ?? role;
+  return formatProjectRoleLabel(normalizeProjectRole(role));
 }
 
 export function getProjectRoles(roles: string[]) {
@@ -37,6 +40,10 @@ export function getProjectRoles(roles: string[]) {
         .filter((role): role is ProjectRole => role !== null),
     ),
   );
+}
+
+export function getProjectRoleLabels(roles: string[]) {
+  return getProjectRoles(roles).map(formatProjectRoleLabel);
 }
 
 function normalizeProjectRole(role: string) {
@@ -65,5 +72,22 @@ function normalizeProjectRole(role: string) {
       return 'insightdocs:viewer';
     default:
       return null;
+  }
+}
+
+function formatProjectRoleLabel(role: ProjectRole | null) {
+  switch (role) {
+    case 'insightdocs:admin':
+      return 'ผู้ดูแลระบบ';
+    case 'insightdocs:document_controller':
+      return 'ผู้ควบคุมเอกสาร';
+    case 'insightdocs:manager':
+      return 'ผู้อนุมัติ';
+    case 'insightdocs:signer':
+      return 'ผู้ลงนาม';
+    case 'insightdocs:viewer':
+      return 'ผู้ใช้งานทั่วไป';
+    default:
+      return 'ไม่ระบุบทบาท';
   }
 }

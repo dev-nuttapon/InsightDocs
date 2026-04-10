@@ -1,21 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
-import { createUser, getUsers } from '../api/usersApi';
-import { getProjectRoles, type AppUser, type CreateUserInput } from '../types';
-
-const initialForm: CreateUserInput = {
-  id: '',
-};
+import { getUsers } from '../api/usersApi';
+import { getProjectRoleLabels, type AppUser } from '../types';
 
 export function UsersPage() {
   const { accessToken } = useAuth();
+  const location = useLocation();
   const [users, setUsers] = useState<AppUser[]>([]);
-  const [form, setForm] = useState<CreateUserInput>(initialForm);
   const [error, setError] = useState<string | null>(null);
+  const [notice] = useState<string | null>((location.state as { notice?: string } | null)?.notice ?? null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -49,47 +45,20 @@ export function UsersPage() {
     };
   }, [accessToken]);
 
-  async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!accessToken) {
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      const created = await createUser(form, accessToken);
-      setUsers((current) => [...current, created].sort((left, right) => formatUserName(left).localeCompare(formatUserName(right))));
-      setForm(initialForm);
-      setError(null);
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Unable to create user.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
   return (
     <section className="panel stack">
       <div>
         <span className="sidebar__eyebrow">Admin</span>
         <h2>Users & Access</h2>
-        <p className="muted">Review local access records while identity details and business roles are resolved from Keycloak.</p>
+        <p className="muted">สร้างผู้ใช้งานจากระบบนี้ แล้ว provision บัญชีไปยัง Keycloak พร้อมสร้าง access record ใน InsightDocs ให้เชื่อมกันอัตโนมัติ</p>
       </div>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
+      {notice ? <div className="callout">{notice}</div> : null}
 
-      <form className="form-grid" onSubmit={handleCreate}>
-        <input
-          className="input"
-          placeholder="User Id (Keycloak UUID)"
-          value={form.id}
-          onChange={(event) => setForm((current) => ({ ...current, id: event.target.value }))}
-        />
-        <button className="button" disabled={isSubmitting} type="submit">
-          {isSubmitting ? 'Creating...' : 'Create Access Record'}
-        </button>
-      </form>
+      <div className="actions">
+        <Link className="button" to="/users/new">Create User</Link>
+      </div>
 
       {isLoading ? (
         <p className="muted">Loading users...</p>
@@ -112,7 +81,7 @@ export function UsersPage() {
                   </td>
                   <td>{user.email}</td>
                   <td>{user.status}</td>
-                  <td>{getProjectRoles(user.roles).join(', ') || 'No project roles'}</td>
+                  <td>{getProjectRoleLabels(user.roles).join(', ') || 'ไม่มีบทบาทในระบบ'}</td>
                 </tr>
               ))}
             </tbody>

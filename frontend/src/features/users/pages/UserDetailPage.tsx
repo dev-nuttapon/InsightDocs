@@ -8,7 +8,7 @@ import {
   enableUser,
   getUser,
 } from '../api/usersApi';
-import { getProjectRoles, type AppUser } from '../types';
+import { getProjectRoleLabels, type AppUser } from '../types';
 
 export function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -46,7 +46,7 @@ export function UserDetailPage() {
   }, [accessToken, id]);
 
   const resolvedName = useMemo(() => (user ? formatUserName(user) : 'User'), [user]);
-  const projectRoles = useMemo(() => getProjectRoles(user?.roles ?? []), [user?.roles]);
+  const projectRoles = useMemo(() => getProjectRoleLabels(user?.roles ?? []), [user?.roles]);
 
   async function runMutation(action: () => Promise<AppUser | void>, successMessage: string) {
     try {
@@ -102,7 +102,7 @@ export function UserDetailPage() {
               </span>
             ))
           ) : (
-            <span className="muted">No InsightDocs project roles mapped to this account.</span>
+            <span className="muted">ไม่มีบทบาทของ InsightDocs ที่ผูกกับบัญชีนี้</span>
           )}
         </div>
       </div>

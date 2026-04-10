@@ -19,6 +19,7 @@ import { DocumentsPage } from '../features/documents/pages/DocumentsPage';
 import { SearchPage } from '../features/search/pages/SearchPage';
 import { SignaturesPage } from '../features/signatures/pages/SignaturesPage';
 import { CurrentUserPage } from '../features/users/pages/CurrentUserPage';
+import { CreateUserPage } from '../features/users/pages/CreateUserPage';
 import { UserDetailPage } from '../features/users/pages/UserDetailPage';
 import { UsersPage } from '../features/users/pages/UsersPage';
 import { AdminRoute } from '../features/users/routes/AdminRoute';
@@ -110,6 +111,10 @@ export const router = createBrowserRouter([
               {
                 path: 'users',
                 element: <UsersPage />,
+              },
+              {
+                path: 'users/new',
+                element: <CreateUserPage />,
               },
               {
                 path: 'users/:id',
