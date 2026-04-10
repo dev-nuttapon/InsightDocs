@@ -67,14 +67,14 @@ internal sealed class DashboardService(
                 document.Category,
                 Status = document.Status.ToString(),
                 CurrentVersionNumber = document.Versions.Where(version => version.IsCurrent).Select(version => (int?)version.VersionNumber).FirstOrDefault(),
-                OwnerKeycloakUserId = document.OwnerUser != null ? document.OwnerUser.KeycloakUserId : null,
-                ControllerKeycloakUserId = document.ControllerUser != null ? document.ControllerUser.KeycloakUserId : null,
+                document.OwnerUserId,
+                document.ControllerUserId,
                 LastActivityAt = document.UpdatedAt ?? document.CreatedAt
             })
             .ToArrayAsync(cancellationToken);
 
         var identities = await LoadIdentitiesAsync(
-            documents.SelectMany(document => new[] { document.OwnerKeycloakUserId, document.ControllerKeycloakUserId }),
+            documents.SelectMany(document => new Guid?[] { document.OwnerUserId, document.ControllerUserId }),
             cancellationToken);
 
         return documents
@@ -84,8 +84,8 @@ internal sealed class DashboardService(
                 document.Category,
                 document.Status,
                 document.CurrentVersionNumber,
-                ResolveDisplayName(identities.GetValueOrDefault(document.OwnerKeycloakUserId ?? string.Empty)),
-                ResolveDisplayName(identities.GetValueOrDefault(document.ControllerKeycloakUserId ?? string.Empty)),
+                document.OwnerUserId.HasValue ? ResolveDisplayName(identities.GetValueOrDefault(document.OwnerUserId.Value)) : null,
+                document.ControllerUserId.HasValue ? ResolveDisplayName(identities.GetValueOrDefault(document.ControllerUserId.Value)) : null,
                 document.LastActivityAt))
             .ToArray();
     }
@@ -153,18 +153,18 @@ internal sealed class DashboardService(
                 RelatedDocumentTitle = log.RelatedDocumentId.HasValue
                     ? dbContext.Documents.Where(document => document.Id == log.RelatedDocumentId.Value).Select(document => document.Title).FirstOrDefault()
                     : null,
-                ActorKeycloakUserId = log.ActorUser != null ? log.ActorUser.KeycloakUserId : null,
+                log.ActorUserId,
                 log.Timestamp
             })
             .ToArrayAsync(cancellationToken);
 
-        var identities = await LoadIdentitiesAsync(items.Select(item => item.ActorKeycloakUserId), cancellationToken);
+        var identities = await LoadIdentitiesAsync(items.Select(item => item.ActorUserId), cancellationToken);
 
         return items
             .Select(item =>
             {
-                var identity = item.ActorKeycloakUserId is not null
-                    ? identities.GetValueOrDefault(item.ActorKeycloakUserId)
+                var identity = item.ActorUserId.HasValue
+                    ? identities.GetValueOrDefault(item.ActorUserId.Value)
                     : null;
 
                 return new RecentDashboardActivityDto(
@@ -203,23 +203,19 @@ internal sealed class DashboardService(
         }
 
         var normalized = actorIdentifier.Trim();
-
-        return dbContext.Users
-            .Where(user => user.KeycloakUserId == normalized)
-            .Select(user => (Guid?)user.Id)
-            .FirstOrDefaultAsync(cancellationToken);
+        return Task.FromResult(Guid.TryParse(normalized, out var id) ? (Guid?)id : null);
     }
 
-    private async Task<Dictionary<string, KeycloakUserIdentity?>> LoadIdentitiesAsync(IEnumerable<string?> keycloakUserIds, CancellationToken cancellationToken)
+    private async Task<Dictionary<Guid, KeycloakUserIdentity?>> LoadIdentitiesAsync(IEnumerable<Guid?> userIds, CancellationToken cancellationToken)
     {
-        var ids = keycloakUserIds.Where(id => !string.IsNullOrWhiteSpace(id)).Cast<string>().Distinct(StringComparer.Ordinal).ToArray();
+        var ids = userIds.Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToArray();
         var pairs = await Task.WhenAll(ids.Select(async id => new
         {
             Id = id,
-            Identity = await keycloakAdminService.GetUserIdentityAsync(id, cancellationToken)
+            Identity = await keycloakAdminService.GetUserIdentityAsync(id.ToString(), cancellationToken)
         }));
 
-        return pairs.ToDictionary(item => item.Id, item => item.Identity, StringComparer.Ordinal);
+        return pairs.ToDictionary(item => item.Id, item => item.Identity);
     }
 
     private static string? ResolveDisplayName(KeycloakUserIdentity? identity)

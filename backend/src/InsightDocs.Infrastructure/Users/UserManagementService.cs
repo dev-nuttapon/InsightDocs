@@ -17,7 +17,7 @@ public sealed class UserManagementService(
     {
         var users = await dbContext.Users
             .AsNoTracking()
-            .OrderBy(user => user.KeycloakUserId)
+            .OrderBy(user => user.Id)
             .ToListAsync(cancellationToken);
 
         return await MapSummariesAsync(users, cancellationToken);
@@ -28,14 +28,14 @@ public sealed class UserManagementService(
         var users = await dbContext.Users
             .AsNoTracking()
             .Where(user => user.Status == UserStatus.Active)
-            .OrderBy(user => user.KeycloakUserId)
+            .OrderBy(user => user.Id)
             .ToListAsync(cancellationToken);
 
-        var identities = await LoadKeycloakIdentitiesAsync(users.Select(user => user.KeycloakUserId), cancellationToken);
+        var identities = await LoadKeycloakIdentitiesAsync(users.Select(user => user.Id), cancellationToken);
 
         return users
-            .Where(user => HasRole(identities.GetValueOrDefault(user.KeycloakUserId)?.Roles, BusinessRoles.Signer))
-            .Select(user => MapSummary(user, identities.GetValueOrDefault(user.KeycloakUserId)))
+            .Where(user => HasRole(identities.GetValueOrDefault(user.Id)?.Roles, BusinessRoles.Signer))
+            .Select(user => MapSummary(user, identities.GetValueOrDefault(user.Id)))
             .ToArray();
     }
 
@@ -47,22 +47,11 @@ public sealed class UserManagementService(
 
     public async Task<UserDetailDto> CreateUserAsync(CreateUserCommand command, CancellationToken cancellationToken)
     {
-        await EnsureUniqueUserAsync(command.KeycloakUserId, null, cancellationToken);
+        await EnsureUniqueUserAsync(command.Id, null, cancellationToken);
 
-        var user = new User(command.KeycloakUserId);
+        var user = new User(command.Id);
 
         dbContext.Users.Add(user);
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        return await MapDetailAsync(user, cancellationToken);
-    }
-
-    public async Task<UserDetailDto> UpdateUserAsync(Guid id, UpdateUserCommand command, CancellationToken cancellationToken)
-    {
-        var user = await LoadUserAsync(id, cancellationToken);
-        await EnsureUniqueUserAsync(command.KeycloakUserId, id, cancellationToken);
-
-        user.UpdateKeycloakUser(command.KeycloakUserId);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return await MapDetailAsync(user, cancellationToken);
@@ -77,7 +66,7 @@ public sealed class UserManagementService(
 
         var user = await LoadUserAsync(id, cancellationToken);
         user.Approve(approvedBy);
-        await keycloakAdminService.SetUserEnabledAsync(user.KeycloakUserId, true, cancellationToken);
+        await keycloakAdminService.SetUserEnabledAsync(user.Id.ToString(), true, cancellationToken);
         await auditLogService.WriteAsync(
             new WriteAuditLogEntry(
                 "registration.approved",
@@ -86,7 +75,7 @@ public sealed class UserManagementService(
                 ActorIdentifier: approvedBy,
                 Metadata: new
                 {
-                    user.KeycloakUserId,
+                    UserId = user.Id,
                     ApprovedBy = approvedBy,
                     Status = user.Status.ToString()
                 }),
@@ -100,7 +89,7 @@ public sealed class UserManagementService(
     {
         var user = await LoadUserAsync(id, cancellationToken);
         user.Disable();
-        await keycloakAdminService.SetUserEnabledAsync(user.KeycloakUserId, false, cancellationToken);
+        await keycloakAdminService.SetUserEnabledAsync(user.Id.ToString(), false, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return await MapDetailAsync(user, cancellationToken);
@@ -110,7 +99,7 @@ public sealed class UserManagementService(
     {
         var user = await LoadUserAsync(id, cancellationToken);
         user.Enable();
-        await keycloakAdminService.SetUserEnabledAsync(user.KeycloakUserId, true, cancellationToken);
+        await keycloakAdminService.SetUserEnabledAsync(user.Id.ToString(), true, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return await MapDetailAsync(user, cancellationToken);
@@ -124,56 +113,52 @@ public sealed class UserManagementService(
         return user ?? throw new NotFoundException($"User '{id}' was not found.");
     }
 
-    private async Task EnsureUniqueUserAsync(string keycloakUserId, Guid? currentUserId, CancellationToken cancellationToken)
+    private async Task EnsureUniqueUserAsync(Guid id, Guid? currentUserId, CancellationToken cancellationToken)
     {
-        var normalizedKeycloakUserId = keycloakUserId.Trim();
-
         var duplicateExists = await dbContext.Users.AnyAsync(user =>
             user.Id != currentUserId &&
-            user.KeycloakUserId == normalizedKeycloakUserId, cancellationToken);
+            user.Id == id, cancellationToken);
 
         if (duplicateExists)
         {
-            throw new ConflictException("A user with the same Keycloak user id already exists.");
+            throw new ConflictException("A user with the same Keycloak id already exists.");
         }
     }
 
     private async Task<IReadOnlyCollection<UserSummaryDto>> MapSummariesAsync(IReadOnlyCollection<User> users, CancellationToken cancellationToken)
     {
-        var identities = await LoadKeycloakIdentitiesAsync(users.Select(user => user.KeycloakUserId), cancellationToken);
+        var identities = await LoadKeycloakIdentitiesAsync(users.Select(user => user.Id), cancellationToken);
 
         return users
-            .Select(user => MapSummary(user, identities.GetValueOrDefault(user.KeycloakUserId)))
+            .Select(user => MapSummary(user, identities.GetValueOrDefault(user.Id)))
             .ToArray();
     }
 
     private async Task<UserDetailDto> MapDetailAsync(User user, CancellationToken cancellationToken)
     {
-        var identity = await keycloakAdminService.GetUserIdentityAsync(user.KeycloakUserId, cancellationToken);
+        var identity = await keycloakAdminService.GetUserIdentityAsync(user.Id.ToString(), cancellationToken);
         return MapDetail(user, identity);
     }
 
-    private async Task<Dictionary<string, KeycloakUserIdentity?>> LoadKeycloakIdentitiesAsync(IEnumerable<string> keycloakUserIds, CancellationToken cancellationToken)
+    private async Task<Dictionary<Guid, KeycloakUserIdentity?>> LoadKeycloakIdentitiesAsync(IEnumerable<Guid> userIds, CancellationToken cancellationToken)
     {
-        var ids = keycloakUserIds
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Distinct(StringComparer.Ordinal)
+        var ids = userIds
+            .Distinct()
             .ToArray();
 
         var lookups = await Task.WhenAll(ids.Select(async id => new
         {
             Id = id,
-            Identity = await keycloakAdminService.GetUserIdentityAsync(id, cancellationToken)
+            Identity = await keycloakAdminService.GetUserIdentityAsync(id.ToString(), cancellationToken)
         }));
 
-        return lookups.ToDictionary(item => item.Id, item => item.Identity, StringComparer.Ordinal);
+        return lookups.ToDictionary(item => item.Id, item => item.Identity);
     }
 
     private static UserSummaryDto MapSummary(User user, KeycloakUserIdentity? identity) =>
         new(
             user.Id,
-            user.KeycloakUserId,
-            identity?.Username ?? user.KeycloakUserId,
+            identity?.Username ?? user.Id.ToString(),
             identity?.Email ?? string.Empty,
             ResolveDisplayName(user, identity),
             identity?.FirstName,
@@ -189,8 +174,7 @@ public sealed class UserManagementService(
     private static UserDetailDto MapDetail(User user, KeycloakUserIdentity? identity) =>
         new(
             user.Id,
-            user.KeycloakUserId,
-            identity?.Username ?? user.KeycloakUserId,
+            identity?.Username ?? user.Id.ToString(),
             identity?.Email ?? string.Empty,
             ResolveDisplayName(user, identity),
             identity?.FirstName,
@@ -214,7 +198,7 @@ public sealed class UserManagementService(
             return fullName;
         }
 
-        return identity?.Username ?? user.KeycloakUserId;
+        return identity?.Username ?? user.Id.ToString();
     }
 
     private static bool HasRole(IReadOnlyCollection<string>? roles, string roleName) =>

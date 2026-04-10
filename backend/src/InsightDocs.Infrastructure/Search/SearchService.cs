@@ -101,8 +101,8 @@ internal sealed class SearchService(
                 document.Description,
                 document.Category,
                 document.Status,
-                OwnerKeycloakUserId = document.OwnerUser != null ? document.OwnerUser.KeycloakUserId : null,
-                ControllerKeycloakUserId = document.ControllerUser != null ? document.ControllerUser.KeycloakUserId : null,
+                document.OwnerUserId,
+                document.ControllerUserId,
                 CurrentVersionNumber = document.Versions.Where(version => version.IsCurrent).Select(version => (int?)version.VersionNumber).FirstOrDefault(),
                 SignatureSummary = new SignatureSummaryDto(
                     document.Versions
@@ -129,13 +129,13 @@ internal sealed class SearchService(
             .ToArrayAsync(cancellationToken);
 
         var identities = await LoadIdentitiesAsync(
-            items.SelectMany(item => new[] { item.OwnerKeycloakUserId, item.ControllerKeycloakUserId }),
+            items.SelectMany(item => new Guid?[] { item.OwnerUserId, item.ControllerUserId }),
             cancellationToken);
 
         var mappedItems = items.Select(item =>
         {
-            var ownerIdentity = item.OwnerKeycloakUserId is not null ? identities.GetValueOrDefault(item.OwnerKeycloakUserId) : null;
-            var controllerIdentity = item.ControllerKeycloakUserId is not null ? identities.GetValueOrDefault(item.ControllerKeycloakUserId) : null;
+            var ownerIdentity = item.OwnerUserId.HasValue ? identities.GetValueOrDefault(item.OwnerUserId.Value) : null;
+            var controllerIdentity = item.ControllerUserId.HasValue ? identities.GetValueOrDefault(item.ControllerUserId.Value) : null;
 
             return new DocumentSearchResultDto(
                 item.Id,
@@ -157,7 +157,11 @@ internal sealed class SearchService(
     private async Task<Guid[]> ResolveMatchingUserIdsAsync(string searchTerm, CancellationToken cancellationToken)
     {
         var matches = await keycloakAdminService.SearchUsersAsync(searchTerm, cancellationToken);
-        var keycloakIds = matches.Select(match => match.KeycloakUserId).ToArray();
+        var keycloakIds = matches
+            .Select(match => Guid.TryParse(match.KeycloakUserId, out var id) ? id : (Guid?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .ToArray();
 
         if (keycloakIds.Length == 0)
         {
@@ -165,21 +169,21 @@ internal sealed class SearchService(
         }
 
         return await dbContext.Users
-            .Where(user => keycloakIds.Contains(user.KeycloakUserId))
+            .Where(user => keycloakIds.Contains(user.Id))
             .Select(user => user.Id)
             .ToArrayAsync(cancellationToken);
     }
 
-    private async Task<Dictionary<string, KeycloakUserIdentity?>> LoadIdentitiesAsync(IEnumerable<string?> keycloakUserIds, CancellationToken cancellationToken)
+    private async Task<Dictionary<Guid, KeycloakUserIdentity?>> LoadIdentitiesAsync(IEnumerable<Guid?> userIds, CancellationToken cancellationToken)
     {
-        var ids = keycloakUserIds.Where(id => !string.IsNullOrWhiteSpace(id)).Cast<string>().Distinct(StringComparer.Ordinal).ToArray();
+        var ids = userIds.Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToArray();
         var pairs = await Task.WhenAll(ids.Select(async id => new
         {
             Id = id,
-            Identity = await keycloakAdminService.GetUserIdentityAsync(id, cancellationToken)
+            Identity = await keycloakAdminService.GetUserIdentityAsync(id.ToString(), cancellationToken)
         }));
 
-        return pairs.ToDictionary(item => item.Id, item => item.Identity, StringComparer.Ordinal);
+        return pairs.ToDictionary(item => item.Id, item => item.Identity);
     }
 
     private static string? ResolveDisplayName(KeycloakUserIdentity? identity)

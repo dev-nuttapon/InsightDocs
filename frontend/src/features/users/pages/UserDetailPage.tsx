@@ -7,15 +7,13 @@ import {
   disableUser,
   enableUser,
   getUser,
-  updateUser,
 } from '../api/usersApi';
-import { formatBusinessRole, type AppUser, type UpdateUserInput } from '../types';
+import { formatBusinessRole, type AppUser } from '../types';
 
 export function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { accessToken } = useAuth();
   const [user, setUser] = useState<AppUser | null>(null);
-  const [form, setForm] = useState<UpdateUserInput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -31,9 +29,6 @@ export function UserDetailPage() {
         const payload = await getUser(id, accessToken);
         if (!ignore) {
           setUser(payload);
-          setForm({
-            keycloakUserId: payload.keycloakUserId,
-          });
           setError(null);
         }
       } catch (loadError) {
@@ -57,9 +52,6 @@ export function UserDetailPage() {
       const result = await action();
       if (result) {
         setUser(result);
-        setForm({
-          keycloakUserId: result.keycloakUserId,
-        });
       } else if (id && accessToken) {
         const refreshed = await getUser(id, accessToken);
         setUser(refreshed);
@@ -72,7 +64,7 @@ export function UserDetailPage() {
     }
   }
 
-  if (!user || !form || !accessToken || !id) {
+  if (!user || !accessToken || !id) {
     return (
       <section className="panel">
         <p className="muted">{error ?? 'Loading user...'}</p>
@@ -93,22 +85,11 @@ export function UserDetailPage() {
       </div>
 
       <div className="callout">
-        Identity details and business roles are sourced from Keycloak. This page only updates the local application access record.
+        Identity details and business roles are sourced from Keycloak. This access record is bound to the same UUID as the Keycloak account and cannot be edited separately.
       </div>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
-
-      <form
-        className="form-grid"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void runMutation(() => updateUser(id, form, accessToken), 'User profile updated.');
-        }}
-      >
-        <input className="input" value={form.keycloakUserId} onChange={(event) => setForm((current) => current ? { ...current, keycloakUserId: event.target.value } : current)} />
-        <button className="button" type="submit">Save Access Record</button>
-      </form>
 
       <div className="card stack">
         <span className="card__label">Keycloak Roles</span>

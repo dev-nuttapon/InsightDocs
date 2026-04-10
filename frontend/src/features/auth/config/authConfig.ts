@@ -14,3 +14,4 @@ export const keycloakRealm = readEnv('VITE_KEYCLOAK_REALM', 'saas');
 export const keycloakClientId = readEnv('VITE_KEYCLOAK_CLIENT_ID', 'insightdocs-web');
 export const keycloakScopes = import.meta.env.VITE_KEYCLOAK_SCOPES || 'openid profile email';
 export const authRequestTimeoutMs = 10000;
+export const keycloakSessionCheckTimeoutMs = Number(import.meta.env.VITE_KEYCLOAK_SESSION_CHECK_TIMEOUT_MS ?? '2500');

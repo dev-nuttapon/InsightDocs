@@ -55,17 +55,7 @@ export function AppShell() {
           <div className="sidebar__brand-mark" aria-hidden="true">ID</div>
           <div className="sidebar__brand-copy">
             <span className="sidebar__eyebrow">Enterprise PDF Platform</span>
-            <h1 className="sidebar__title">InsightDocs</h1>
-            <p className="sidebar__copy">
-              Internal document control for approvals, signatures, version history, and audit-ready operations.
-            </p>
           </div>
-        </div>
-
-        <div className="sidebar__status">
-          <span className="sidebar__status-label">Workspace</span>
-          <strong>Controlled document operations</strong>
-          <span className="muted">Keep review, signing, and access decisions in one governed surface.</span>
         </div>
 
         <nav className="sidebar__nav" aria-label="Primary">
@@ -106,17 +96,6 @@ export function AppShell() {
             <span className="card__label">Signed In</span>
             <strong>{user.displayName ?? user.username ?? user.email ?? user.subject}</strong>
             <span className="muted">{user.email ?? 'Email not provided'}</span>
-            {access.normalizedRoles.length > 0 ? (
-              <div className="sidebar__role-list">
-                {access.normalizedRoles.map((role) => (
-                  <span key={role} className="status-pill status-pill--subtle">
-                    {formatRoleLabel(role)}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <span className="muted">No Keycloak roles</span>
-            )}
             <NavLink className="button button--secondary" to="/logout">
               Logout
             </NavLink>

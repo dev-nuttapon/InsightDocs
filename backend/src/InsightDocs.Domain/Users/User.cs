@@ -2,8 +2,7 @@ namespace InsightDocs.Domain.Users;
 
 public sealed class User
 {
-    public Guid Id { get; private set; } = Guid.NewGuid();
-    public string KeycloakUserId { get; private set; } = string.Empty;
+    public Guid Id { get; private set; }
     public UserStatus Status { get; private set; } = UserStatus.Pending;
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? ApprovedAt { get; private set; }
@@ -13,14 +12,9 @@ public sealed class User
     {
     }
 
-    public User(string keycloakUserId)
+    public User(Guid id)
     {
-        KeycloakUserId = keycloakUserId.Trim();
-    }
-
-    public void UpdateKeycloakUser(string keycloakUserId)
-    {
-        KeycloakUserId = keycloakUserId.Trim();
+        Id = id;
     }
 
     public void Approve(string approvedBy)

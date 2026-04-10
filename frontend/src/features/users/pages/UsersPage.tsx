@@ -6,7 +6,7 @@ import { createUser, getUsers } from '../api/usersApi';
 import { formatBusinessRole, type AppUser, type CreateUserInput } from '../types';
 
 const initialForm: CreateUserInput = {
-  keycloakUserId: '',
+  id: '',
 };
 
 export function UsersPage() {
@@ -59,7 +59,7 @@ export function UsersPage() {
     try {
       setIsSubmitting(true);
       const created = await createUser(form, accessToken);
-      setUsers((current) => [...current, created].sort((left, right) => left.keycloakUserId.localeCompare(right.keycloakUserId)));
+      setUsers((current) => [...current, created].sort((left, right) => formatUserName(left).localeCompare(formatUserName(right))));
       setForm(initialForm);
       setError(null);
     } catch (submitError) {
@@ -82,9 +82,9 @@ export function UsersPage() {
       <form className="form-grid" onSubmit={handleCreate}>
         <input
           className="input"
-          placeholder="Keycloak User Id"
-          value={form.keycloakUserId}
-          onChange={(event) => setForm((current) => ({ ...current, keycloakUserId: event.target.value }))}
+          placeholder="User Id (Keycloak UUID)"
+          value={form.id}
+          onChange={(event) => setForm((current) => ({ ...current, id: event.target.value }))}
         />
         <button className="button" disabled={isSubmitting} type="submit">
           {isSubmitting ? 'Creating...' : 'Create Access Record'}

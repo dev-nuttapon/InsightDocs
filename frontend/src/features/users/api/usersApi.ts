@@ -1,5 +1,5 @@
-import { getJson, postJson, putJson } from '../../../shared/api/http';
-import type { AppUser, CreateUserInput, UpdateUserInput } from '../types';
+import { getJson, postJson } from '../../../shared/api/http';
+import type { AppUser, CreateUserInput } from '../types';
 
 export function getUsers(accessToken: string) {
   return getJson<AppUser[]>('/api/users', { accessToken });
@@ -11,10 +11,6 @@ export function getUser(id: string, accessToken: string) {
 
 export function createUser(input: CreateUserInput, accessToken: string) {
   return postJson<AppUser>('/api/users', input, { accessToken });
-}
-
-export function updateUser(id: string, input: UpdateUserInput, accessToken: string) {
-  return putJson<AppUser>(`/api/users/${id}`, input, { accessToken });
 }
 
 export function approveUser(id: string, accessToken: string) {

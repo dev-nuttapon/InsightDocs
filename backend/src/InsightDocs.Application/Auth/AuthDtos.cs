@@ -5,7 +5,6 @@ namespace InsightDocs.Application.Auth;
 
 public sealed record RegistrationResultDto(
     Guid UserId,
-    string KeycloakUserId,
     string Username,
     string Email,
     string DisplayName,

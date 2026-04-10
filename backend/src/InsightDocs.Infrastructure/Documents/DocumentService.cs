@@ -29,9 +29,9 @@ internal sealed class DocumentService(
                 document.Description,
                 document.Category,
                 document.OwnerUserId,
-                document.OwnerUser != null ? document.OwnerUser.KeycloakUserId : null,
+                document.OwnerUserId.HasValue ? document.OwnerUserId.Value.ToString() : null,
                 document.ControllerUserId,
-                document.ControllerUser != null ? document.ControllerUser.KeycloakUserId : null,
+                document.ControllerUserId.HasValue ? document.ControllerUserId.Value.ToString() : null,
                 document.Status,
                 document.Versions.Count,
                 document.Versions.Where(version => version.IsCurrent).Select(version => (int?)version.VersionNumber).FirstOrDefault(),
@@ -52,9 +52,9 @@ internal sealed class DocumentService(
                 entity.Description,
                 entity.Category,
                 entity.OwnerUserId,
-                entity.OwnerUser != null ? entity.OwnerUser.KeycloakUserId : null,
+                entity.OwnerUserId.HasValue ? entity.OwnerUserId.Value.ToString() : null,
                 entity.ControllerUserId,
-                entity.ControllerUser != null ? entity.ControllerUser.KeycloakUserId : null,
+                entity.ControllerUserId.HasValue ? entity.ControllerUserId.Value.ToString() : null,
                 entity.Status,
                 entity.Versions.Count,
                 entity.Versions.Where(version => version.IsCurrent).Select(version => (int?)version.VersionNumber).FirstOrDefault(),
@@ -507,7 +507,7 @@ internal sealed class DocumentService(
             throw new ConflictException("Only active users can be assigned as signers.");
         }
 
-        var signerIdentity = await keycloakAdminService.GetUserIdentityAsync(signer.KeycloakUserId, cancellationToken);
+        var signerIdentity = await keycloakAdminService.GetUserIdentityAsync(signer.Id.ToString(), cancellationToken);
         var hasSignerRole = HasRole(signerIdentity?.Roles, BusinessRoles.Signer);
 
         if (!hasSignerRole)
@@ -595,7 +595,7 @@ internal sealed class DocumentService(
             ?? throw new NotFoundException($"Document '{documentId}' was not found.");
 
         var actor = await ResolveUserAsync(actorIdentifier, cancellationToken);
-        var actorIdentity = await keycloakAdminService.GetUserIdentityAsync(actor.KeycloakUserId, cancellationToken);
+        var actorIdentity = await keycloakAdminService.GetUserIdentityAsync(actor.Id.ToString(), cancellationToken);
 
         if (actor.Id != request.SignerUserId && !await HasAdministrativeRoleAsync(actor, cancellationToken))
         {
@@ -613,8 +613,8 @@ internal sealed class DocumentService(
             sourcePdf,
             new PdfSignaturePlacement(request.PageNumber, request.PositionX, request.PositionY, request.Width, request.Height),
             new PdfSignatureAppearance(
-                ResolveDisplayName(actorIdentity, actor.KeycloakUserId),
-                actorIdentity?.Username ?? actor.KeycloakUserId,
+                ResolveDisplayName(actorIdentity, actor.Id.ToString()),
+                actorIdentity?.Username ?? actor.Id.ToString(),
                 signedAt,
                 command.Comment),
             cancellationToken);
@@ -627,7 +627,7 @@ internal sealed class DocumentService(
             cancellationToken);
 
         request.DocumentVersion.SetSignedObjectKey(storedSignedObject.ObjectKey);
-        request.MarkSigned(actorIdentity?.Username ?? actor.KeycloakUserId, storedSignedObject.ObjectKey, command.Comment);
+        request.MarkSigned(actorIdentity?.Username ?? actor.Id.ToString(), storedSignedObject.ObjectKey, command.Comment);
         await auditLogService.WriteAsync(
             new WriteAuditLogEntry(
                 "document.signature.signed",
@@ -677,8 +677,8 @@ internal sealed class DocumentService(
 
         EnsureSignatureWorkflow(document, request);
         await EnsureSigningOrderSatisfiedAsync(request, cancellationToken);
-        var actorIdentity = await keycloakAdminService.GetUserIdentityAsync(actor.KeycloakUserId, cancellationToken);
-        request.MarkRejected(actorIdentity?.Username ?? actor.KeycloakUserId, command.Comment);
+        var actorIdentity = await keycloakAdminService.GetUserIdentityAsync(actor.Id.ToString(), cancellationToken);
+        request.MarkRejected(actorIdentity?.Username ?? actor.Id.ToString(), command.Comment);
         await auditLogService.WriteAsync(
             new WriteAuditLogEntry(
                 "document.signature.rejected",
@@ -838,8 +838,13 @@ internal sealed class DocumentService(
 
     private async Task<User> ResolveUserAsync(string actorIdentifier, CancellationToken cancellationToken)
     {
+        if (!Guid.TryParse(actorIdentifier, out var actorId))
+        {
+            throw new NotFoundException("The current authenticated user is not mapped to an active application user.");
+        }
+
         var actor = await dbContext.Users
-            .FirstOrDefaultAsync(user => user.KeycloakUserId == actorIdentifier, cancellationToken);
+            .FirstOrDefaultAsync(user => user.Id == actorId, cancellationToken);
 
         if (actor is null)
         {
@@ -856,7 +861,7 @@ internal sealed class DocumentService(
 
     private async Task<bool> HasAdministrativeRoleAsync(User user, CancellationToken cancellationToken)
     {
-        var identity = await keycloakAdminService.GetUserIdentityAsync(user.KeycloakUserId, cancellationToken);
+        var identity = await keycloakAdminService.GetUserIdentityAsync(user.Id.ToString(), cancellationToken);
         return HasRole(identity?.Roles, BusinessRoles.Admin);
     }
 
@@ -925,8 +930,8 @@ internal sealed class DocumentService(
             request.DocumentId,
             request.DocumentVersionId,
             request.SignerUserId,
-            request.SignerUser.KeycloakUserId,
-            request.SignerUser.KeycloakUserId,
+            request.SignerUserId.ToString(),
+            request.SignerUserId.ToString(),
             request.SigningOrder,
             request.Status,
             request.PageNumber,

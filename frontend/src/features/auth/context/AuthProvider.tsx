@@ -196,7 +196,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       })
       .catch((error) => {
         console.error('Keycloak init failed:', error);
-        setAnonymous('expired', 'Unable to initialize Keycloak session.');
+        const message = error instanceof Error ? error.message : 'Unable to initialize Keycloak session.';
+        setAnonymous('expired', message);
       });
 
     return () => {

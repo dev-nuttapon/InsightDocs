@@ -426,20 +426,12 @@ partial class InsightDocsDbContextModelSnapshot : ModelSnapshot
             b.Property<DateTimeOffset>("CreatedAt")
                 .HasColumnType("timestamp with time zone");
 
-            b.Property<string>("KeycloakUserId")
-                .IsRequired()
-                .HasMaxLength(128)
-                .HasColumnType("character varying(128)");
-
             b.Property<string>("Status")
                 .IsRequired()
                 .HasMaxLength(20)
                 .HasColumnType("character varying(20)");
 
             b.HasKey("Id");
-
-            b.HasIndex("KeycloakUserId")
-                .IsUnique();
 
             b.ToTable("users", (string)null!);
         });

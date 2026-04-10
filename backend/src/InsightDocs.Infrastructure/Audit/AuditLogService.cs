@@ -48,11 +48,15 @@ internal sealed class AuditLogService(
             var actor = query.Actor.Trim();
             var actorGuid = Guid.TryParse(actor, out var parsedActorId) ? parsedActorId : (Guid?)null;
             var matchingKeycloakUsers = await keycloakAdminService.SearchUsersAsync(actor, cancellationToken);
-            var matchingKeycloakUserIds = matchingKeycloakUsers.Select(user => user.KeycloakUserId).ToArray();
+            var matchingUserIds = matchingKeycloakUsers
+                .Select(user => Guid.TryParse(user.KeycloakUserId, out var id) ? id : (Guid?)null)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToArray();
 
             auditLogs = auditLogs.Where(auditLog =>
                 (actorGuid.HasValue && auditLog.ActorUserId == actorGuid.Value) ||
-                (auditLog.ActorUser != null && matchingKeycloakUserIds.Contains(auditLog.ActorUser.KeycloakUserId)));
+                (auditLog.ActorUserId.HasValue && matchingUserIds.Contains(auditLog.ActorUserId.Value)));
         }
 
         if (!string.IsNullOrWhiteSpace(query.Action))
@@ -86,7 +90,6 @@ internal sealed class AuditLogService(
             {
                 auditLog.Id,
                 auditLog.ActorUserId,
-                ActorKeycloakUserId = auditLog.ActorUser != null ? auditLog.ActorUser.KeycloakUserId : null,
                 auditLog.Action,
                 auditLog.EntityType,
                 auditLog.EntityId,
@@ -96,12 +99,12 @@ internal sealed class AuditLogService(
             })
             .ToArrayAsync(cancellationToken);
 
-        var identities = await LoadIdentitiesAsync(items.Select(item => item.ActorKeycloakUserId), cancellationToken);
+        var identities = await LoadIdentitiesAsync(items.Select(item => item.ActorUserId), cancellationToken);
 
         var mappedItems = items.Select(item =>
         {
-            var identity = item.ActorKeycloakUserId is not null
-                ? identities.GetValueOrDefault(item.ActorKeycloakUserId)
+            var identity = item.ActorUserId.HasValue
+                ? identities.GetValueOrDefault(item.ActorUserId.Value)
                 : null;
 
             return new AuditLogListItemDto(
@@ -130,7 +133,6 @@ internal sealed class AuditLogService(
             {
                 entity.Id,
                 entity.ActorUserId,
-                ActorKeycloakUserId = entity.ActorUser != null ? entity.ActorUser.KeycloakUserId : null,
                 entity.Action,
                 entity.EntityType,
                 entity.EntityId,
@@ -146,8 +148,8 @@ internal sealed class AuditLogService(
             throw new NotFoundException($"Audit log '{id}' was not found.");
         }
 
-        var identity = auditLog.ActorKeycloakUserId is not null
-            ? await keycloakAdminService.GetUserIdentityAsync(auditLog.ActorKeycloakUserId, cancellationToken)
+        var identity = auditLog.ActorUserId.HasValue
+            ? await keycloakAdminService.GetUserIdentityAsync(auditLog.ActorUserId.Value.ToString(), cancellationToken)
             : null;
 
         return new AuditLogDetailDto(
@@ -172,23 +174,19 @@ internal sealed class AuditLogService(
         }
 
         var normalized = actorIdentifier.Trim();
-
-        return await dbContext.Users
-            .Where(user => user.KeycloakUserId == normalized)
-            .Select(user => (Guid?)user.Id)
-            .FirstOrDefaultAsync(cancellationToken);
+        return Guid.TryParse(normalized, out var id) ? id : null;
     }
 
-    private async Task<Dictionary<string, KeycloakUserIdentity?>> LoadIdentitiesAsync(IEnumerable<string?> keycloakUserIds, CancellationToken cancellationToken)
+    private async Task<Dictionary<Guid, KeycloakUserIdentity?>> LoadIdentitiesAsync(IEnumerable<Guid?> userIds, CancellationToken cancellationToken)
     {
-        var ids = keycloakUserIds.Where(id => !string.IsNullOrWhiteSpace(id)).Cast<string>().Distinct(StringComparer.Ordinal).ToArray();
+        var ids = userIds.Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToArray();
         var pairs = await Task.WhenAll(ids.Select(async id => new
         {
             Id = id,
-            Identity = await keycloakAdminService.GetUserIdentityAsync(id, cancellationToken)
+            Identity = await keycloakAdminService.GetUserIdentityAsync(id.ToString(), cancellationToken)
         }));
 
-        return pairs.ToDictionary(item => item.Id, item => item.Identity, StringComparer.Ordinal);
+        return pairs.ToDictionary(item => item.Id, item => item.Identity);
     }
 
     private static string? ResolveDisplayName(KeycloakUserIdentity? identity)

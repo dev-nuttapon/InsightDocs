@@ -1,6 +1,12 @@
 import Keycloak from 'keycloak-js';
 
-import { keycloakBaseUrl, keycloakClientId, keycloakRealm, keycloakScopes } from '../config/authConfig';
+import {
+  keycloakSessionCheckTimeoutMs,
+  keycloakBaseUrl,
+  keycloakClientId,
+  keycloakRealm,
+  keycloakScopes,
+} from '../config/authConfig';
 
 const keycloak = new Keycloak({
   url: keycloakBaseUrl,
@@ -44,7 +50,7 @@ export async function initKeycloak() {
       throw error;
     });
 
-  return initPromise;
+  return withTimeout(initPromise, keycloakSessionCheckTimeoutMs, 'Keycloak session check timed out.');
 }
 
 export function bindAuthEvents(handlers: AuthEventHandlers) {
@@ -108,4 +114,21 @@ export function getAccessToken() {
 
 export function isAuthenticated() {
   return Boolean(keycloak.authenticated);
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string) {
+  let timeoutId: number | null = null;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
+  }
 }

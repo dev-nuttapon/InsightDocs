@@ -38,14 +38,6 @@ public sealed class UsersController(
         return CreatedAtAction(nameof(GetUser), new { id = user.Id }, ApiResponse<UserDetailDto>.Ok(user, HttpContext.TraceIdentifier));
     }
 
-    [HttpPut("{id:guid}")]
-    [ProducesResponseType(typeof(ApiResponse<UserDetailDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<ApiResponse<UserDetailDto>>> UpdateUser(Guid id, [FromBody] UpdateUserCommand command, CancellationToken cancellationToken)
-    {
-        var user = await userManagementService.UpdateUserAsync(id, command, cancellationToken);
-        return Ok(ApiResponse<UserDetailDto>.Ok(user, HttpContext.TraceIdentifier));
-    }
-
     [HttpPost("{id:guid}/approve")]
     [ProducesResponseType(typeof(ApiResponse<UserDetailDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<UserDetailDto>>> ApproveUser(Guid id, CancellationToken cancellationToken)

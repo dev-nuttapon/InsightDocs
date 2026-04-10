@@ -12,10 +12,6 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasKey(user => user.Id);
 
-        builder.Property(user => user.KeycloakUserId)
-            .HasMaxLength(128)
-            .IsRequired();
-
         builder.Property(user => user.Status)
             .HasConversion<string>()
             .HasMaxLength(20)
@@ -26,8 +22,5 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(user => user.ApprovedBy)
             .HasMaxLength(100);
-
-        builder.HasIndex(user => user.KeycloakUserId)
-            .IsUnique();
     }
 }

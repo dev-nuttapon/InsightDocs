@@ -4,7 +4,6 @@ namespace InsightDocs.Application.Users;
 
 public sealed record UserSummaryDto(
     Guid Id,
-    string KeycloakUserId,
     string Username,
     string Email,
     string DisplayName,
@@ -18,7 +17,6 @@ public sealed record UserSummaryDto(
 
 public sealed record UserDetailDto(
     Guid Id,
-    string KeycloakUserId,
     string Username,
     string Email,
     string DisplayName,

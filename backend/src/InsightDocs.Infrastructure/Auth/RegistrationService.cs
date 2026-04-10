@@ -27,7 +27,12 @@ public sealed class RegistrationService(
                 enabled: false,
                 cancellationToken);
 
-            var user = new User(keycloakUserId);
+            if (!Guid.TryParse(keycloakUserId, out var userId))
+            {
+                throw new ValidationException("Keycloak returned a non-GUID user id.");
+            }
+
+            var user = new User(userId);
 
             dbContext.Users.Add(user);
             await auditLogService.WriteAsync(
@@ -38,7 +43,7 @@ public sealed class RegistrationService(
                     ActorUserId: null,
                 Metadata: new
                 {
-                    user.KeycloakUserId,
+                    UserId = user.Id,
                     command.Username,
                     command.Email,
                     command.DisplayName,
@@ -47,7 +52,7 @@ public sealed class RegistrationService(
                 cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            return new RegistrationResultDto(user.Id, user.KeycloakUserId, command.Username, command.Email, command.DisplayName, user.Status);
+            return new RegistrationResultDto(user.Id, command.Username, command.Email, command.DisplayName, user.Status);
         }
         catch
         {
