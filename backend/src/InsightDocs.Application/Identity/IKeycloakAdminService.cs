@@ -2,13 +2,14 @@ namespace InsightDocs.Application.Identity;
 
 public interface IKeycloakAdminService
 {
-    Task<string> CreateUserAsync(string username, string email, string displayName, string password, bool enabled, CancellationToken cancellationToken);
-    Task UpdateUserAsync(string keycloakUserId, string username, string email, string displayName, bool enabled, CancellationToken cancellationToken);
+    Task<string> CreateUserAsync(string username, string email, string firstName, string lastName, string password, bool enabled, CancellationToken cancellationToken);
+    Task UpdateUserAsync(string keycloakUserId, string username, string email, string firstName, string lastName, bool enabled, CancellationToken cancellationToken);
     Task<KeycloakUserIdentity?> GetUserIdentityAsync(string keycloakUserId, CancellationToken cancellationToken);
     Task<KeycloakUserIdentity?> FindUserByUsernameOrEmailAsync(string lookup, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<KeycloakUserIdentity>> SearchUsersAsync(string searchTerm, CancellationToken cancellationToken);
     Task DeleteUserAsync(string keycloakUserId, CancellationToken cancellationToken);
     Task SetUserEnabledAsync(string keycloakUserId, bool enabled, CancellationToken cancellationToken);
+    Task SyncUserRolesAsync(string keycloakUserId, IReadOnlyCollection<string> roles, CancellationToken cancellationToken);
     Task ResetPasswordAsync(string keycloakUserId, string password, CancellationToken cancellationToken);
 }
 

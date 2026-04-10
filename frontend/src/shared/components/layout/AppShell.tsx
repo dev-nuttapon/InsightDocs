@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { ThemeToggle } from '../../../components/ThemeToggle';
@@ -35,18 +35,20 @@ export function AppShell() {
       {
         key: 'admin' as const,
         label: 'Administration',
-        links: access.canAccessAdmin
-          ? [
-              { to: '/users', label: 'Users & Access' },
-              { to: '/admin/password-reset-requests', label: 'Password Reset Requests' },
-              { to: '/audit-logs', label: 'Audit Logs' },
-            ]
-          : [],
+        links: [
+          ...(access.canAccessUsers ? [{ to: '/users', label: 'Users & Access' }] : []),
+          ...(access.canAccessPasswordResetAdmin ? [{ to: '/admin/password-reset-requests', label: 'Password Reset Requests' }] : []),
+          ...(access.canAccessAuditLogs ? [{ to: '/audit-logs', label: 'Audit Logs' }] : []),
+        ],
       },
     ];
 
     return items.filter((section) => section.links.length > 0);
-  }, [access.canAccessAdmin, access.canReviewDocuments, access.canSignDocuments]);
+  }, [access.canAccessAuditLogs, access.canAccessPasswordResetAdmin, access.canAccessUsers, access.canReviewDocuments, access.canSignDocuments]);
+
+  useEffect(() => {
+    setOpenSection(resolveOpenSection(location.pathname));
+  }, [location.pathname]);
 
   return (
     <div className="app-shell">
@@ -207,4 +209,24 @@ function resolvePageMeta(pathname: string) {
     title: 'Document Control Workspace',
     description: 'Operate controlled content, move work through review, and keep every change audit-ready.',
   };
+}
+
+function resolveOpenSection(pathname: string): 'workspace' | 'actions' | 'admin' {
+  if (
+    pathname.startsWith('/users') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/audit-logs')
+  ) {
+    return 'admin';
+  }
+
+  if (
+    pathname.startsWith('/me') ||
+    pathname.startsWith('/approvals') ||
+    pathname.startsWith('/signatures')
+  ) {
+    return 'actions';
+  }
+
+  return 'workspace';
 }

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace InsightDocs.Api.Controllers;
 
 [ApiController]
-[Authorize(Policy = AuthorizationPolicies.AdminAccess)]
+[Authorize(Policy = AuthorizationPolicies.UserManagementAccess)]
 [Route("api/admin/password-reset-requests")]
 public sealed class AdminPasswordResetRequestsController(
     IPasswordResetService passwordResetService,

@@ -1,8 +1,10 @@
 export type RoleKey =
   | 'admin'
+  | 'audit_reader'
   | 'document_controller'
   | 'manager'
   | 'signer'
+  | 'user_admin'
   | 'viewer';
 
 type AccessProfile = {
@@ -21,17 +23,21 @@ type AccessProfile = {
 
 const roleAliases: Record<RoleKey, string[]> = {
   admin: ['Admin', 'admin', 'realm-admin', 'insightdocs-admin', 'insightdocs:admin'],
+  audit_reader: ['AuditReader', 'auditreader', 'insightdocs:audit_reader'],
   document_controller: ['DocumentController', 'documentcontroller', 'insightdocs:document_controller'],
   manager: ['Manager', 'manager', 'insightdocs:manager'],
   signer: ['Signer', 'signer', 'insightdocs:signer'],
+  user_admin: ['UserAdmin', 'useradmin', 'insightdocs:user_admin'],
   viewer: ['Viewer', 'viewer', 'insightdocs:viewer'],
 };
 
 export function buildAccessProfile(roles: string[]): AccessProfile {
   const hasAdmin = hasAnyRole(roles, 'admin');
+  const hasAuditReader = hasAnyRole(roles, 'audit_reader');
   const hasDocumentController = hasAnyRole(roles, 'document_controller');
   const hasManager = hasAnyRole(roles, 'manager');
   const hasSigner = hasAnyRole(roles, 'signer');
+  const hasUserAdmin = hasAnyRole(roles, 'user_admin');
 
   const normalizedRoles = (Object.keys(roleAliases) as RoleKey[]).filter((role) => hasAnyRole(roles, role));
 
@@ -43,10 +49,10 @@ export function buildAccessProfile(roles: string[]): AccessProfile {
     canReviewDocuments: hasAdmin || hasManager,
     canManageSignatures: hasAdmin || hasDocumentController || hasManager,
     canSignDocuments: hasAdmin || hasSigner,
-    canAccessAdmin: hasAdmin,
-    canAccessUsers: hasAdmin,
-    canAccessPasswordResetAdmin: hasAdmin,
-    canAccessAuditLogs: hasAdmin,
+    canAccessAdmin: hasAdmin || hasUserAdmin || hasAuditReader,
+    canAccessUsers: hasAdmin || hasUserAdmin,
+    canAccessPasswordResetAdmin: hasAdmin || hasUserAdmin,
+    canAccessAuditLogs: hasAdmin || hasAuditReader,
   };
 }
 
@@ -59,12 +65,16 @@ export function formatRoleLabel(role: RoleKey) {
   switch (role) {
     case 'admin':
       return 'Admin';
+    case 'audit_reader':
+      return 'Audit Reader';
     case 'document_controller':
       return 'Document Controller';
     case 'manager':
       return 'Manager';
     case 'signer':
       return 'Signer';
+    case 'user_admin':
+      return 'User Admin';
     case 'viewer':
       return 'Viewer';
     default:
@@ -73,8 +83,16 @@ export function formatRoleLabel(role: RoleKey) {
 }
 
 export function canAccessPath(access: ReturnType<typeof buildAccessProfile>, path: string) {
-  if (path.startsWith('/users') || path.startsWith('/admin/password-reset-requests') || path.startsWith('/audit-logs')) {
-    return access.canAccessAdmin;
+  if (path.startsWith('/users')) {
+    return access.canAccessUsers;
+  }
+
+  if (path.startsWith('/admin/password-reset-requests')) {
+    return access.canAccessPasswordResetAdmin;
+  }
+
+  if (path.startsWith('/audit-logs')) {
+    return access.canAccessAuditLogs;
   }
 
   if (path.startsWith('/approvals')) {

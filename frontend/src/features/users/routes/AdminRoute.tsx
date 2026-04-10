@@ -5,9 +5,9 @@ import { buildAccessProfile } from '../../../shared/auth/authorization';
 
 export function AdminRoute() {
   const { user } = useAuth();
-  const isAdmin = buildAccessProfile(user?.roles ?? []).isAdmin;
+  const canAccessAdmin = buildAccessProfile(user?.roles ?? []).canAccessAdmin;
 
-  if (!isAdmin) {
+  if (!canAccessAdmin) {
     return <Navigate replace to="/unauthorized" />;
   }
 

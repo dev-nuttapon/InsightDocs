@@ -4,6 +4,8 @@ public static class AuthorizationPolicies
 {
     public const string AuthenticatedUser = "AuthenticatedUser";
     public const string AdminAccess = "AdminAccess";
+    public const string UserManagementAccess = "UserManagementAccess";
+    public const string AuditAccess = "AuditAccess";
     public const string DocumentManagement = "DocumentManagement";
     public const string DocumentReviewSubmission = "DocumentReviewSubmission";
     public const string DocumentReviewDecision = "DocumentReviewDecision";

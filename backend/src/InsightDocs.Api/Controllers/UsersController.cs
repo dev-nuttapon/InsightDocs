@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace InsightDocs.Api.Controllers;
 
 [ApiController]
-[Authorize(Policy = AuthorizationPolicies.AdminAccess)]
+[Authorize(Policy = AuthorizationPolicies.UserManagementAccess)]
 [Route("api/users")]
 public sealed class UsersController(
     IUserManagementService userManagementService,

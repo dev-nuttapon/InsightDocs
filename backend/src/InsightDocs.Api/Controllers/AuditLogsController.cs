@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace InsightDocs.Api.Controllers;
 
 [ApiController]
-[Authorize(Policy = AuthorizationPolicies.AdminAccess)]
+[Authorize(Policy = AuthorizationPolicies.AuditAccess)]
 [Route("api/audit-logs")]
 public sealed class AuditLogsController(IAuditLogService auditLogService) : ControllerBase
 {

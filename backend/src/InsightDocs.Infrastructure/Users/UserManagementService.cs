@@ -49,16 +49,20 @@ public sealed class UserManagementService(
     public async Task<UserDetailDto> CreateUserAsync(CreateUserCommand command, CancellationToken cancellationToken)
     {
         string? keycloakUserId = null;
+        var normalizedRoles = NormalizeRoles(command.Roles);
 
         try
         {
             keycloakUserId = await keycloakAdminService.CreateUserAsync(
                 command.Username.Trim(),
                 command.Email.Trim(),
-                command.DisplayName.Trim(),
+                command.FirstName.Trim(),
+                command.LastName.Trim(),
                 command.Password,
                 enabled: false,
                 cancellationToken);
+
+            await keycloakAdminService.SyncUserRolesAsync(keycloakUserId, normalizedRoles, cancellationToken);
 
             if (!Guid.TryParse(keycloakUserId, out var userId))
             {
@@ -67,7 +71,7 @@ public sealed class UserManagementService(
 
             await EnsureUniqueUserAsync(userId, null, cancellationToken);
 
-            var user = new User(userId, UserStatus.Disabled);
+            var user = new User(userId, UserStatus.Pending);
 
             dbContext.Users.Add(user);
             await auditLogService.WriteAsync(
@@ -80,7 +84,9 @@ public sealed class UserManagementService(
                         UserId = user.Id,
                         command.Username,
                         command.Email,
-                        command.DisplayName,
+                        command.FirstName,
+                        command.LastName,
+                        Roles = normalizedRoles,
                         Status = user.Status.ToString(),
                         ProvisionedInKeycloak = true
                     }),
@@ -105,14 +111,23 @@ public sealed class UserManagementService(
         var user = await LoadUserAsync(id, cancellationToken);
         var currentIdentity = await keycloakAdminService.GetUserIdentityAsync(user.Id.ToString(), cancellationToken)
             ?? throw new NotFoundException($"Keycloak user '{id}' was not found.");
+        var normalizedRoles = NormalizeRoles(command.Roles);
 
         await keycloakAdminService.UpdateUserAsync(
             user.Id.ToString(),
             command.Username.Trim(),
             command.Email.Trim(),
-            command.DisplayName.Trim(),
+            command.FirstName.Trim(),
+            command.LastName.Trim(),
             currentIdentity.Enabled ?? user.Status != UserStatus.Disabled,
             cancellationToken);
+
+        await keycloakAdminService.SyncUserRolesAsync(user.Id.ToString(), normalizedRoles, cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(command.Password))
+        {
+            await keycloakAdminService.ResetPasswordAsync(user.Id.ToString(), command.Password, cancellationToken);
+        }
 
         await auditLogService.WriteAsync(
             new WriteAuditLogEntry(
@@ -124,7 +139,10 @@ public sealed class UserManagementService(
                     UserId = user.Id,
                     command.Username,
                     command.Email,
-                    command.DisplayName
+                    command.FirstName,
+                    command.LastName,
+                    Roles = normalizedRoles,
+                    PasswordUpdated = !string.IsNullOrWhiteSpace(command.Password)
                 }),
             cancellationToken);
 
@@ -296,4 +314,31 @@ public sealed class UserManagementService(
 
     private static bool HasRole(IReadOnlyCollection<string>? roles, string roleName) =>
         roles?.Any(role => string.Equals(role, roleName, StringComparison.OrdinalIgnoreCase)) == true;
+
+    private static string[] NormalizeRoles(IReadOnlyCollection<string>? roles)
+    {
+        var normalized = (roles ?? [])
+            .Where(role => !string.IsNullOrWhiteSpace(role))
+            .Select(role => role.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (normalized.Length == 0)
+        {
+            throw new ValidationException("At least one role is required.");
+        }
+
+        var invalidRoles = normalized
+            .Where(role => !BusinessRoles.DefaultRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
+            .ToArray();
+
+        if (invalidRoles.Length > 0)
+        {
+            throw new ValidationException($"Unsupported roles: {string.Join(", ", invalidRoles)}");
+        }
+
+        return normalized
+            .OrderBy(role => role, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
 }

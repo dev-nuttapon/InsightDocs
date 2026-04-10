@@ -3,14 +3,26 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { getUser, updateUser } from '../api/usersApi';
-import { formatUserStatus, getProjectRoleLabels, type AppUser, type UpdateUserInput } from '../types';
+import { AVAILABLE_PROJECT_ROLES, formatBusinessRole, formatBusinessRoleDescription, formatUserStatus, type AppUser, type UpdateUserInput } from '../types';
+
+type EditUserFormState = UpdateUserInput & {
+  confirmPassword: string;
+};
 
 export function EditUserPage() {
   const { id } = useParams<{ id: string }>();
   const { accessToken } = useAuth();
   const navigate = useNavigate();
   const [user, setUser] = useState<AppUser | null>(null);
-  const [form, setForm] = useState<UpdateUserInput>({ username: '', email: '', displayName: '' });
+  const [form, setForm] = useState<EditUserFormState>({
+    username: '',
+    email: '',
+    firstName: '',
+    lastName: '',
+    password: '',
+    confirmPassword: '',
+    roles: [],
+  });
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -29,7 +41,11 @@ export function EditUserPage() {
           setForm({
             username: payload.email,
             email: payload.email,
-            displayName: payload.displayName,
+            firstName: payload.firstName ?? '',
+            lastName: payload.lastName ?? '',
+            password: '',
+            confirmPassword: '',
+            roles: payload.roles,
           });
           setError(null);
         }
@@ -48,8 +64,6 @@ export function EditUserPage() {
   }, [accessToken, id]);
 
   const resolvedName = useMemo(() => (user ? formatUserName(user) : 'User'), [user]);
-  const projectRoles = useMemo(() => getProjectRoleLabels(user?.roles ?? []), [user?.roles]);
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -57,11 +71,26 @@ export function EditUserPage() {
       return;
     }
 
+    if (form.password && form.password !== form.confirmPassword) {
+      setError('รหัสผ่านและยืนยันรหัสผ่านต้องตรงกัน');
+      return;
+    }
+
+    if (form.roles.length === 0) {
+      setError('กรุณาเลือกอย่างน้อย 1 role');
+      return;
+    }
+
     try {
       setIsSaving(true);
+      setError(null);
       const payload = {
-        ...form,
         username: form.email.trim(),
+        email: form.email.trim(),
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        password: form.password?.trim() ? form.password : undefined,
+        roles: form.roles,
       };
       const updated = await updateUser(id, payload, accessToken);
       navigate(`/users/${updated.id}`, {
@@ -99,21 +128,6 @@ export function EditUserPage() {
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
 
-      <div className="card stack user-form-card">
-        <span className="card__label">Project Roles</span>
-        <div className="actions">
-          {projectRoles.length > 0 ? (
-            projectRoles.map((role) => (
-              <span key={role} className="button button--secondary">
-                {role}
-              </span>
-            ))
-          ) : (
-            <span className="muted">ไม่มีบทบาทของ InsightDocs ที่ผูกกับบัญชีนี้</span>
-          )}
-        </div>
-      </div>
-
       <div className="stack user-form-panel">
         <form className="form-grid" onSubmit={handleSubmit}>
           <label className="stack" htmlFor="edit-user-email">
@@ -130,16 +144,84 @@ export function EditUserPage() {
               }}
             />
           </label>
-          <label className="stack" htmlFor="edit-user-display-name">
-            <span>Display Name</span>
+          <label className="stack" htmlFor="edit-user-first-name">
+            <span>ชื่อ</span>
             <input
-              id="edit-user-display-name"
+              id="edit-user-first-name"
               className="input"
-              placeholder="Display name"
-              value={form.displayName}
-              onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))}
+              placeholder="ชื่อ"
+              value={form.firstName}
+              onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))}
             />
           </label>
+          <label className="stack" htmlFor="edit-user-last-name">
+            <span>นามสกุล</span>
+            <input
+              id="edit-user-last-name"
+              className="input"
+              placeholder="นามสกุล"
+              value={form.lastName}
+              onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))}
+            />
+          </label>
+          <label className="stack" htmlFor="edit-user-password">
+            <span>รหัสผ่านใหม่</span>
+            <input
+              id="edit-user-password"
+              className="input"
+              placeholder="เว้นว่างหากไม่ต้องการเปลี่ยน"
+              type="password"
+              value={form.password ?? ''}
+              onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+            />
+          </label>
+          <label className="stack" htmlFor="edit-user-confirm-password">
+            <span>ยืนยันรหัสผ่านใหม่</span>
+            <input
+              id="edit-user-confirm-password"
+              className="input"
+              placeholder="ยืนยันรหัสผ่านใหม่"
+              type="password"
+              value={form.confirmPassword}
+              onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
+            />
+          </label>
+          <fieldset className="stack role-group">
+            <legend>Roles</legend>
+            <div className="table-wrap role-table-wrap">
+              <table className="table role-table">
+                <thead>
+                  <tr>
+                    <th>เลือก</th>
+                    <th>Role</th>
+                    <th>คำอธิบาย</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {AVAILABLE_PROJECT_ROLES.map((role) => (
+                    <tr key={role}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={form.roles.includes(role)}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              roles: event.target.checked
+                                ? [...current.roles, role]
+                                : current.roles.filter((value) => value !== role),
+                            }))
+                          }
+                        />
+                      </td>
+                      <td>{formatBusinessRole(role)}</td>
+                      <td className="muted">{formatBusinessRoleDescription(role)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </fieldset>
           <div className="actions">
             <button className="button" disabled={isSaving} type="submit">
               {isSaving ? 'Saving...' : 'บันทึกการแก้ไข'}

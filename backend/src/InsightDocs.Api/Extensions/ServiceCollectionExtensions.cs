@@ -73,6 +73,20 @@ public static class ServiceCollectionExtensions
                 policy.RequireAuthenticatedUser())
             .AddPolicy(AuthorizationPolicies.AdminAccess, policy =>
                 policy.RequireRole(BusinessRoles.Admin, "admin", "realm-admin", "insightdocs-admin"))
+            .AddPolicy(AuthorizationPolicies.UserManagementAccess, policy =>
+                policy.RequireRole(
+                    BusinessRoles.Admin,
+                    "admin",
+                    "realm-admin",
+                    "insightdocs-admin",
+                    BusinessRoles.UserAdmin))
+            .AddPolicy(AuthorizationPolicies.AuditAccess, policy =>
+                policy.RequireRole(
+                    BusinessRoles.Admin,
+                    "admin",
+                    "realm-admin",
+                    "insightdocs-admin",
+                    BusinessRoles.AuditReader))
             .AddPolicy(AuthorizationPolicies.DocumentManagement, policy =>
                 policy.RequireRole(
                     BusinessRoles.Admin,

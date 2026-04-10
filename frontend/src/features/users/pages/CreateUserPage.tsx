@@ -3,19 +3,26 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { createUser } from '../api/usersApi';
-import type { CreateUserInput } from '../types';
+import { AVAILABLE_PROJECT_ROLES, formatBusinessRole, formatBusinessRoleDescription, type CreateUserInput } from '../types';
 
-const initialForm: CreateUserInput = {
+type CreateUserFormState = CreateUserInput & {
+  confirmPassword: string;
+};
+
+const initialForm: CreateUserFormState = {
   username: '',
   email: '',
-  displayName: '',
+  firstName: '',
+  lastName: '',
   password: '',
+  confirmPassword: '',
+  roles: [],
 };
 
 export function CreateUserPage() {
   const { accessToken } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState<CreateUserInput>(initialForm);
+  const [form, setForm] = useState<CreateUserFormState>(initialForm);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -26,11 +33,26 @@ export function CreateUserPage() {
       return;
     }
 
+    if (form.password !== form.confirmPassword) {
+      setError('รหัสผ่านและยืนยันรหัสผ่านต้องตรงกัน');
+      return;
+    }
+
+    if (form.roles.length === 0) {
+      setError('กรุณาเลือกอย่างน้อย 1 role');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
+      setError(null);
       const payload = {
-        ...form,
         username: form.email.trim(),
+        email: form.email.trim(),
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        password: form.password,
+        roles: form.roles,
       };
       const created = await createUser(payload, accessToken);
       navigate('/users', {
@@ -76,27 +98,84 @@ export function CreateUserPage() {
               }}
             />
           </label>
-          <label className="stack" htmlFor="create-user-display-name">
-            <span>Display Name</span>
+          <label className="stack" htmlFor="create-user-first-name">
+            <span>ชื่อ</span>
             <input
-              id="create-user-display-name"
+              id="create-user-first-name"
               className="input"
-              placeholder="Display name"
-              value={form.displayName}
-              onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))}
+              placeholder="ชื่อ"
+              value={form.firstName}
+              onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))}
+            />
+          </label>
+          <label className="stack" htmlFor="create-user-last-name">
+            <span>นามสกุล</span>
+            <input
+              id="create-user-last-name"
+              className="input"
+              placeholder="นามสกุล"
+              value={form.lastName}
+              onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))}
             />
           </label>
           <label className="stack" htmlFor="create-user-password">
-            <span>Temporary Password</span>
+            <span>รหัสผ่าน</span>
             <input
               id="create-user-password"
               className="input"
-              placeholder="Temporary password"
+              placeholder="รหัสผ่าน"
               type="password"
               value={form.password}
               onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
             />
           </label>
+          <label className="stack" htmlFor="create-user-confirm-password">
+            <span>ยืนยันรหัสผ่าน</span>
+            <input
+              id="create-user-confirm-password"
+              className="input"
+              placeholder="ยืนยันรหัสผ่าน"
+              type="password"
+              value={form.confirmPassword}
+              onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
+            />
+          </label>
+          <fieldset className="stack role-group">
+            <legend>Roles</legend>
+            <div className="table-wrap role-table-wrap">
+              <table className="table role-table">
+                <thead>
+                  <tr>
+                    <th>เลือก</th>
+                    <th>Role</th>
+                    <th>คำอธิบาย</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {AVAILABLE_PROJECT_ROLES.map((role) => (
+                    <tr key={role}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={form.roles.includes(role)}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              roles: event.target.checked
+                                ? [...current.roles, role]
+                                : current.roles.filter((value) => value !== role),
+                            }))
+                          }
+                        />
+                      </td>
+                      <td>{formatBusinessRole(role)}</td>
+                      <td className="muted">{formatBusinessRoleDescription(role)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </fieldset>
           <div className="actions">
             <button className="button" disabled={isSubmitting} type="submit">
               {isSubmitting ? 'Creating...' : 'Create User'}

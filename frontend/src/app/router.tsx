@@ -23,7 +23,6 @@ import { CreateUserPage } from '../features/users/pages/CreateUserPage';
 import { EditUserPage } from '../features/users/pages/EditUserPage';
 import { UserDetailPage } from '../features/users/pages/UserDetailPage';
 import { UsersPage } from '../features/users/pages/UsersPage';
-import { AdminRoute } from '../features/users/routes/AdminRoute';
 import { RoleRoute } from '../shared/routing/RoleRoute';
 
 export const router = createBrowserRouter([
@@ -107,7 +106,7 @@ export const router = createBrowserRouter([
             ],
           },
           {
-            element: <AdminRoute />,
+            element: <RoleRoute check={(access) => access.canAccessUsers} />,
             children: [
               {
                 path: 'users',
@@ -125,10 +124,20 @@ export const router = createBrowserRouter([
                 path: 'users/:id/edit',
                 element: <EditUserPage />,
               },
+            ],
+          },
+          {
+            element: <RoleRoute check={(access) => access.canAccessPasswordResetAdmin} />,
+            children: [
               {
                 path: 'admin/password-reset-requests',
                 element: <AdminPasswordResetRequestsPage />,
               },
+            ],
+          },
+          {
+            element: <RoleRoute check={(access) => access.canAccessAuditLogs} />,
+            children: [
               {
                 path: 'audit-logs',
                 element: <AuditLogsPage />,

@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../../auth/context/useAuth';
-import { getUsers } from '../api/usersApi';
-import { formatUserStatus, getProjectRoleLabels, type AppUser } from '../types';
+import { deleteUser, disableUser, enableUser, getUsers } from '../api/usersApi';
+import { canDisableUser, canEnableUser, formatUserStatus, getProjectRoleLabels, type AppUser } from '../types';
 
 export function UsersPage() {
   const { accessToken } = useAuth();
   const location = useLocation();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [notice] = useState<string | null>((location.state as { notice?: string } | null)?.notice ?? null);
+  const [notice, setNotice] = useState<string | null>((location.state as { notice?: string } | null)?.notice ?? null);
   const [isLoading, setIsLoading] = useState(true);
+  const [busyUserId, setBusyUserId] = useState<string | null>(null);
+  const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -44,6 +46,85 @@ export function UsersPage() {
       ignore = true;
     };
   }, [accessToken]);
+
+  async function runRowAction(
+    userId: string,
+    action: () => Promise<AppUser | void>,
+    successMessage: string,
+    options?: { remove?: boolean },
+  ) {
+    if (!accessToken) {
+      return;
+    }
+
+    try {
+      setBusyUserId(userId);
+      const result = await action();
+      setUsers((current) => {
+        if (options?.remove) {
+          return current.filter((user) => user.id !== userId);
+        }
+
+        if (!result) {
+          return current;
+        }
+
+        return current.map((user) => (user.id === userId ? result : user));
+      });
+      setNotice(successMessage);
+      setError(null);
+      setOpenMenuUserId(null);
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : 'Action failed.');
+      setNotice(null);
+    } finally {
+      setBusyUserId(null);
+    }
+  }
+
+  async function handleDelete(user: AppUser) {
+    if (!accessToken) {
+      return;
+    }
+
+    const confirmed = window.confirm(`ยืนยันการลบผู้ใช้งาน ${formatUserName(user)} ออกจาก InsightDocs และ Keycloak?`);
+    if (!confirmed) {
+      return;
+    }
+
+    await runRowAction(
+      user.id,
+      () => deleteUser(user.id, accessToken),
+      'ลบผู้ใช้งานสำเร็จ',
+      { remove: true },
+    );
+  }
+
+  async function handleDisable(user: AppUser) {
+    const confirmed = window.confirm(`ยืนยันการปิดการใช้งานผู้ใช้ ${formatUserName(user)} ?`);
+    if (!confirmed) {
+      return;
+    }
+
+    await runRowAction(
+      user.id,
+      () => disableUser(user.id, accessToken!),
+      'ปิดการใช้งานผู้ใช้สำเร็จ',
+    );
+  }
+
+  async function handleEnable(user: AppUser) {
+    const confirmed = window.confirm(`ยืนยันการเปิดการใช้งานผู้ใช้ ${formatUserName(user)} ?`);
+    if (!confirmed) {
+      return;
+    }
+
+    await runRowAction(
+      user.id,
+      () => enableUser(user.id, accessToken!),
+      'เปิดการใช้งานผู้ใช้สำเร็จ',
+    );
+  }
 
   return (
     <section className="panel panel--full stack">
@@ -81,13 +162,57 @@ export function UsersPage() {
                     <Link to={`/users/${user.id}`}>{formatUserName(user)}</Link>
                   </td>
                   <td>{user.email}</td>
-                  <td>{formatUserStatus(user.status)}</td>
+                  <td>{formatUserStatus(user.status, user.approvedAt)}</td>
                   <td>{getProjectRoleLabels(user.roles).join(', ') || 'ไม่มีบทบาทในระบบ'}</td>
                   <td>
-                    <div className="actions actions--compact">
-                      <Link className="button button--secondary" to={`/users/${user.id}/edit`}>
-                        แก้ไข
-                      </Link>
+                    <div className="row-menu">
+                      <button
+                        className="button button--secondary"
+                        disabled={busyUserId === user.id}
+                        type="button"
+                        onClick={() => setOpenMenuUserId((current) => (current === user.id ? null : user.id))}
+                      >
+                        {busyUserId === user.id ? 'กำลังบันทึก...' : 'ตัวเลือก'}
+                      </button>
+                      {openMenuUserId === user.id ? (
+                        <div className="topbar__menu-panel row-menu__panel">
+                          <Link
+                            className="topbar__menu-link"
+                            to={`/users/${user.id}/edit`}
+                            onClick={() => setOpenMenuUserId(null)}
+                          >
+                            แก้ไข
+                          </Link>
+                          {canDisableUser(user.status, user.approvedAt) ? (
+                            <button
+                              className="topbar__menu-link topbar__menu-link--button"
+                              disabled={busyUserId === user.id}
+                              type="button"
+                              onClick={() => void handleDisable(user)}
+                            >
+                              ปิดการใช้งาน
+                            </button>
+                          ) : null}
+                          {canEnableUser(user.status, user.approvedAt) ? (
+                            <button
+                              className="topbar__menu-link topbar__menu-link--button"
+                              disabled={busyUserId === user.id}
+                              type="button"
+                              onClick={() => void handleEnable(user)}
+                            >
+                              เปิดการใช้งาน
+                            </button>
+                          ) : null}
+                          <button
+                            className="topbar__menu-link topbar__menu-link--button"
+                            disabled={busyUserId === user.id}
+                            type="button"
+                            onClick={() => void handleDelete(user)}
+                          >
+                            ลบ
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                   </td>
                 </tr>

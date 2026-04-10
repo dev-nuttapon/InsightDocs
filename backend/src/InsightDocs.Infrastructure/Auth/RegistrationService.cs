@@ -23,6 +23,7 @@ public sealed class RegistrationService(
                 command.Username.Trim(),
                 command.Email.Trim(),
                 command.DisplayName.Trim(),
+                string.Empty,
                 command.Password,
                 enabled: false,
                 cancellationToken);
