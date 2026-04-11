@@ -8,6 +8,7 @@ import { deleteUser, disableUser, enableUser, getUsers } from '../api/usersApi';
 import { canDisableUser, canEnableUser, getProjectRoleLabels, resolveUserStatus, type AppUser } from '../types';
 import { StatCard } from '../../../shared/components/ui/StatCard';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
+import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 
 type PendingAction =
   | {
@@ -153,6 +154,22 @@ export function UsersPage() {
         eyebrow="Administration"
         description="สร้างผู้ใช้งานจากระบบนี้ แล้ว provision บัญชีไปยัง Keycloak พร้อมสร้าง access record ใน InsightDocs ให้เชื่อมกันอัตโนมัติ"
         actions={<Link className="button" to="/users/new">Invite User</Link>}
+      />
+
+      <ModuleMockup
+        eyebrow="Users Mockup"
+        title="ศูนย์จัดการผู้ใช้งานและสิทธิ์ของระบบ"
+        description="ใช้หน้านี้ในการดูรายชื่อผู้ใช้ ปรับสถานะการใช้งาน และเข้าถึงงานสร้างหรือแก้ไขผู้ใช้งานจากจุดเดียว"
+        highlights={['ผู้ใช้งานทั้งหมด', 'สถานะบัญชี', 'บทบาทในระบบ', 'Provision ไป Keycloak']}
+        steps={[
+          'ดูรายการผู้ใช้งานและบทบาทปัจจุบัน',
+          'เปิดเมนูตัวเลือกเพื่อแก้ไข เปิดใช้งาน หรือปิดการใช้งาน',
+          'สร้างผู้ใช้งานใหม่ผ่านหน้าเฉพาะแล้วผูกเข้ากับ Keycloak',
+        ]}
+        metrics={[
+          { label: 'จำนวนบัญชี', value: `${users.length} รายการ` },
+          { label: 'สถานะระบบ', value: 'Provisioned Access' },
+        ]}
       />
 
       {notice ? <div className="callout">{notice}</div> : null}

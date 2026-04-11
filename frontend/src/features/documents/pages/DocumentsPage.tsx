@@ -5,6 +5,9 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { StatCard } from '../../../shared/components/ui/StatCard';
+import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { SampleDocumentsShowcase } from '../../../shared/components/mock/SampleDocumentsShowcase';
+import { SAMPLE_DOCUMENTS } from '../../../shared/mock/sampleDocuments';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { buildAccessProfile } from '../../../shared/auth/authorization';
@@ -87,15 +90,15 @@ export function DocumentsPage() {
   }
 
   const summaryCards = useMemo(() => [
-    { label: 'เอกสารทั้งหมด', value: documents.length },
-    { label: 'ฉบับร่าง', value: documents.filter((document) => document.status === 'Draft').length },
-    { label: 'รอตรวจสอบ', value: documents.filter((document) => document.status === 'InReview').length },
-    { label: 'อนุมัติแล้ว', value: documents.filter((document) => document.status === 'Approved').length },
+    { label: 'เอกสารทั้งหมด', value: documents.length > 0 ? documents.length : SAMPLE_DOCUMENTS.length },
+    { label: 'ฉบับร่าง', value: (documents.length > 0 ? documents : SAMPLE_DOCUMENTS).filter((document) => document.status === 'Draft').length },
+    { label: 'รอตรวจสอบ', value: (documents.length > 0 ? documents : SAMPLE_DOCUMENTS).filter((document) => document.status === 'InReview').length },
+    { label: 'อนุมัติแล้ว', value: (documents.length > 0 ? documents : SAMPLE_DOCUMENTS).filter((document) => document.status === 'Approved').length },
   ], [documents]);
 
-  const filteredDocuments = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+  const normalizedQuery = query.trim().toLowerCase();
 
+  const filteredDocuments = useMemo(() => {
     return documents.filter((document) => {
       const matchesStatus = statusFilter === 'all' || document.status === statusFilter;
       const matchesQuery =
@@ -110,6 +113,40 @@ export function DocumentsPage() {
     });
   }, [documents, query, statusFilter]);
 
+  const displayedDocuments = useMemo(() => {
+    if (documents.length > 0) {
+      return filteredDocuments;
+    }
+
+    return SAMPLE_DOCUMENTS
+      .filter((document) => {
+        const matchesStatus = statusFilter === 'all' || document.status === statusFilter;
+        const matchesQuery =
+          normalizedQuery.length === 0 ||
+          document.title.toLowerCase().includes(normalizedQuery) ||
+          document.category.toLowerCase().includes(normalizedQuery) ||
+          document.owner.toLowerCase().includes(normalizedQuery) ||
+          document.controller.toLowerCase().includes(normalizedQuery);
+
+        return matchesStatus && matchesQuery;
+      })
+      .map((document, index) => ({
+        id: document.id,
+        title: document.title,
+        description: `เอกสารตัวอย่างสำหรับ demo workflow ของ ${document.category}`,
+        category: document.category,
+        ownerUserId: null,
+        ownerDisplayName: document.owner,
+        controllerUserId: null,
+        controllerDisplayName: document.controller,
+        status: document.status as DocumentStatus,
+        versionCount: Number(document.currentVersion.replace('v', '')),
+        currentVersionNumber: Number(document.currentVersion.replace('v', '')),
+        createdAt: new Date(Date.now() - index * 86400000).toISOString(),
+        createdBy: 'demo.system',
+      }));
+  }, [documents.length, filteredDocuments, query, statusFilter]);
+
   return (
     <div className="stack stack--xl">
       <PageHeader
@@ -118,6 +155,24 @@ export function DocumentsPage() {
         description="ดูรายการเอกสารที่อยู่ภายใต้การควบคุม ค้นหาเอกสารที่ต้องใช้ และเปิดดูรายละเอียดเพื่อจัดการเวอร์ชัน อนุมัติ และลงนาม"
         actions={<Link className="button button--secondary" to="/search">ค้นหาเอกสารขั้นสูง</Link>}
       />
+
+      <ModuleMockup
+        eyebrow="Registry Mockup"
+        title="ศูนย์ทะเบียนเอกสารและการติดตามสถานะ"
+        description="ใช้เป็นหน้าหลักสำหรับสร้างเอกสารใหม่ ตรวจสถานะปัจจุบัน และเข้าไปดูเวอร์ชัน อนุมัติ และลายเซ็นของเอกสารแต่ละรายการ"
+        highlights={['ลงทะเบียนเอกสาร', 'ติดตามสถานะ', 'เปิดเอกสาร', 'ควบคุมเวอร์ชัน']}
+        steps={[
+          'สร้างรายการเอกสารหรือค้นหารายการเดิมจาก registry',
+          'เปิดเอกสารเพื่อจัดการเวอร์ชัน อนุมัติ และการลงนาม',
+          'ใช้ตัวกรองเพื่อดูเฉพาะชุดเอกสารที่กำลังทำงานอยู่',
+        ]}
+        metrics={[
+          { label: 'มุมมองหลัก', value: 'Document Registry' },
+          { label: 'งานต่อเนื่อง', value: access.canManageDocuments ? 'Create + Manage' : 'Review + View' },
+        ]}
+      />
+
+      <SampleDocumentsShowcase />
 
       <div className="dashboard-summary-grid">
         {summaryCards.map((card) => (
@@ -209,22 +264,22 @@ export function DocumentsPage() {
 
         <div className="registry-toolbar">
           <span className="muted">
-            พบ {filteredDocuments.length} จาก {documents.length} รายการ
+            พบ {displayedDocuments.length} จาก {documents.length > 0 ? documents.length : SAMPLE_DOCUMENTS.length} รายการ
           </span>
         </div>
 
-        {filteredDocuments.length === 0 ? (
+        {displayedDocuments.length === 0 ? (
           <EmptyState
-            title={documents.length === 0 ? 'ยังไม่มีเอกสาร' : 'ไม่พบเอกสารที่ตรงเงื่อนไข'}
+            title={documents.length === 0 ? 'ไม่พบเอกสารตัวอย่างที่ตรงเงื่อนไข' : 'ไม่พบเอกสารที่ตรงเงื่อนไข'}
             description={
               documents.length === 0
-                ? 'เริ่มต้นด้วยการสร้างรายการเอกสารใหม่ แล้วค่อยอัปโหลดไฟล์ PDF ในหน้ารายละเอียด'
+                ? 'ลองเปลี่ยนคำค้นหรือสถานะ เพื่อดูเอกสารตัวอย่างชุดอื่นใน mockup'
                 : 'ลองเปลี่ยนคำค้นหรือสถานะที่เลือก เพื่อดูเอกสารรายการอื่น'
             }
           />
         ) : (
           <div className="registry-list">
-            {filteredDocuments.map((document) => (
+            {displayedDocuments.map((document) => (
               <article key={document.id} className="registry-item">
                 <div className="registry-item__main">
                   <div className="registry-item__header">

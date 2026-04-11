@@ -10,6 +10,7 @@ import { StatCard } from '../../../shared/components/ui/StatCard';
 import { Timeline, TimelineItem } from '../../../shared/components/ui/Timeline';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
+import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 
 const defaultFilters: AuditLogFilters = {
   actor: '',
@@ -146,6 +147,22 @@ export function AuditLogsPage() {
         title="Audit log"
         eyebrow="Audit"
         description="ติดตามเหตุการณ์สำคัญของระบบย้อนหลัง ตรวจสอบผู้กระทำ รายการที่เกี่ยวข้อง และดู metadata ของเหตุการณ์แต่ละรายการ"
+      />
+
+      <ModuleMockup
+        eyebrow="Audit Mockup"
+        title="ศูนย์ติดตามเหตุการณ์สำคัญของระบบ"
+        description="ใช้หน้านี้ในการสืบค้นเหตุการณ์ย้อนหลัง เลือกดูรายละเอียดเชิงลึก และเชื่อมกลับไปยังเอกสารหรือผู้ใช้งานที่เกี่ยวข้อง"
+        highlights={['Append-only Log', 'Actor Traceability', 'Event Detail', 'Related Document Link']}
+        steps={[
+          'กรองเหตุการณ์ด้วยผู้กระทำ ประเภทเหตุการณ์ หรือ document id',
+          'เลือก event ที่ต้องการเพื่อตรวจ metadata และ timeline',
+          'ย้อนกลับไปยังเอกสารหรือผู้ใช้งานที่เกี่ยวข้องเมื่อจำเป็น',
+        ]}
+        metrics={[
+          { label: 'รายการทั้งหมด', value: `${results?.totalCount ?? 0} เหตุการณ์` },
+          { label: 'มุมมอง', value: 'Operational Traceability' },
+        ]}
       />
 
       <div className="dashboard-summary-grid">

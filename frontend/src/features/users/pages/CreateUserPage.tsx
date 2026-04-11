@@ -6,6 +6,7 @@ import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 import { createUser } from '../api/usersApi';
 import { AVAILABLE_PROJECT_ROLES, formatBusinessRole, formatBusinessRoleDescription, type CreateUserInput } from '../types';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
+import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 
 type CreateUserFormState = CreateUserInput & {
   confirmPassword: string;
@@ -91,6 +92,22 @@ export function CreateUserPage() {
         eyebrow="Users & Access"
         description="กำหนดข้อมูลบัญชี บทบาทเริ่มต้น และรหัสผ่านเริ่มต้นของผู้ใช้งานใหม่ จากนั้นระบบจะสร้างบัญชีเดียวกันใน InsightDocs และ Keycloak ให้อัตโนมัติ"
         actions={<Link className="button button--secondary" to="/users">กลับไปรายการผู้ใช้</Link>}
+      />
+
+      <ModuleMockup
+        eyebrow="Invite Mockup"
+        title="หน้าสร้างบัญชีผู้ใช้งานจากระบบ InsightDocs"
+        description="ใช้หน้านี้ในการสร้างบัญชีใหม่ กำหนดบทบาทตั้งต้น และ provision บัญชีเดียวกันไปยัง Keycloak โดยไม่ต้องออกไปจัดการหลายระบบ"
+        highlights={['Account Setup', 'Role Assignment', 'Initial Password', 'Keycloak Provisioning']}
+        steps={[
+          'กรอกข้อมูลบัญชีพื้นฐานและรหัสผ่านเริ่มต้น',
+          'เลือกบทบาทเริ่มต้นให้ตรงกับหน้าที่ของผู้ใช้งาน',
+          'บันทึกเพื่อสร้างบัญชีใน InsightDocs และ Keycloak พร้อมกัน',
+        ]}
+        metrics={[
+          { label: 'บทบาทที่เลือก', value: `${selectedRolesCount} บทบาท` },
+          { label: 'ปลายทางบัญชี', value: 'InsightDocs + Keycloak' },
+        ]}
       />
 
       <section className="panel panel--full stack">

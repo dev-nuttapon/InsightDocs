@@ -4,6 +4,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
+import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { SampleDocumentsShowcase } from '../../../shared/components/mock/SampleDocumentsShowcase';
 
 
 
@@ -91,6 +93,24 @@ export function SearchPage() {
         eyebrow="Search"
         description="Search document metadata and current signature state using PostgreSQL filters and full-text search."
       />
+
+      <ModuleMockup
+        eyebrow="Search Mockup"
+        title="พื้นที่ค้นหาเอกสารแบบหลายเงื่อนไข"
+        description="หน้านี้ใช้ค้นหาเอกสารจากคำค้น หมวดหมู่ สถานะ และผู้เกี่ยวข้อง พร้อมเปิดดูรายละเอียดเอกสารที่ต้องใช้ได้ทันที"
+        highlights={['Keyword Search', 'Advanced Filters', 'Signature Summary', 'Quick Open']}
+        steps={[
+          'ใส่คำค้นหรือเงื่อนไขที่ต้องการ',
+          'ไล่ดูผลลัพธ์พร้อมสถานะและ summary การลงนาม',
+          'เปิดเอกสารที่ต้องการเพื่อตรวจสอบรายละเอียดต่อ',
+        ]}
+        metrics={[
+          { label: 'รูปแบบการค้นหา', value: 'Metadata + Full-text' },
+          { label: 'ผลลัพธ์ที่คาดหวัง', value: results ? `${results.totalCount} รายการ` : 'พร้อมค้นหา' },
+        ]}
+      />
+
+      <SampleDocumentsShowcase />
 
       <section className="panel stack">
 

@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { StatCard } from '../../../shared/components/ui/StatCard';
+import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { SampleDocumentsShowcase } from '../../../shared/components/mock/SampleDocumentsShowcase';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { getPendingSignatures, rejectDocumentSignature, signDocumentSignature } from '../../documents/api/documentsApi';
@@ -79,8 +81,26 @@ export function SignaturesPage() {
       <PageHeader
         title="คิวรอลงนาม"
         eyebrow="Signatures"
-        description="เอกสารที่ถูกมอบหมายให้คุณลงนามจะแสดงในหน้านี้ พร้อมตำแหน่งลายเซ็นและความเห็นประกอบก่อนดำเนินการ"
+        description="เอกสารที่ถูกมอบหมายให้คุณลงนามจะแสดงในหน้านี้ พร้อมตำแหน่งลายเซ็น รูปแบบลายเซ็นบนเอกสาร และความเห็นประกอบก่อนดำเนินการ"
       />
+
+      <ModuleMockup
+        eyebrow="Signature Mockup"
+        title="คิวงานลงนามพร้อมตำแหน่งลายเซ็น"
+        description="หน้านี้ใช้สำหรับดูรายการที่ได้รับมอบหมาย ตรวจตำแหน่งลายเซ็นบน PDF และดำเนินการลงนามหรือปฏิเสธตามลำดับที่กำหนด"
+        highlights={['Signing Queue', 'Hybrid Signature', 'Sequential Order', 'Visible Placement']}
+        steps={[
+          'เลือกเอกสารที่ได้รับมอบหมายให้ลงนาม',
+          'ตรวจตำแหน่งลายเซ็นและข้อมูลประกอบก่อนลงนาม',
+          'ลงนามหรือปฏิเสธ พร้อมบันทึกเหตุผลในคิวงาน',
+        ]}
+        metrics={[
+          { label: 'งานรอดำเนินการ', value: `${items.length} รายการ` },
+          { label: 'โหมดสาธิต', value: 'Hybrid Signature Demo' },
+        ]}
+      />
+
+      <SampleDocumentsShowcase />
 
       <div className="dashboard-summary-grid">
         <StatCard label="รอลงนามทั้งหมด" value={items.length} />
@@ -90,6 +110,11 @@ export function SignaturesPage() {
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
+
+      <div className="callout">
+        <strong>รูปแบบลายเซ็นที่ใช้ใน demo</strong>
+        <div className="muted">ระบบสาธิตการลงนามแบบผสม โดยแสดงทั้งข้อมูลการลงนามดิจิทัลและพื้นที่รูปลายเซ็นที่วางบน PDF เพื่อให้ผู้อ่านเห็นร่องรอยการลงนามในเอกสารโดยตรง</div>
+      </div>
 
       <section className="panel panel--full stack">
         <div className="section-heading">
@@ -123,6 +148,23 @@ export function SignaturesPage() {
                     <span>หน้า {item.pageNumber}</span>
                     <span>ตำแหน่ง X:{item.positionX} Y:{item.positionY}</span>
                     <span>ขนาด {item.width} × {item.height}</span>
+                    <span>รูปแบบ Hybrid Signature</span>
+                  </div>
+
+                  <div className="signature-preview-panel signature-preview-panel--inline">
+                    <div className="signature-preview signature-preview--hybrid">
+                      <div className="signature-preview__stamp">ลงนามอิเล็กทรอนิกส์</div>
+                      <div className="signature-preview__identity">
+                        <div className="signature-preview__avatar">SG</div>
+                        <div className="stack stack--compact">
+                          <strong>กรอบลายเซ็นบนเอกสาร</strong>
+                          <span className="muted">แสดงชื่อผู้ลงนาม เวลา และรูปลายเซ็นประกอบบน PDF</span>
+                        </div>
+                      </div>
+                      <div className="signature-preview__image">
+                        <span className="signature-preview__scribble">Signature</span>
+                      </div>
+                    </div>
                   </div>
 
                   {item.comment ? (

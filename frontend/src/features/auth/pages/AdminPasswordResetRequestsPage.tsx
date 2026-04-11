@@ -6,6 +6,7 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { StatCard } from '../../../shared/components/ui/StatCard';
+import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 
 export function AdminPasswordResetRequestsPage() {
   const { accessToken } = useAuth();
@@ -96,6 +97,22 @@ export function AdminPasswordResetRequestsPage() {
         title="คำขอรีเซ็ตรหัสผ่าน"
         eyebrow="Administration"
         description="ตรวจสอบคำขอรีเซ็ตรหัสผ่าน อนุมัติหรือปฏิเสธคำขอ และคัดลอกลิงก์รีเซ็ตเพื่อส่งต่อให้ผู้ใช้งานด้วยตนเอง"
+      />
+
+      <ModuleMockup
+        eyebrow="Reset Flow Mockup"
+        title="คิวคำขอรีเซ็ตรหัสผ่านที่ดูแลโดยผู้ดูแลระบบ"
+        description="ใช้ตรวจคำขอรีเซ็ตรหัสผ่านแบบไม่ส่งอีเมลอัตโนมัติ อนุมัติหรือปฏิเสธ และคัดลอกลิงก์รีเซ็ตเพื่อส่งให้ผู้ใช้ด้วยตนเอง"
+        highlights={['Pending Request', 'Approve / Reject', 'Manual Link Sharing', 'Audit-ready Flow']}
+        steps={[
+          'เปิดคำขอที่ผู้ใช้ส่งเข้ามา',
+          'อนุมัติหรือปฏิเสธตามนโยบายขององค์กร',
+          'คัดลอกลิงก์รีเซ็ตและส่งต่อให้ผู้ใช้ด้วยช่องทางภายใน',
+        ]}
+        metrics={[
+          { label: 'คำขอทั้งหมด', value: `${requests.length} รายการ` },
+          { label: 'รูปแบบการส่งลิงก์', value: 'Manual Admin Hand-off' },
+        ]}
       />
 
       <div className="dashboard-summary-grid">

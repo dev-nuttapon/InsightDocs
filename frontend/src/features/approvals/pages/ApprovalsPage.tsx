@@ -5,6 +5,8 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { StatCard } from '../../../shared/components/ui/StatCard';
+import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { SampleDocumentsShowcase } from '../../../shared/components/mock/SampleDocumentsShowcase';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { approveDocument, getPendingApprovals, rejectDocument } from '../../documents/api/documentsApi';
@@ -74,6 +76,24 @@ export function ApprovalsPage() {
         eyebrow="Approvals"
         description="ตรวจสอบเอกสารที่ถูกส่งเข้ามาเพื่ออนุมัติ พร้อมบันทึกความเห็นและดำเนินการอนุมัติหรือปฏิเสธได้จากหน้านี้"
       />
+
+      <ModuleMockup
+        eyebrow="Approval Mockup"
+        title="คิวพิจารณาเอกสารสำหรับผู้อนุมัติ"
+        description="ใช้หน้านี้ในการเปิดเอกสาร ตรวจเวอร์ชันปัจจุบัน บันทึกความเห็น และตัดสินใจอนุมัติหรือปฏิเสธจาก workflow เดียว"
+        highlights={['Pending Queue', 'Review Comment', 'Approve / Reject', 'Open Document']}
+        steps={[
+          'เลือกเอกสารที่ถูกส่งเข้ามาในคิวอนุมัติ',
+          'อ่านข้อมูลสำคัญและเปิดเอกสารเพื่อตรวจสอบก่อนตัดสินใจ',
+          'บันทึกความเห็นแล้วอนุมัติหรือปฏิเสธทันทีจากคิวงาน',
+        ]}
+        metrics={[
+          { label: 'สถานะคิว', value: `${items.length} รายการ` },
+          { label: 'รูปแบบงาน', value: 'Manager Review Flow' },
+        ]}
+      />
+
+      <SampleDocumentsShowcase />
 
       <div className="dashboard-summary-grid">
         <StatCard label="รออนุมัติทั้งหมด" value={items.length} />

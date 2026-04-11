@@ -6,6 +6,9 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { StatCard } from '../../../shared/components/ui/StatCard';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
+import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { SampleDocumentsShowcase } from '../../../shared/components/mock/SampleDocumentsShowcase';
+import { SAMPLE_DOCUMENTS } from '../../../shared/mock/sampleDocuments';
 import { buildAccessProfile } from '../../../shared/auth/authorization';
 import { useAuth } from '../../auth/context/useAuth';
 import {
@@ -174,6 +177,42 @@ export function DashboardPage() {
     };
   }, [access.canManageDocuments, access.canReviewDocuments, access.canSignDocuments]);
 
+  const displayedRecentDocuments = useMemo(() => {
+    if (recentDocuments.length > 0) {
+      return recentDocuments;
+    }
+
+    return SAMPLE_DOCUMENTS.map((document, index) => ({
+      id: document.id,
+      title: document.title,
+      category: document.category,
+      status: document.status,
+      currentVersionNumber: Number(document.currentVersion.replace('v', '')),
+      ownerDisplayName: document.owner,
+      controllerDisplayName: document.controller,
+      lastActivityAt: new Date(Date.now() - index * 3600000).toISOString(),
+    }));
+  }, [recentDocuments]);
+
+  const displayedRecentActivities = useMemo(() => {
+    if (recentActivities.length > 0) {
+      return recentActivities;
+    }
+
+    return SAMPLE_DOCUMENTS.map((document, index) => ({
+      id: `mock-activity-${document.id}`,
+      action: document.status === 'Approved' ? 'document.approval.approved' : document.status === 'InReview' ? 'document.approval.submitted' : 'document.created',
+      entityType: 'Document',
+      entityId: document.id,
+      relatedDocumentId: document.id,
+      relatedVersionId: document.currentVersion,
+      relatedDocumentTitle: document.title,
+      actorDisplayName: document.controller,
+      actorUsername: null,
+      timestamp: new Date(Date.now() - index * 5400000).toISOString(),
+    }));
+  }, [recentActivities]);
+
   if (!summary && !error) {
     return <StatePanel eyebrow="Dashboard" title="Loading dashboard" description="Collecting current metrics, recent documents, and operational activity." busy />;
   }
@@ -185,6 +224,24 @@ export function DashboardPage() {
         eyebrow="Operational Dashboard"
         description={primaryHeading.description}
       />
+
+      <ModuleMockup
+        eyebrow="Dashboard Mockup"
+        title="ศูนย์ควบคุมภาพรวมงานเอกสาร"
+        description="ใช้หน้านี้เป็นจุดเริ่มต้นสำหรับดูสถานะงานรายวัน เห็นคิวที่ต้องทำต่อ เอกสารล่าสุด และกิจกรรมสำคัญในภาพเดียว"
+        highlights={['ภาพรวมรายวัน', 'งานเร่งด่วน', 'คิวรออนุมัติ/ลงนาม', 'เอกสารล่าสุด']}
+        steps={[
+          'เปิดดู metric สำคัญของบทบาทที่คุณรับผิดชอบ',
+          'เลือกงานที่ต้องดำเนินการต่อจาก Quick Actions',
+          'ตรวจเอกสารล่าสุดและกิจกรรมที่เพิ่งเกิดขึ้น',
+        ]}
+        metrics={[
+          { label: 'บทบาทการใช้งาน', value: access.isAdmin ? 'Admin Workspace' : access.canReviewDocuments ? 'Review Workspace' : access.canSignDocuments ? 'Signature Workspace' : 'General Workspace' },
+          { label: 'โฟกัสหลัก', value: access.canReviewDocuments ? 'Approvals' : access.canSignDocuments ? 'Signing Queue' : 'Document Operations' },
+        ]}
+      />
+
+      <SampleDocumentsShowcase />
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
 
@@ -277,7 +334,7 @@ export function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {recentDocuments.map((document) => (
+                {displayedRecentDocuments.map((document) => (
                   <tr key={document.id}>
                     <td>
                       <Link to={`/documents/${document.id}`} style={{ fontWeight: 700 }}>{document.title}</Link>
@@ -292,7 +349,7 @@ export function DashboardPage() {
                     </td>
                   </tr>
                 ))}
-                {recentDocuments.length === 0 ? (
+                {displayedRecentDocuments.length === 0 ? (
                   <tr>
                     <td colSpan={3}>
                       <EmptyState 
@@ -312,14 +369,14 @@ export function DashboardPage() {
             <span className="sidebar__eyebrow">Recent Activities</span>
             <h3>กิจกรรมล่าสุด</h3>
           </div>
-          {recentActivities.length === 0 ? (
+          {displayedRecentActivities.length === 0 ? (
             <EmptyState 
               title="No activity" 
               description="Recent operational events will appear here." 
             />
           ) : (
             <div className="timeline" style={{ padding: '8px' }}>
-              {recentActivities.map((activity) => (
+              {displayedRecentActivities.map((activity) => (
                 <div key={activity.id} className="timeline-item">
                   <div className="timeline-item__dot" />
                   <div className="timeline-item__content">
