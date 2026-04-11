@@ -9,6 +9,7 @@ export function LoginPage() {
   const { authState, isAuthenticated, isReady, login, error, user } = useAuth();
   const redirectTarget = readRedirectTarget(location.state);
   const entryError = readEntryError(location.state) ?? error;
+  const isExpiredSession = authState === 'expired' || isExpiredSessionMessage(entryError);
   const loginStartedRef = useRef(false);
   const access = buildAccessProfile(user?.roles ?? []);
   const hasMappedAccess = access.normalizedRoles.length > 0;
@@ -17,7 +18,7 @@ export function LoginPage() {
     : resolveDefaultAuthorizedPath(access);
 
   useEffect(() => {
-    if (!isReady || isAuthenticated || entryError || loginStartedRef.current) {
+    if (!isReady || isAuthenticated || loginStartedRef.current || (entryError && !isExpiredSession)) {
       return;
     }
 
@@ -25,7 +26,7 @@ export function LoginPage() {
     void login(redirectTarget).catch(() => {
       loginStartedRef.current = false;
     });
-  }, [entryError, isAuthenticated, isReady, login, redirectTarget]);
+  }, [entryError, isAuthenticated, isExpiredSession, isReady, login, redirectTarget]);
 
   if (isAuthenticated && !hasMappedAccess) {
     return <Navigate replace to="/unauthorized" state={{ errorMessage: 'This account is authenticated but does not have any mapped InsightDocs roles.' }} />;
@@ -36,12 +37,12 @@ export function LoginPage() {
   }
 
   const isBusy = !isReady || authState === 'loading';
-  const heading = entryError
+  const heading = entryError && !isExpiredSession
     ? 'Keycloak sign-in needs attention'
     : authState === 'expired'
       ? 'Session expired'
       : 'Checking your session';
-  const description = entryError
+  const description = entryError && !isExpiredSession
     ? 'The sign-in flow returned with an error. Review the message below, then retry once Keycloak or the backend is ready.'
     : authState === 'expired'
       ? 'เซสชันเดิมไม่สามารถใช้งานต่อได้ ระบบจะพาคุณไปเริ่ม login ใหม่ผ่าน Keycloak'
@@ -54,9 +55,9 @@ export function LoginPage() {
         <h2>{heading}</h2>
         <p className="muted">{description}</p>
 
-        {entryError ? <div className="callout callout--danger">{entryError}</div> : null}
+        {entryError && !isExpiredSession ? <div className="callout callout--danger">{entryError}</div> : null}
 
-        {entryError ? (
+        {entryError && !isExpiredSession ? (
           <div className="actions">
             <button className="button button--wide" type="button" onClick={() => void login(redirectTarget)} disabled={isBusy}>
               {isBusy ? 'Redirecting...' : 'Retry Keycloak Login'}
@@ -108,4 +109,13 @@ function readRedirectTarget(state: unknown) {
 function readEntryError(state: unknown) {
   const candidate = state as { errorMessage?: string } | null;
   return candidate?.errorMessage ?? null;
+}
+
+function isExpiredSessionMessage(message: string | null) {
+  if (!message) {
+    return false;
+  }
+
+  const normalized = message.trim().toLowerCase();
+  return normalized.includes('session expired') || normalized.includes('sign in again');
 }

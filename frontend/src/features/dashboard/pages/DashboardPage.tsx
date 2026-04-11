@@ -7,7 +7,6 @@ import { StatCard } from '../../../shared/components/ui/StatCard';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
-import { SampleDocumentsShowcase } from '../../../shared/components/mock/SampleDocumentsShowcase';
 import { SAMPLE_DOCUMENTS } from '../../../shared/mock/sampleDocuments';
 import { buildAccessProfile } from '../../../shared/auth/authorization';
 import { useAuth } from '../../auth/context/useAuth';
@@ -241,7 +240,15 @@ export function DashboardPage() {
         ]}
       />
 
-      <SampleDocumentsShowcase />
+      <section className="panel stack">
+        <div className="action-row">
+          <div className="action-row__copy">
+            <strong>ตัวอย่างเอกสารสำหรับ demo</strong>
+            <span className="muted">ดูชุดเอกสารตัวอย่างและไฟล์ PDF ตัวอย่างจากหน้า Documents เพื่อให้เห็น workflow ของเอกสารในบริบทที่เกี่ยวข้องจริง</span>
+          </div>
+          <Link className="button" to="/documents">เปิดตัวอย่างเอกสาร</Link>
+        </div>
+      </section>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
 
