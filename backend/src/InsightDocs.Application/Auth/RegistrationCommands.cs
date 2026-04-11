@@ -37,6 +37,13 @@ public sealed record ResetPasswordCommand
     public string NewPassword { get; init; } = string.Empty;
 }
 
+public sealed record ChangePasswordCommand
+{
+    [Required]
+    [MinLength(8)]
+    public string NewPassword { get; init; } = string.Empty;
+}
+
 public sealed record ReviewPasswordResetRequestCommand
 {
     public string Comment { get; init; } = string.Empty;

@@ -129,50 +129,52 @@ export function DocumentsPage() {
       {notice ? <div className="callout">{notice}</div> : null}
 
       {access.canManageDocuments ? (
-        <section className="panel stack">
+        <section className="panel panel--full stack">
           <div className="section-heading">
             <span className="sidebar__eyebrow">Register</span>
             <h3>ลงทะเบียนเอกสารใหม่</h3>
           </div>
-          <form className="stack" onSubmit={handleCreate}>
-            <div className="grid-2">
+          <div className="user-form-panel">
+            <form className="stack" onSubmit={handleCreate}>
+              <div className="grid-2">
+                <label className="stack">
+                  <span className="card__label">ชื่อเอกสาร</span>
+                  <input
+                    className="input"
+                    placeholder="เช่น สัญญาจ้าง, ระเบียบการเงิน"
+                    value={form.title}
+                    onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label className="stack">
+                  <span className="card__label">หมวดหมู่</span>
+                  <input
+                    className="input"
+                    placeholder="เช่น Legal, HR, Finance"
+                    value={form.category ?? ''}
+                    onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
+                  />
+                </label>
+              </div>
               <label className="stack">
-                <span className="card__label">ชื่อเอกสาร</span>
-                <input
-                  className="input"
-                  placeholder="เช่น สัญญาจ้าง, ระเบียบการเงิน"
-                  value={form.title}
-                  onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-                  required
+                <span className="card__label">คำอธิบาย</span>
+                <textarea
+                  className="input textarea textarea--compact"
+                  placeholder="สรุปวัตถุประสงค์หรือขอบเขตของเอกสารนี้"
+                  value={form.description ?? ''}
+                  onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
                 />
               </label>
-              <label className="stack">
-                <span className="card__label">หมวดหมู่</span>
-                <input
-                  className="input"
-                  placeholder="เช่น Legal, HR, Finance"
-                  value={form.category ?? ''}
-                  onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
-                />
-              </label>
-            </div>
-            <label className="stack">
-              <span className="card__label">คำอธิบาย</span>
-              <textarea
-                className="input textarea textarea--compact"
-                placeholder="สรุปวัตถุประสงค์หรือขอบเขตของเอกสารนี้"
-                value={form.description ?? ''}
-                onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-              />
-            </label>
-            <div className="actions actions--compact">
-              <button className="button" type="submit">สร้างรายการเอกสาร</button>
-            </div>
-          </form>
+              <div className="actions actions--compact">
+                <button className="button" type="submit">สร้างรายการเอกสาร</button>
+              </div>
+            </form>
+          </div>
         </section>
       ) : null}
 
-      <section className="panel stack">
+      <section className="panel panel--full stack">
         <div className="section-heading">
           <span className="sidebar__eyebrow">Registry</span>
           <h3>รายการเอกสาร</h3>

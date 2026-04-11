@@ -59,6 +59,10 @@ export function resetPassword(token: string, newPassword: string) {
   return publicPost<void>('/api/auth/reset-password', { token, newPassword });
 }
 
+export function changePassword(newPassword: string, accessToken: string) {
+  return publicAuthorizedPost<void>('/api/auth/change-password', { newPassword }, accessToken);
+}
+
 export async function getPasswordResetRequests(accessToken: string) {
   return apiFetch<PasswordResetRequest[]>('/api/admin/password-reset-requests', accessToken);
 }

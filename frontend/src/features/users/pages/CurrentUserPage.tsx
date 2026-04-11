@@ -1,13 +1,21 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { changePassword } from '../../auth/api/authApi';
+import { getUserProfile } from '../../auth/services/keycloakAuth';
 import { useAuth } from '../../auth/context/useAuth';
-import { buildAccessProfile } from '../../../shared/auth/authorization';
+import { buildAccessProfile, formatRoleLabel } from '../../../shared/auth/authorization';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
-import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
-import { StatCard } from '../../../shared/components/ui/StatCard';
+import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 
 export function CurrentUserPage() {
-  const { user } = useAuth();
+  const { accessToken, user } = useAuth();
+  const [profile, setProfile] = useState<{ firstName?: string; lastName?: string; username?: string; email?: string } | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
   const roles = user?.roles ?? [];
   const access = buildAccessProfile(roles);
 
@@ -15,12 +23,73 @@ export function CurrentUserPage() {
     .slice(0, 2)
     .toUpperCase();
 
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadProfile() {
+      try {
+        const payload = await getUserProfile();
+        if (!ignore) {
+          setProfile(payload);
+        }
+      } catch {
+        if (!ignore) {
+          setProfile(null);
+        }
+      }
+    }
+
+    void loadProfile();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const derivedName = useMemo(() => splitDisplayName(user?.displayName), [user?.displayName]);
+  const firstName = profile?.firstName?.trim() || derivedName.firstName || '-';
+  const lastName = profile?.lastName?.trim() || derivedName.lastName || '-';
+  const normalizedRoles = access.normalizedRoles;
+
+  async function handleChangePassword(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!accessToken) {
+      setError('ไม่พบ session สำหรับเปลี่ยนรหัสผ่าน');
+      return;
+    }
+
+    if (newPassword.trim().length < 8) {
+      setError('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('รหัสผ่านใหม่และยืนยันรหัสผ่านต้องตรงกัน');
+      return;
+    }
+
+    try {
+      setIsSavingPassword(true);
+      setError(null);
+      await changePassword(newPassword, accessToken);
+      setNotice('เปลี่ยนรหัสผ่านสำเร็จ');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'ไม่สามารถเปลี่ยนรหัสผ่านได้');
+      setNotice(null);
+    } finally {
+      setIsSavingPassword(false);
+    }
+  }
+
   return (
     <div className="stack stack--xl">
       <PageHeader
-        title="My Profile"
-        eyebrow="User Identity"
-        description="Review your authenticated session, identity claims, and active permissions within the InsightDocs workspace."
+        title="ข้อมูลบัญชีของฉัน"
+        eyebrow="My Profile"
+        description="ตรวจสอบข้อมูลบัญชีที่ใช้เข้าสู่ระบบ บทบาทที่ได้รับ และดำเนินการที่เกี่ยวข้องกับบัญชีของคุณ"
       />
 
       <div className="profile-grid">
@@ -29,21 +98,6 @@ export function CurrentUserPage() {
             <div className="profile-avatar">{initials}</div>
             <div className="profile-meta">
               <div className="profile-name">{user?.displayName ?? user?.username}</div>
-              <div className="muted">{user?.email}</div>
-            </div>
-          </div>
-
-          <div className="stack" style={{ marginTop: '24px' }}>
-            <span className="card__label">Session Context</span>
-            <div className="detail-list">
-              <div>
-                <dt>Subject ID</dt>
-                <dd className="muted" style={{ fontSize: '11px', wordBreak: 'break-all' }}>{user?.subject}</dd>
-              </div>
-              <div>
-                <dt>Auth Method</dt>
-                <dd>Keycloak OIDC</dd>
-              </div>
             </div>
           </div>
 
@@ -53,61 +107,95 @@ export function CurrentUserPage() {
         </aside>
 
         <section className="profile-info stack">
-          <div className="dashboard-summary-grid">
-            <StatCard 
-              label="Administrative" 
-              value={access.isAdmin ? 'Full' : 'None'} 
-              trend={access.isAdmin ? 'Active' : undefined}
-              trendType={access.isAdmin ? 'up' : 'down'}
-            />
-            <StatCard 
-              label="Signing Capacity" 
-              value={access.canSignDocuments ? 'Enabled' : 'Restricted'} 
-              trend={access.canSignDocuments ? 'Verified' : undefined}
-              trendType={access.canSignDocuments ? 'up' : 'down'}
-            />
+          <div className="panel stack">
+            <h3 className="form-section__title">ข้อมูลผู้ใช้งาน</h3>
+            <dl className="detail-list">
+              <div>
+                <dt>ชื่อ</dt>
+                <dd>{firstName}</dd>
+              </div>
+              <div>
+                <dt>นามสกุล</dt>
+                <dd>{lastName}</dd>
+              </div>
+              <div>
+                <dt>ชื่อผู้ใช้</dt>
+                <dd>{profile?.username ?? user?.username ?? '-'}</dd>
+              </div>
+            </dl>
           </div>
 
           <div className="panel stack">
-            <h3 className="form-section__title">Assigned Roles & Capabilities</h3>
-            <div className="tag-list" style={{ gap: '10px' }}>
-              {roles.map(role => (
-                <StatusBadge key={role} status={role.includes('admin') ? 'Approved' : 'Pending'} />
-              ))}
-              {roles.length === 0 && <span className="muted">No explicit roles assigned to this session.</span>}
-            </div>
-
-            <div className="grid-2" style={{ marginTop: '32px' }}>
-              <article className="card stack">
-                <span className="card__label">Documents</span>
-                <h4>Workspace Registry</h4>
-                <p className="muted">Access the governed document collection to manage versions and control workflows.</p>
-                <Link className="button button--secondary" to="/documents">Open Documents</Link>
-              </article>
-
-              <article className="card stack">
-                <span className="card__label">History</span>
-                <h4>Activity Logs</h4>
-                <p className="muted">Review system-wide compliance events and your individual contribution history.</p>
-                <Link className="button button--secondary" to="/audit-logs">View Logs</Link>
-              </article>
-            </div>
+            <h3 className="form-section__title">บทบาทในระบบ</h3>
+            {normalizedRoles.length > 0 ? (
+              <div className="tag-list">
+                {normalizedRoles.map((role) => (
+                  <span key={role} className="tag">
+                    {formatRoleLabel(role)}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">ไม่พบบทบาทที่ผูกกับบัญชีนี้</p>
+            )}
           </div>
 
-          {access.canReviewDocuments && (
-            <div className="panel panel--hero stack">
-              <div className="section-heading">
-                <span className="sidebar__eyebrow">Operational Action</span>
-                <h3>Approval Queue</h3>
+          <div className="panel stack">
+            <h3 className="form-section__title">เปลี่ยนรหัสผ่าน</h3>
+            {notice ? <div className="callout">{notice}</div> : null}
+            <form className="stack" onSubmit={handleChangePassword}>
+              <label className="stack">
+                <span className="card__label">รหัสผ่านใหม่</span>
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="อย่างน้อย 8 ตัวอักษร"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+              </label>
+              <label className="stack">
+                <span className="card__label">ยืนยันรหัสผ่านใหม่</span>
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+              </label>
+              <div className="actions actions--compact">
+                <button className="button" disabled={isSavingPassword} type="submit">
+                  {isSavingPassword ? 'กำลังบันทึก...' : 'บันทึกรหัสผ่านใหม่'}
+                </button>
               </div>
-              <p className="muted">You have document controller or manager permissions. There may be pending approvals waiting for your decision.</p>
-              <div className="actions">
-                <Link className="button" to="/approvals">Go to Approvals</Link>
-              </div>
-            </div>
-          )}
+            </form>
+          </div>
         </section>
       </div>
+
+      <ErrorModal message={error} onClose={() => setError(null)} />
     </div>
   );
+}
+
+function splitDisplayName(displayName: string | null | undefined) {
+  const normalized = displayName?.trim() ?? '';
+  if (!normalized) {
+    return { firstName: '', lastName: '' };
+  }
+
+  const parts = normalized.split(/\s+/);
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: '' };
+  }
+
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(' '),
+  };
 }

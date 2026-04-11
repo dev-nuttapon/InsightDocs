@@ -6,7 +6,7 @@ import { useAuth } from '../../../features/auth/context/useAuth';
 import { buildAccessProfile } from '../../auth/authorization';
 
 export function AppShell() {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
   const [openSection, setOpenSection] = useState<'workspace' | 'actions' | 'admin'>('workspace');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -28,7 +28,6 @@ export function AppShell() {
         key: 'actions' as const,
         label: 'My Actions',
         links: [
-          { to: '/me', label: 'My Profile' },
           ...(access.canReviewDocuments ? [{ to: '/approvals', label: 'Approvals' }] : []),
           ...(access.canSignDocuments ? [{ to: '/signatures', label: 'Signatures' }] : []),
         ],
@@ -110,25 +109,6 @@ export function AppShell() {
           </nav>
         </div>
 
-        {isAuthenticated && user && (
-          <div className="sidebar__profile">
-            <div className="topbar__profile-copy sidebar__profile-copy">
-              <div className="sidebar__profile-row">
-                <div className="sidebar__avatar-sm" aria-hidden="true">
-                  {(user.displayName ?? user.username ?? user.email ?? 'ID').slice(0, 2).toUpperCase()}
-                </div>
-                <div className="sidebar__profile-text">
-                  <strong className="sidebar__profile-name">
-                    {user.displayName ?? user.username}
-                  </strong>
-                  <span className="muted sidebar__profile-email">
-                    {user.email ?? user.subject}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </aside>
 
       <main className="content">

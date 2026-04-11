@@ -17,6 +17,7 @@ namespace InsightDocs.Api.Controllers;
 public sealed class AuthController(
     ICurrentUser currentUser,
     IKeycloakBrowserAuthService keycloakBrowserAuthService,
+    IKeycloakAdminService keycloakAdminService,
     IRegistrationService registrationService,
     IPasswordResetService passwordResetService,
     IOptions<ApplicationOptions> applicationOptions) : ControllerBase
@@ -124,6 +125,21 @@ public sealed class AuthController(
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command, CancellationToken cancellationToken)
     {
         await passwordResetService.ResetPasswordAsync(command, cancellationToken);
+        return NoContent();
+    }
+
+    [Authorize(Policy = AuthorizationPolicies.AuthenticatedUser)]
+    [HttpPost("change-password")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(currentUser.Subject))
+        {
+            return Unauthorized(ErrorResponse.Failure("unauthorized", "Authenticated user subject is missing.", HttpContext.TraceIdentifier));
+        }
+
+        await keycloakAdminService.ResetPasswordAsync(currentUser.Subject, command.NewPassword, cancellationToken);
         return NoContent();
     }
 
