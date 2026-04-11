@@ -95,40 +95,69 @@ export function SearchPage() {
       <section className="panel stack">
 
 
-      <div className="form-grid">
-        <input className="input" placeholder="Keyword search" value={filters.query} onChange={(event) => updateFilters({ query: event.target.value, page: 1 })} />
-        <div className="hero-grid hero-grid--stacked">
-          <input className="input" placeholder="Category" value={filters.category} onChange={(event) => updateFilters({ category: event.target.value, page: 1 })} />
-          <select className="input input--select" value={filters.status} onChange={(event) => updateFilters({ status: event.target.value, page: 1 })}>
-            <option value="">All statuses</option>
-            <option value="Draft">Draft</option>
-            <option value="InReview">InReview</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-            <option value="Archived">Archived</option>
-          </select>
-          <input className="input" placeholder="Owner" value={filters.owner} onChange={(event) => updateFilters({ owner: event.target.value, page: 1 })} />
-          <input className="input" placeholder="Controller" value={filters.controller} onChange={(event) => updateFilters({ controller: event.target.value, page: 1 })} />
-          <input className="input" placeholder="Signer" value={filters.signer} onChange={(event) => updateFilters({ signer: event.target.value, page: 1 })} />
-          <select className="input input--select" value={filters.archived} onChange={(event) => updateFilters({ archived: event.target.value, page: 1 })}>
-            <option value="">Archived and active</option>
-            <option value="false">Exclude archived</option>
-            <option value="true">Only archived</option>
-          </select>
+      <div className="stack stack--compact">
+        <div className="filter-bar">
+          <span className="filter-bar__label">Filters</span>
+          <div className="hero-grid hero-grid--stacked" style={{ flex: 1, marginTop: 0 }}>
+            <input className="input" placeholder="Keyword query" value={filters.query} onChange={(event) => updateFilters({ query: event.target.value, page: 1 })} />
+            <input className="input" placeholder="Category" value={filters.category} onChange={(event) => updateFilters({ category: event.target.value, page: 1 })} />
+            <select className="input input--select" value={filters.status} onChange={(event) => updateFilters({ status: event.target.value, page: 1 })}>
+              <option value="">Any Status</option>
+              <option value="Draft">Draft</option>
+              <option value="InReview">InReview</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Archived">Archived</option>
+            </select>
+          </div>
+          <button 
+            className="button button--secondary" 
+            type="button" 
+            onClick={() => updateFilters({ ...defaultFilters, page: 1 })}
+            disabled={Object.entries(filters).every(([k, v]) => k === 'page' || k === 'pageSize' || v === '')}
+          >
+            Clear All
+          </button>
+        </div>
+
+        <div className="filter-chip-list">
+          {filters.query && (
+            <span className="filter-chip">
+              <span className="filter-chip__label">Query:</span> {filters.query}
+              <button className="filter-chip__remove" onClick={() => updateFilters({ query: '' })}>×</button>
+            </span>
+          )}
+          {filters.category && (
+            <span className="filter-chip">
+              <span className="filter-chip__label">Category:</span> {filters.category}
+              <button className="filter-chip__remove" onClick={() => updateFilters({ category: '' })}>×</button>
+            </span>
+          )}
+          {filters.status && (
+            <span className="filter-chip">
+              <span className="filter-chip__label">Status:</span> {filters.status}
+              <button className="filter-chip__remove" onClick={() => updateFilters({ status: '' })}>×</button>
+            </span>
+          )}
+          {filters.owner && (
+            <span className="filter-chip">
+              <span className="filter-chip__label">Owner:</span> {filters.owner}
+              <button className="filter-chip__remove" onClick={() => updateFilters({ owner: '' })}>×</button>
+            </span>
+          )}
         </div>
       </div>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
 
       <div className="table-wrap">
-        <table className="table">
+        <table className="table table--premium">
           <thead>
             <tr>
               <th>Document</th>
               <th>Status</th>
               <th>Category</th>
-              <th>Owner</th>
-              <th>Controller</th>
+              <th>Owner / Controller</th>
               <th>Current Version</th>
               <th>Signature Summary</th>
             </tr>
@@ -137,21 +166,23 @@ export function SearchPage() {
             {results?.items.map((item) => (
               <tr key={item.id}>
                 <td>
-                  <Link to={`/documents/${item.id}`}>{item.title}</Link>
-                  <div className="muted">{item.description ?? 'No description'}</div>
+                  <Link to={`/documents/${item.id}`} style={{ fontWeight: 700, fontSize: '15px' }}>{item.title}</Link>
+                  <div className="muted" style={{ marginTop: '2px' }}>{item.description ?? 'No description'}</div>
                 </td>
                 <td>
                   <StatusBadge status={item.status} />
                 </td>
 
                 <td>{item.category ?? 'Uncategorized'}</td>
-                <td>{item.ownerDisplayName ?? item.ownerUsername ?? 'Unassigned'}</td>
-                <td>{item.controllerDisplayName ?? item.controllerUsername ?? 'Unassigned'}</td>
+                <td>
+                  <div>{item.ownerDisplayName ?? item.ownerUsername ?? 'None'}</div>
+                  <div className="muted" style={{ fontSize: '12px' }}>Ctrl: {item.controllerDisplayName ?? item.controllerUsername ?? 'None'}</div>
+                </td>
                 <td>{item.currentVersionNumber ? `v${item.currentVersionNumber}` : 'None'}</td>
                 <td>
-                  <div>Total: {item.signatureSummary.totalRequests}</div>
-                  <div className="muted">
-                    Pending {item.signatureSummary.pendingCount} / Signed {item.signatureSummary.signedCount} / Rejected {item.signatureSummary.rejectedCount}
+                  <div style={{ fontSize: '13px', fontWeight: 600 }}>Total: {item.signatureSummary.totalRequests}</div>
+                  <div className="muted" style={{ fontSize: '12px' }}>
+                    Signed {item.signatureSummary.signedCount} / Pending {item.signatureSummary.pendingCount}
                   </div>
                 </td>
               </tr>
@@ -181,5 +212,6 @@ export function SearchPage() {
         </button>
       </div>
     </section>
-  );
+  </div>
+);
 }

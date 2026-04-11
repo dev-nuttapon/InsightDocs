@@ -19,7 +19,8 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const normalizedStatus = status.replace(/\s+/g, '');
+  const statusString = String(status ?? '');
+  const normalizedStatus = statusString.replace(/\s+/g, '');
   const variant = getVariant(normalizedStatus);
   
   return (

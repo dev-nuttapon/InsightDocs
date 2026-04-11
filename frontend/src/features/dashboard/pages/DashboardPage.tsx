@@ -206,35 +206,33 @@ export function DashboardPage() {
             <h3>Latest governed content</h3>
           </div>
           <div className="table-wrap">
-            <table className="table">
+            <table className="table table--premium">
               <thead>
                 <tr>
                   <th>Document</th>
                   <th>Status</th>
-                  <th>Version</th>
-                  <th>Owner</th>
-                  <th>Last Activity</th>
+                  <th>Activity</th>
                 </tr>
               </thead>
               <tbody>
                 {recentDocuments.map((document) => (
                   <tr key={document.id}>
                     <td>
-                      <Link to={`/documents/${document.id}`}>{document.title}</Link>
-                      <div className="muted">{document.category ?? 'Uncategorized'}</div>
+                      <Link to={`/documents/${document.id}`} style={{ fontWeight: 700 }}>{document.title}</Link>
+                      <div className="muted" style={{ fontSize: '11px' }}>{document.category ?? 'Uncategorized'}</div>
                     </td>
                     <td>
                       <StatusBadge status={document.status} />
                     </td>
-
-                    <td>{document.currentVersionNumber ? `v${document.currentVersionNumber}` : 'None'}</td>
-                    <td>{document.ownerDisplayName ?? document.controllerDisplayName ?? 'Unassigned'}</td>
-                    <td>{new Date(document.lastActivityAt).toLocaleString()}</td>
+                    <td>
+                      <div style={{ fontSize: '12px' }}>v{document.currentVersionNumber || '1'}</div>
+                      <div className="muted" style={{ fontSize: '11px' }}>{new Date(document.lastActivityAt).toLocaleDateString()}</div>
+                    </td>
                   </tr>
                 ))}
                 {recentDocuments.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>
+                    <td colSpan={3}>
                       <EmptyState 
                         title="No documents" 
                         description="There are no documents in the system yet." 
@@ -242,7 +240,6 @@ export function DashboardPage() {
                     </td>
                   </tr>
                 ) : null}
-
               </tbody>
             </table>
           </div>
@@ -259,27 +256,29 @@ export function DashboardPage() {
               description="Recent operational events will appear here." 
             />
           ) : (
-            <div className="timeline-list">
+            <div className="timeline" style={{ padding: '8px' }}>
               {recentActivities.map((activity) => (
                 <div key={activity.id} className="timeline-item">
-                  <strong>{activity.action}</strong>
-                  <div className="muted">
-                    {activity.actorDisplayName ?? activity.actorUsername ?? 'System'} • {new Date(activity.timestamp).toLocaleString()}
-                  </div>
-                  <div className="muted">
-                    {activity.relatedDocumentId ? (
-                      <Link to={`/documents/${activity.relatedDocumentId}`}>
-                        {activity.relatedDocumentTitle ?? 'Open related document'}
-                      </Link>
-                    ) : (
-                      activity.entityType
-                    )}
+                  <div className="timeline-item__dot" />
+                  <div className="timeline-item__content">
+                    <div className="timeline-item__time">{new Date(activity.timestamp).toLocaleTimeString()}</div>
+                    <div className="timeline-item__label">{activity.action}</div>
+                    <div className="muted" style={{ fontSize: '12px' }}>
+                      {activity.relatedDocumentId ? (
+                        <Link to={`/documents/${activity.relatedDocumentId}`} style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                          {activity.relatedDocumentTitle ?? 'Open document'}
+                        </Link>
+                      ) : (
+                        activity.entityType
+                      )}
+                      {" • "}
+                      {activity.actorDisplayName ?? activity.actorUsername ?? 'System'}
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
-
         </section>
       </div>
     </section>

@@ -82,6 +82,7 @@ export function AppShell() {
                         key={link.to}
                         className="sidebar__link"
                         to={link.to}
+                        end
                       >
                         <span>{link.label}</span>
                         <span className="sidebar__link-arrow" aria-hidden="true">→</span>
@@ -95,14 +96,15 @@ export function AppShell() {
         </nav>
 
         {isAuthenticated && user && (
-          <div className="sidebar__profile">
-             <div className="topbar__profile-copy">
-                <strong>{user.displayName ?? user.username ?? user.subject}</strong>
-                <span className="muted">{user.email ?? 'No email'}</span>
-             </div>
-             <NavLink className="button button--secondary" to="/logout">
-                Sign Out
-             </NavLink>
+          <div className="sidebar__profile-compact">
+            <div className="sidebar__avatar-sm" aria-hidden="true">
+              {(user.displayName ?? user.username ?? user.email ?? 'ID').slice(0, 2).toUpperCase()}
+            </div>
+            <div className="topbar__profile-copy" style={{ minWidth: 0 }}>
+              <strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user.displayName ?? user.username}
+              </strong>
+            </div>
           </div>
         )}
       </aside>

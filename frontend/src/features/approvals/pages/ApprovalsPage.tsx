@@ -83,14 +83,13 @@ export function ApprovalsPage() {
       {notice ? <div className="callout">{notice}</div> : null}
 
       <div className="table-wrap">
-        <table className="table">
+        <table className="table table--premium">
           <thead>
             <tr>
-              <th>Document</th>
+              <th>Document / Submitter</th>
               <th>Status</th>
-              <th>Current Version</th>
-              <th>Submitted</th>
-              <th>Comment</th>
+              <th>Details</th>
+              <th>Control Decision</th>
               <th />
             </tr>
           </thead>
@@ -98,18 +97,21 @@ export function ApprovalsPage() {
             {items.map((item) => (
               <tr key={item.documentId}>
                 <td>
-                  <Link to={`/documents/${item.documentId}`}>{item.documentTitle}</Link>
-                  <div className="muted">By {item.submittedBy}</div>
+                  <Link to={`/documents/${item.documentId}`} style={{ fontWeight: 700 }}>{item.documentTitle}</Link>
+                  <div className="muted" style={{ fontSize: '11px' }}>Submitted by {item.submittedBy}</div>
                 </td>
                 <td>
                   <StatusBadge status={item.status} />
                 </td>
-                <td>{item.currentVersionNumber ? `v${item.currentVersionNumber}` : 'None'}</td>
-                <td>{new Date(item.submittedAt).toLocaleString()}</td>
+                <td>
+                  <div style={{ fontSize: '12px' }}>Ver. {item.currentVersionNumber ?? '1'}</div>
+                  <div className="muted" style={{ fontSize: '11px' }}>{new Date(item.submittedAt).toLocaleDateString()}</div>
+                </td>
                 <td>
                   <textarea
                     className="input textarea textarea--compact"
-                    placeholder={item.latestComment ?? 'Enter approval or rejection comment'}
+                    placeholder={item.latestComment ?? 'Approval/Rejection note'}
+                    style={{ minWidth: '200px' }}
                     value={comments[item.documentId] ?? ''}
                     onChange={(event) => setComments((current) => ({ ...current, [item.documentId]: event.target.value }))}
                   />
@@ -128,7 +130,7 @@ export function ApprovalsPage() {
             ))}
             {items.length === 0 ? (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={5}>
                   <EmptyState 
                     title="Queue empty" 
                     description="No documents are currently pending review." 
@@ -136,10 +138,10 @@ export function ApprovalsPage() {
                 </td>
               </tr>
             ) : null}
-
           </tbody>
         </table>
       </div>
     </section>
-  );
+  </div>
+);
 }

@@ -90,15 +90,13 @@ export function SignaturesPage() {
       {notice ? <div className="callout">{notice}</div> : null}
 
       <div className="table-wrap">
-        <table className="table">
+        <table className="table table--premium">
           <thead>
             <tr>
-              <th>Document</th>
-              <th>Version</th>
+              <th>Document / Version</th>
               <th>Order</th>
-              <th>Page</th>
-              <th>Position</th>
-              <th>Comment</th>
+              <th>Placement</th>
+              <th>Final Comment</th>
               <th />
             </tr>
           </thead>
@@ -106,16 +104,21 @@ export function SignaturesPage() {
             {items.map((item) => (
               <tr key={item.signatureRequestId}>
                 <td>
-                  <Link to={`/documents/${item.documentId}`}>{item.documentTitle}</Link>
+                  <Link to={`/documents/${item.documentId}`} style={{ fontWeight: 700 }}>{item.documentTitle}</Link>
+                  <div className="muted" style={{ fontSize: '11px' }}>Version {item.versionNumber}</div>
                 </td>
-                <td>v{item.versionNumber}</td>
-                <td>{item.signingOrder}</td>
-                <td>{item.pageNumber}</td>
-                <td>{item.positionX}, {item.positionY} ({item.width} × {item.height})</td>
+                <td>
+                  <div className="status-pill status-pill--subtle">Seq. {item.signingOrder}</div>
+                </td>
+                <td>
+                  <div style={{ fontSize: '12px' }}>Page {item.pageNumber}</div>
+                  <div className="muted" style={{ fontSize: '11px' }}>{item.positionX}, {item.positionY}</div>
+                </td>
                 <td>
                   <textarea
                     className="input textarea textarea--compact"
                     placeholder={item.comment ?? 'Optional signature comment'}
+                    style={{ minWidth: '200px' }}
                     value={comments[item.signatureRequestId] ?? ''}
                     onChange={(event) => setComments((current) => ({ ...current, [item.signatureRequestId]: event.target.value }))}
                   />
@@ -134,7 +137,7 @@ export function SignaturesPage() {
             ))}
             {items.length === 0 ? (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={5}>
                   <EmptyState 
                     title="No pending signatures" 
                     description="You have no documents assigned for signature at this time." 
@@ -142,10 +145,10 @@ export function SignaturesPage() {
                 </td>
               </tr>
             ) : null}
-
           </tbody>
         </table>
       </div>
     </section>
-  );
+  </div>
+);
 }

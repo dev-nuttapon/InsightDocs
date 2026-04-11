@@ -7,7 +7,9 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { useAuth } from '../../auth/context/useAuth';
 import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 import { deleteUser, disableUser, enableUser, getUsers } from '../api/usersApi';
-import { canDisableUser, canEnableUser, formatUserStatus, getProjectRoleLabels, type AppUser } from '../types';
+import { canDisableUser, canEnableUser, formatUserStatus, getProjectRoleLabels, resolveUserStatus, type AppUser } from '../types';
+import { StatCard } from '../../../shared/components/ui/StatCard';
+import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 
 type PendingAction =
   | {
@@ -155,6 +157,12 @@ export function UsersPage() {
         actions={<Link className="button" to="/users/new">Invite User</Link>}
       />
 
+      <div className="dashboard-summary-grid">
+        <StatCard label="Total Accounts" value={users.length} />
+        <StatCard label="Active Signers" value={users.filter(u => u.roles.includes('signer')).length} />
+        <StatCard label="Pending Approval" value={users.filter(u => !u.approvedAt).length} />
+      </div>
+
       <section className="panel panel--full stack">
 
 
@@ -162,7 +170,7 @@ export function UsersPage() {
         <p className="muted">Loading users...</p>
       ) : (
         <div className="table-wrap">
-          <table className="table">
+          <table className="table table--premium">
             <thead>
               <tr>
                 <th>Name</th>
@@ -176,10 +184,16 @@ export function UsersPage() {
               {users.map((user) => (
                 <tr key={user.id}>
                   <td>
-                    <Link to={`/users/${user.id}/edit`}>{formatUserName(user)}</Link>
+                    <Link to={`/users/${user.id}/edit`} style={{ fontWeight: 700 }}>{formatUserName(user)}</Link>
+                    <div className="muted" style={{ fontSize: '12px' }}>ID: {user.id.slice(0, 8)}...</div>
                   </td>
                   <td>{user.email}</td>
-                  <td>{formatUserStatus(user.status, user.approvedAt)}</td>
+                  <td>
+                    <StatusBadge status={resolveUserStatus(user.status, user.approvedAt)} />
+                    <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>
+                      {user.approvedAt ? `Approved ${new Date(user.approvedAt).toLocaleDateString()}` : 'Approval Pending'}
+                    </div>
+                  </td>
                   <td>
                     {getProjectRoleLabels(user.roles).length > 0 ? (
                       <div className="tag-list">
@@ -303,7 +317,8 @@ export function UsersPage() {
 
       <ErrorModal message={error} onClose={() => setError(null)} />
     </section>
-  );
+  </div>
+);
 }
 
 function formatUserName(user: AppUser) {

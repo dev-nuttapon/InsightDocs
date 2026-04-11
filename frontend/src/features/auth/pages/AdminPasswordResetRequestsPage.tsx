@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 
 import { approvePasswordResetRequest, getPasswordResetRequests, rejectPasswordResetRequest, type PasswordResetRequest } from '../api/authApi';
 import { useAuth } from '../context/useAuth';
+import { PageHeader } from '../../../shared/components/layout/PageHeader';
+import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
+import { EmptyState } from '../../../shared/components/ui/EmptyState';
 
 export function AdminPasswordResetRequestsPage() {
   const { accessToken } = useAuth();
@@ -87,52 +90,80 @@ export function AdminPasswordResetRequestsPage() {
   }
 
   return (
-    <section className="panel stack">
-      <div>
-        <span className="sidebar__eyebrow">Admin</span>
-        <h2>Password Reset Requests</h2>
-        <p className="muted">Approve or reject password reset requests. After approval, copy the reset link and send it manually to the user.</p>
-      </div>
+    <div className="stack stack--xl">
+      <PageHeader
+        title="Password Reset Requests"
+        eyebrow="Administration"
+        description="Review and process manual password reset requests. Approved requests generate a secure link that must be manually provided to the user."
+      />
 
-      {error ? <div className="callout callout--danger">{error}</div> : null}
-      {notice ? <div className="callout">{notice}</div> : null}
+      <section className="panel stack">
+        {error ? <div className="callout callout--danger">{error}</div> : null}
+        {notice ? <div className="callout">{notice}</div> : null}
 
-      <div className="table-wrap">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Requested</th>
-              <th>Status</th>
-              <th>Reset Link</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests.map((request) => (
-              <tr key={request.id}>
-                <td>{request.displayName}<div className="muted">{request.username} | {request.email}</div></td>
-                <td>{new Date(request.requestedAt).toLocaleString()}</td>
-                <td>{request.status}</td>
-                <td className="table__link-cell">{request.resetUrl ?? 'Pending approval'}</td>
-                <td>
-                  <div className="actions actions--compact">
-                    {request.status === 'Pending' ? (
-                      <>
-                        <button className="button" type="button" onClick={() => void handleApprove(request.id)}>Approve</button>
-                        <button className="button button--secondary" type="button" onClick={() => void handleReject(request.id)}>Reject</button>
-                      </>
-                    ) : null}
-                    {request.resetUrl ? (
-                      <button className="button button--secondary" type="button" onClick={() => void handleCopy(request.resetUrl)}>Copy Link</button>
-                    ) : null}
-                  </div>
-                </td>
+        <div className="table-wrap">
+          <table className="table table--premium">
+            <thead>
+              <tr>
+                <th>User Identity</th>
+                <th>Request Date</th>
+                <th>Status</th>
+                <th>Generated Link</th>
+                <th />
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+            </thead>
+            <tbody>
+              {requests.map((request) => (
+                <tr key={request.id}>
+                  <td>
+                    <div style={{ fontWeight: 700 }}>{request.displayName}</div>
+                    <div className="muted" style={{ fontSize: '11px' }}>{request.email}</div>
+                  </td>
+                  <td>
+                    <div style={{ fontSize: '12px' }}>{new Date(request.requestedAt).toLocaleDateString()}</div>
+                    <div className="muted" style={{ fontSize: '11px' }}>{new Date(request.requestedAt).toLocaleTimeString()}</div>
+                  </td>
+                  <td>
+                    <StatusBadge status={request.status === 'Pending' ? 'Pending' : (request.status === 'Approved' ? 'Approved' : 'Rejected')} />
+                  </td>
+                  <td className="table__link-cell" style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {request.resetUrl ? (
+                      <code style={{ fontSize: '11px', background: 'var(--color-bg-alt)', padding: '2px 4px', borderRadius: '4px' }}>
+                        {request.resetUrl}
+                      </code>
+                    ) : (
+                      <span className="muted">Pending approval</span>
+                    )}
+                  </td>
+                  <td>
+                    <div className="actions actions--compact">
+                      {request.status === 'Pending' ? (
+                        <>
+                          <button className="button" type="button" onClick={() => void handleApprove(request.id)}>Approve</button>
+                          <button className="button button--secondary" type="button" onClick={() => void handleReject(request.id)}>Reject</button>
+                        </>
+                      ) : null}
+                      {request.resetUrl ? (
+                        <button className="button button--secondary" type="button" onClick={() => void handleCopy(request.resetUrl)}>Copy Link</button>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {requests.length === 0 && (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState 
+                      title="No active requests" 
+                      description="There are no pending password reset requests in the administrative queue." 
+                    />
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
   );
 }

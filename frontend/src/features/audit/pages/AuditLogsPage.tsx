@@ -8,6 +8,11 @@ import { useAuth } from '../../auth/context/useAuth';
 import { getAuditLog, getAuditLogs } from '../api/auditApi';
 import type { AuditLogDetail, AuditLogFilters, AuditLogListResponse } from '../types';
 
+import { StatCard } from '../../../shared/components/ui/StatCard';
+import { Timeline, TimelineItem } from '../../../shared/components/ui/Timeline';
+import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
+import { EmptyState } from '../../../shared/components/ui/EmptyState';
+
 const defaultFilters: AuditLogFilters = {
   actor: '',
   action: '',
@@ -106,6 +111,37 @@ export function AuditLogsPage() {
     }
   }, [selectedLog]);
 
+  const timelineItems = useMemo<TimelineItem[]>(() => {
+    if (!selectedLog) return [];
+    return [
+      {
+        id: 'actor',
+        title: 'Actor Information',
+        time: selectedLog.actorDisplayName ?? selectedLog.actorUsername ?? 'System',
+        body: <div className="muted">{selectedLog.actorUserId ? `User ID: ${selectedLog.actorUserId}` : 'Internal Event'}</div>,
+        status: 'info',
+      },
+      {
+        id: 'action',
+        title: 'Action Performed',
+        time: selectedLog.action,
+        body: <div className="muted">Target: {selectedLog.entityType} ({selectedLog.entityId ?? 'N/A'})</div>,
+        status: selectedLog.action.toLowerCase().includes('reject') || selectedLog.action.toLowerCase().includes('delete') ? 'danger' : 'success',
+      },
+      {
+        id: 'document',
+        title: 'Related Document',
+        time: selectedLog.relatedDocumentId ? 'Linked' : 'None',
+        body: selectedLog.relatedDocumentId ? (
+          <Link to={`/documents/${selectedLog.relatedDocumentId}`} className="button button--secondary" style={{ padding: '4px 8px', fontSize: '11px' }}>
+            View Document
+          </Link>
+        ) : null,
+        status: 'neutral',
+      },
+    ];
+  }, [selectedLog]);
+
   return (
     <div className="stack stack--xl">
       <PageHeader
@@ -114,85 +150,114 @@ export function AuditLogsPage() {
         description="Review append-only compliance events across registration, password reset, documents, approvals, and signatures."
       />
 
+      <div className="dashboard-summary-grid">
+        <StatCard label="Total Activities" value={results?.totalCount ?? 0} />
+        <StatCard label="Recent Events" value={results?.items.length ?? 0} />
+        <StatCard label="Active Filters" value={Object.values(filters).filter(v => typeof v === 'string' && v.trim() !== '' && v !== '1' && v !== '20').length} />
+      </div>
+
       <section className="panel stack">
-
-
-      <div className="form-grid">
-        <div className="hero-grid hero-grid--stacked">
-          <input className="input" placeholder="Actor" value={filters.actor} onChange={(event) => updateFilters({ actor: event.target.value, page: 1 })} />
-          <input className="input" placeholder="Action" value={filters.action} onChange={(event) => updateFilters({ action: event.target.value, page: 1 })} />
-          <input className="input" placeholder="Related document id" value={filters.documentId} onChange={(event) => updateFilters({ documentId: event.target.value, page: 1 })} />
-          <input className="input" type="datetime-local" value={filters.from} onChange={(event) => updateFilters({ from: event.target.value, page: 1 })} />
-          <input className="input" type="datetime-local" value={filters.to} onChange={(event) => updateFilters({ to: event.target.value, page: 1 })} />
+        <div className="filter-bar">
+          <span className="filter-bar__label">Explore Logs</span>
+          <div className="hero-grid hero-grid--stacked" style={{ flex: 1, marginTop: 0 }}>
+            <input className="input" placeholder="Actor" value={filters.actor} onChange={(event) => updateFilters({ actor: event.target.value, page: 1 })} />
+            <input className="input" placeholder="Action" value={filters.action} onChange={(event) => updateFilters({ action: event.target.value, page: 1 })} />
+            <input className="input" placeholder="Doc ID" value={filters.documentId} onChange={(event) => updateFilters({ documentId: event.target.value, page: 1 })} />
+          </div>
+          <button 
+            className="button button--secondary" 
+            onClick={() => updateFilters(defaultFilters)}
+            disabled={Object.entries(filters).every(([k, v]) => k === 'page' || k === 'pageSize' || v === '')}
+          >
+            Reset
+          </button>
         </div>
-      </div>
 
-      {error ? <div className="callout callout--danger">{error}</div> : null}
+        <div className="filter-chip-list">
+          {filters.from && <span className="filter-chip"><span className="filter-chip__label">From:</span> {filters.from} <button className="filter-chip__remove" onClick={() => updateFilters({ from: '' })}>×</button></span>}
+          {filters.to && <span className="filter-chip"><span className="filter-chip__label">To:</span> {filters.to} <button className="filter-chip__remove" onClick={() => updateFilters({ to: '' })}>×</button></span>}
+        </div>
 
-      <div className="hero-grid">
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Actor</th>
-                <th>Action</th>
-                <th>Entity</th>
-                <th>Links</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results?.items.map((item) => (
-                <tr key={item.id} onClick={() => void handleSelectAuditLog(item.id)} className="table__row--interactive">
-                  <td>{new Date(item.timestamp).toLocaleString()}</td>
-                  <td>{item.actorDisplayName ?? item.actorUsername ?? 'System / anonymous'}</td>
-                  <td>{item.action}</td>
-                  <td>{item.entityType}</td>
-                  <td>
-                    <div className="stack stack--compact">
-                      {item.relatedDocumentId ? <Link to={`/documents/${item.relatedDocumentId}`}>Document</Link> : null}
-                      {item.actorUserId ? <Link to={`/users/${item.actorUserId}/edit`}>User</Link> : null}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {(results?.items.length ?? 0) === 0 ? (
+        {error ? <div className="callout callout--danger">{error}</div> : null}
+
+        <div className="split-layout split-layout--wide">
+          <div className="table-wrap">
+            <table className="table table--premium">
+              <thead>
                 <tr>
-                  <td colSpan={5} className="muted">No audit logs found for the current filters.</td>
+                  <th>Timestamp</th>
+                  <th>Actor / Entity</th>
+                  <th>Action</th>
+                  <th />
                 </tr>
-              ) : null}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {results?.items.map((item) => (
+                  <tr 
+                    key={item.id} 
+                    onClick={() => void handleSelectAuditLog(item.id)} 
+                    className={`table__row--interactive ${selectedLog?.id === item.id ? 'active' : ''}`}
+                    style={selectedLog?.id === item.id ? { backgroundColor: 'var(--color-primary-soft)', borderLeft: '4px solid var(--color-primary)' } : {}}
+                  >
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{new Date(item.timestamp).toLocaleTimeString()}</div>
+                      <div className="muted" style={{ fontSize: '11px' }}>{new Date(item.timestamp).toLocaleDateString()}</div>
+                    </td>
+                    <td>
+                      <div>{item.actorDisplayName ?? item.actorUsername ?? 'System'}</div>
+                      <div className="muted" style={{ fontSize: '11px' }}>{item.entityType}</div>
+                    </td>
+                    <td>
+                      <StatusBadge status={item.action.includes('Approved') || item.action.includes('Success') ? 'Approved' : item.action.includes('Reject') ? 'Rejected' : 'Pending'} />
+                      <div style={{ marginTop: '4px', fontSize: '12px' }}>{item.action}</div>
+                    </td>
+                    <td>
+                      <span className="muted" style={{ fontSize: '18px' }}>›</span>
+                    </td>
+                  </tr>
+                ))}
+                {(results?.items.length ?? 0) === 0 ? (
+                  <tr>
+                    <td colSpan={4}>
+                      <EmptyState title="No logs found" description="Adjust your filters to see more activity records." />
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+
+          <aside className="stack">
+            <div className="panel stack" style={{ padding: '24px', position: 'sticky', top: '24px' }}>
+              <h3 className="form-section__title">Event Detail</h3>
+              {selectedLog ? (
+                <div className="stack">
+                  <Timeline items={timelineItems} />
+                  <div className="audit-meta-viewer">
+                    <div className="muted" style={{ marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase' }}>Structured Metadata</div>
+                    <pre>{formattedMetadata}</pre>
+                  </div>
+                </div>
+              ) : (
+                <EmptyState 
+                  title="Nothing Selected" 
+                  description="Click an audit entry on the left to inspect the secure metadata and event context." 
+                />
+              )}
+            </div>
+          </aside>
         </div>
 
-        <aside className="card stack">
-          <span className="card__label">Detail</span>
-          {selectedLog ? (
-            <>
-              <div><strong>{selectedLog.action}</strong></div>
-              <div className="muted">{new Date(selectedLog.timestamp).toLocaleString()}</div>
-              <div>Actor: {selectedLog.actorDisplayName ?? selectedLog.actorUsername ?? 'System / anonymous'}</div>
-              <div>Entity: {selectedLog.entityType}</div>
-              <div>Entity Id: {selectedLog.entityId ?? 'N/A'}</div>
-              <div>Related document: {selectedLog.relatedDocumentId ?? 'N/A'}</div>
-              <div>Related version: {selectedLog.relatedVersionId ?? 'N/A'}</div>
-              <pre className="audit-metadata">{formattedMetadata}</pre>
-            </>
-          ) : (
-            <p className="muted">Select an audit row to inspect structured metadata.</p>
-          )}
-        </aside>
-      </div>
-
-      <div className="actions">
-        <button className="button button--secondary" disabled={filters.page <= 1} type="button" onClick={() => updateFilters({ page: filters.page - 1 })}>
-          Previous
-        </button>
-        <span className="muted">Page {filters.page} of {totalPages}</span>
-        <button className="button button--secondary" disabled={filters.page >= totalPages} type="button" onClick={() => updateFilters({ page: filters.page + 1 })}>
-          Next
-        </button>
-      </div>
-    </section>
-  );
+        <div className="actions">
+          <button className="button button--secondary" disabled={filters.page <= 1} type="button" onClick={() => updateFilters({ page: filters.page - 1 })}>
+            Previous
+          </button>
+          <span className="muted">Page {filters.page} of {totalPages}</span>
+          <button className="button button--secondary" disabled={filters.page >= totalPages} type="button" onClick={() => updateFilters({ page: filters.page + 1 })}>
+            Next
+          </button>
+        </div>
+      </section>
+    </div>
+);
 }
