@@ -4,8 +4,7 @@ import { Link } from 'react-router-dom';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
-
-
+import { StatCard } from '../../../shared/components/ui/StatCard';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { approveDocument, getPendingApprovals, rejectDocument } from '../../documents/api/documentsApi';
@@ -71,77 +70,96 @@ export function ApprovalsPage() {
   return (
     <div className="stack stack--xl">
       <PageHeader
-        title="Pending approval queue"
+        title="คิวรออนุมัติ"
         eyebrow="Approvals"
-        description="Managers review documents that have been submitted by DocumentControllers."
+        description="ตรวจสอบเอกสารที่ถูกส่งเข้ามาเพื่ออนุมัติ พร้อมบันทึกความเห็นและดำเนินการอนุมัติหรือปฏิเสธได้จากหน้านี้"
       />
 
-      <section className="panel stack">
-
+      <div className="dashboard-summary-grid">
+        <StatCard label="รออนุมัติทั้งหมด" value={items.length} />
+        <StatCard label="ต้องพิจารณาวันนี้" value={items.filter((item) => isToday(item.submittedAt)).length} />
+        <StatCard label="มีความเห็นล่าสุด" value={items.filter((item) => Boolean(item.latestComment)).length} />
+      </div>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
 
-      <div className="table-wrap">
-        <table className="table table--premium">
-          <thead>
-            <tr>
-              <th>Document / Submitter</th>
-              <th>Status</th>
-              <th>Details</th>
-              <th>Control Decision</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
+      <section className="panel panel--full stack">
+        <div className="section-heading">
+          <span className="sidebar__eyebrow">Queue</span>
+          <h3>รายการที่ต้องตัดสินใจ</h3>
+        </div>
+
+        {items.length === 0 ? (
+          <EmptyState 
+            title="ไม่มีรายการรออนุมัติ" 
+            description="เอกสารที่ส่งเข้ามาเพื่อพิจารณาจะแสดงในส่วนนี้เมื่อมีรายการใหม่" 
+          />
+        ) : (
+          <div className="registry-list">
             {items.map((item) => (
-              <tr key={item.documentId}>
-                <td>
-                  <Link to={`/documents/${item.documentId}`} style={{ fontWeight: 700 }}>{item.documentTitle}</Link>
-                  <div className="muted" style={{ fontSize: '11px' }}>Submitted by {item.submittedBy}</div>
-                </td>
-                <td>
-                  <StatusBadge status={item.status} />
-                </td>
-                <td>
-                  <div style={{ fontSize: '12px' }}>Ver. {item.currentVersionNumber ?? '1'}</div>
-                  <div className="muted" style={{ fontSize: '11px' }}>{new Date(item.submittedAt).toLocaleDateString()}</div>
-                </td>
-                <td>
-                  <textarea
-                    className="input textarea textarea--compact"
-                    placeholder={item.latestComment ?? 'Approval/Rejection note'}
-                    style={{ minWidth: '200px' }}
-                    value={comments[item.documentId] ?? ''}
-                    onChange={(event) => setComments((current) => ({ ...current, [item.documentId]: event.target.value }))}
-                  />
-                </td>
-                <td>
-                  <div className="actions actions--compact">
-                    <button className="button" type="button" onClick={() => void runDecision(item.documentId, 'approve')}>
-                      Approve
-                    </button>
-                    <button className="button button--secondary" type="button" onClick={() => void runDecision(item.documentId, 'reject')}>
-                      Reject
-                    </button>
+              <article key={item.documentId} className="registry-item">
+                <div className="registry-item__main">
+                  <div className="registry-item__header">
+                    <div className="stack stack--compact">
+                      <Link className="registry-item__title" to={`/documents/${item.documentId}`}>
+                        {item.documentTitle}
+                      </Link>
+                      <p className="muted">
+                        ส่งโดย {item.submittedBy} เมื่อ {new Date(item.submittedAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <StatusBadge status={item.status} />
                   </div>
-                </td>
-              </tr>
+
+                  <div className="registry-meta">
+                    <span>เวอร์ชัน {item.currentVersionNumber ?? 1}</span>
+                    <span>{isToday(item.submittedAt) ? 'ส่งเข้ามาวันนี้' : `วันที่ ${new Date(item.submittedAt).toLocaleDateString()}`}</span>
+                  </div>
+
+                  {item.latestComment ? (
+                    <div className="callout">
+                      <strong>ความเห็นล่าสุด</strong>
+                      <div className="muted">{item.latestComment}</div>
+                    </div>
+                  ) : null}
+
+                  <label className="stack">
+                    <span className="card__label">ความเห็นประกอบการพิจารณา</span>
+                    <textarea
+                      className="input textarea textarea--compact"
+                      placeholder="ระบุเหตุผลประกอบการอนุมัติหรือปฏิเสธ"
+                      value={comments[item.documentId] ?? ''}
+                      onChange={(event) => setComments((current) => ({ ...current, [item.documentId]: event.target.value }))}
+                    />
+                  </label>
+                </div>
+
+                <div className="registry-item__actions registry-item__actions--stack">
+                  <Link className="button button--secondary" to={`/documents/${item.documentId}`}>
+                    เปิดเอกสาร
+                  </Link>
+                  <button className="button" type="button" onClick={() => void runDecision(item.documentId, 'approve')}>
+                    อนุมัติ
+                  </button>
+                  <button className="button button--secondary" type="button" onClick={() => void runDecision(item.documentId, 'reject')}>
+                    ปฏิเสธ
+                  </button>
+                </div>
+              </article>
             ))}
-            {items.length === 0 ? (
-              <tr>
-                <td colSpan={5}>
-                  <EmptyState 
-                    title="Queue empty" 
-                    description="No documents are currently pending review." 
-                  />
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </div>
-);
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function isToday(value: string) {
+  const target = new Date(value);
+  const now = new Date();
+
+  return target.getFullYear() === now.getFullYear()
+    && target.getMonth() === now.getMonth()
+    && target.getDate() === now.getDate();
 }

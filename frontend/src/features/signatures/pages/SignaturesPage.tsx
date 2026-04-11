@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
-
-
+import { StatCard } from '../../../shared/components/ui/StatCard';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { getPendingSignatures, rejectDocumentSignature, signDocumentSignature } from '../../documents/api/documentsApi';
@@ -78,77 +77,88 @@ export function SignaturesPage() {
   return (
     <div className="stack stack--xl">
       <PageHeader
-        title="Pending signature queue"
+        title="คิวรอลงนาม"
         eyebrow="Signatures"
-        description="Assigned signers complete PDF signature steps here in configured order."
+        description="เอกสารที่ถูกมอบหมายให้คุณลงนามจะแสดงในหน้านี้ พร้อมตำแหน่งลายเซ็นและความเห็นประกอบก่อนดำเนินการ"
       />
 
-      <section className="panel stack">
-
+      <div className="dashboard-summary-grid">
+        <StatCard label="รอลงนามทั้งหมด" value={items.length} />
+        <StatCard label="ลำดับแรก" value={items.filter((item) => item.signingOrder === 1).length} />
+        <StatCard label="มีความเห็นแนบ" value={items.filter((item) => Boolean(item.comment)).length} />
+      </div>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
 
-      <div className="table-wrap">
-        <table className="table table--premium">
-          <thead>
-            <tr>
-              <th>Document / Version</th>
-              <th>Order</th>
-              <th>Placement</th>
-              <th>Final Comment</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
+      <section className="panel panel--full stack">
+        <div className="section-heading">
+          <span className="sidebar__eyebrow">Queue</span>
+          <h3>รายการที่ต้องลงนาม</h3>
+        </div>
+
+        {items.length === 0 ? (
+          <EmptyState 
+            title="ไม่มีรายการรอลงนาม" 
+            description="เอกสารที่ถูกมอบหมายให้คุณลงนามจะปรากฏในส่วนนี้เมื่อมีรายการใหม่" 
+          />
+        ) : (
+          <div className="registry-list">
             {items.map((item) => (
-              <tr key={item.signatureRequestId}>
-                <td>
-                  <Link to={`/documents/${item.documentId}`} style={{ fontWeight: 700 }}>{item.documentTitle}</Link>
-                  <div className="muted" style={{ fontSize: '11px' }}>Version {item.versionNumber}</div>
-                </td>
-                <td>
-                  <div className="status-pill status-pill--subtle">Seq. {item.signingOrder}</div>
-                </td>
-                <td>
-                  <div style={{ fontSize: '12px' }}>Page {item.pageNumber}</div>
-                  <div className="muted" style={{ fontSize: '11px' }}>{item.positionX}, {item.positionY}</div>
-                </td>
-                <td>
-                  <textarea
-                    className="input textarea textarea--compact"
-                    placeholder={item.comment ?? 'Optional signature comment'}
-                    style={{ minWidth: '200px' }}
-                    value={comments[item.signatureRequestId] ?? ''}
-                    onChange={(event) => setComments((current) => ({ ...current, [item.signatureRequestId]: event.target.value }))}
-                  />
-                </td>
-                <td>
-                  <div className="actions actions--compact">
-                    <button className="button" type="button" onClick={() => void runAction(item, 'sign')}>
-                      Sign
-                    </button>
-                    <button className="button button--secondary" type="button" onClick={() => void runAction(item, 'reject')}>
-                      Reject
-                    </button>
+              <article key={item.signatureRequestId} className="registry-item">
+                <div className="registry-item__main">
+                  <div className="registry-item__header">
+                    <div className="stack stack--compact">
+                      <Link className="registry-item__title" to={`/documents/${item.documentId}`}>
+                        {item.documentTitle}
+                      </Link>
+                      <p className="muted">
+                        เวอร์ชัน {item.versionNumber} • ลำดับการลงนาม {item.signingOrder}
+                      </p>
+                    </div>
+                    <span className="status-pill status-pill--subtle">ลำดับ {item.signingOrder}</span>
                   </div>
-                </td>
-              </tr>
+
+                  <div className="registry-meta">
+                    <span>หน้า {item.pageNumber}</span>
+                    <span>ตำแหน่ง X:{item.positionX} Y:{item.positionY}</span>
+                    <span>ขนาด {item.width} × {item.height}</span>
+                  </div>
+
+                  {item.comment ? (
+                    <div className="callout">
+                      <strong>ความเห็นก่อนลงนาม</strong>
+                      <div className="muted">{item.comment}</div>
+                    </div>
+                  ) : null}
+
+                  <label className="stack">
+                    <span className="card__label">ความเห็นประกอบการดำเนินการ</span>
+                    <textarea
+                      className="input textarea textarea--compact"
+                      placeholder="ระบุความเห็นเพิ่มเติมก่อนลงนามหรือปฏิเสธ"
+                      value={comments[item.signatureRequestId] ?? ''}
+                      onChange={(event) => setComments((current) => ({ ...current, [item.signatureRequestId]: event.target.value }))}
+                    />
+                  </label>
+                </div>
+
+                <div className="registry-item__actions registry-item__actions--stack">
+                  <Link className="button button--secondary" to={`/documents/${item.documentId}`}>
+                    เปิดเอกสาร
+                  </Link>
+                  <button className="button" type="button" onClick={() => void runAction(item, 'sign')}>
+                    ลงนาม
+                  </button>
+                  <button className="button button--secondary" type="button" onClick={() => void runAction(item, 'reject')}>
+                    ปฏิเสธ
+                  </button>
+                </div>
+              </article>
             ))}
-            {items.length === 0 ? (
-              <tr>
-                <td colSpan={5}>
-                  <EmptyState 
-                    title="No pending signatures" 
-                    description="You have no documents assigned for signature at this time." 
-                  />
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </div>
-);
+          </div>
+        )}
+      </section>
+    </div>
+  );
 }

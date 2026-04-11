@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
-
-
 import { useAuth } from '../../auth/context/useAuth';
 import { getAuditLog, getAuditLogs } from '../api/auditApi';
 import type { AuditLogDetail, AuditLogFilters, AuditLogListResponse } from '../types';
@@ -147,7 +145,7 @@ export function AuditLogsPage() {
       <PageHeader
         title="Audit log"
         eyebrow="Audit"
-        description="Review append-only compliance events across registration, password reset, documents, approvals, and signatures."
+        description="ติดตามเหตุการณ์สำคัญของระบบย้อนหลัง ตรวจสอบผู้กระทำ รายการที่เกี่ยวข้อง และดู metadata ของเหตุการณ์แต่ละรายการ"
       />
 
       <div className="dashboard-summary-grid">
@@ -156,19 +154,19 @@ export function AuditLogsPage() {
         <StatCard label="Active Filters" value={Object.values(filters).filter(v => typeof v === 'string' && v.trim() !== '' && v !== '1' && v !== '20').length} />
       </div>
 
-      <section className="panel stack">
+      <section className="panel panel--full stack">
         <div className="filter-bar">
           <div className="filter-group">
-            <span className="filter-bar__label">Actor Identity</span>
-            <input className="input" placeholder="Name or Email" value={filters.actor ?? ''} onChange={(event) => updateFilters({ actor: event.target.value, page: 1 })} />
+            <span className="filter-bar__label">ผู้กระทำ</span>
+            <input className="input" placeholder="ชื่อหรืออีเมล" value={filters.actor ?? ''} onChange={(event) => updateFilters({ actor: event.target.value, page: 1 })} />
           </div>
           <div className="filter-group">
-            <span className="filter-bar__label">Action Type</span>
-            <input className="input" placeholder="e.g. Approved, Create" value={filters.action ?? ''} onChange={(event) => updateFilters({ action: event.target.value, page: 1 })} />
+            <span className="filter-bar__label">เหตุการณ์</span>
+            <input className="input" placeholder="เช่น Approved, Created, Signed" value={filters.action ?? ''} onChange={(event) => updateFilters({ action: event.target.value, page: 1 })} />
           </div>
           <div className="filter-group">
-            <span className="filter-bar__label">Document Context</span>
-            <input className="input" placeholder="UUID" value={filters.documentId ?? ''} onChange={(event) => updateFilters({ documentId: event.target.value, page: 1 })} />
+            <span className="filter-bar__label">Document ID</span>
+            <input className="input" placeholder="UUID ของเอกสาร" value={filters.documentId ?? ''} onChange={(event) => updateFilters({ documentId: event.target.value, page: 1 })} />
           </div>
           <button 
             className="button button--secondary" 
@@ -189,57 +187,89 @@ export function AuditLogsPage() {
         {error ? <div className="callout callout--danger">{error}</div> : null}
 
         <div className="split-layout split-layout--wide">
-          <div className="table-wrap">
-            <table className="table table--premium">
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Actor / Entity</th>
-                  <th>Action</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
+          <section className="stack">
+            <div className="registry-toolbar">
+              <span className="muted">
+                แสดง {results?.items.length ?? 0} จาก {results?.totalCount ?? 0} รายการ
+              </span>
+            </div>
+
+            {(results?.items.length ?? 0) === 0 ? (
+              <EmptyState title="ไม่พบรายการ" description="ลองเปลี่ยนเงื่อนไขการค้นหาเพื่อดูเหตุการณ์เพิ่มเติม" />
+            ) : (
+              <div className="registry-list">
                 {results?.items.map((item) => (
-                  <tr 
-                    key={item.id} 
-                    onClick={() => void handleSelectAuditLog(item.id)} 
-                    className={`table__row--interactive ${selectedLog?.id === item.id ? 'active' : ''}`}
-                    style={selectedLog?.id === item.id ? { backgroundColor: 'var(--color-primary-soft)', borderLeft: '4px solid var(--color-primary)' } : {}}
+                  <article
+                    key={item.id}
+                    className={`registry-item ${selectedLog?.id === item.id ? 'registry-item--selected' : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => void handleSelectAuditLog(item.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        void handleSelectAuditLog(item.id);
+                      }
+                    }}
                   >
-                    <td>
-                      <div style={{ fontWeight: 600 }}>{new Date(item.timestamp).toLocaleTimeString()}</div>
-                      <div className="muted" style={{ fontSize: '11px' }}>{new Date(item.timestamp).toLocaleDateString()}</div>
-                    </td>
-                    <td>
-                      <div>{item.actorDisplayName ?? item.actorUsername ?? 'System'}</div>
-                      <div className="muted" style={{ fontSize: '11px' }}>{item.entityType}</div>
-                    </td>
-                    <td>
-                      <StatusBadge status={item.action.includes('Approved') || item.action.includes('Success') ? 'Approved' : item.action.includes('Reject') ? 'Rejected' : 'Pending'} />
-                      <div style={{ marginTop: '4px', fontSize: '12px' }}>{item.action}</div>
-                    </td>
-                    <td>
-                      <span className="muted" style={{ fontSize: '18px' }}>›</span>
-                    </td>
-                  </tr>
+                    <div className="registry-item__main">
+                      <div className="registry-item__header">
+                        <div className="stack stack--compact">
+                          <div className="registry-item__title">{item.action}</div>
+                          <p className="muted">
+                            {item.actorDisplayName ?? item.actorUsername ?? 'System'} • {item.entityType}
+                          </p>
+                        </div>
+                        <StatusBadge status={mapAuditStatus(item.action)} />
+                      </div>
+
+                      <div className="registry-meta">
+                        <span>{new Date(item.timestamp).toLocaleDateString()}</span>
+                        <span>{new Date(item.timestamp).toLocaleTimeString()}</span>
+                        <span>Entity ID: {item.entityId ?? '-'}</span>
+                      </div>
+
+                      <div className="registry-meta">
+                        <span>Actor ID: {item.actorUserId ?? '-'}</span>
+                        <span>Document: {item.relatedDocumentId ?? '-'}</span>
+                      </div>
+                    </div>
+
+                    <div className="registry-item__actions">
+                      <button className="button button--secondary" type="button">
+                        ดูรายละเอียด
+                      </button>
+                    </div>
+                  </article>
                 ))}
-                {(results?.items.length ?? 0) === 0 ? (
-                  <tr>
-                    <td colSpan={4}>
-                      <EmptyState title="No logs found" description="Adjust your filters to see more activity records." />
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            )}
+          </section>
 
           <aside className="stack">
             <div className="panel stack" style={{ padding: '24px', position: 'sticky', top: '24px' }}>
-              <h3 className="form-section__title">Event Detail</h3>
+              <h3 className="form-section__title">รายละเอียดเหตุการณ์</h3>
               {selectedLog ? (
                 <div className="stack">
+                  <dl className="detail-list">
+                    <div>
+                      <dt>เหตุการณ์</dt>
+                      <dd>{selectedLog.action}</dd>
+                    </div>
+                    <div>
+                      <dt>ผู้กระทำ</dt>
+                      <dd>{selectedLog.actorDisplayName ?? selectedLog.actorUsername ?? 'System'}</dd>
+                    </div>
+                    <div>
+                      <dt>วันเวลา</dt>
+                      <dd>{new Date(selectedLog.timestamp).toLocaleString()}</dd>
+                    </div>
+                    <div>
+                      <dt>Entity</dt>
+                      <dd>{selectedLog.entityType} ({selectedLog.entityId ?? '-'})</dd>
+                    </div>
+                  </dl>
+
                   <Timeline items={timelineItems} />
                   <div className="audit-meta-viewer">
                     <div className="muted" style={{ marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase' }}>Structured Metadata</div>
@@ -248,8 +278,8 @@ export function AuditLogsPage() {
                 </div>
               ) : (
                 <EmptyState 
-                  title="Nothing Selected" 
-                  description="Click an audit entry on the left to inspect the secure metadata and event context." 
+                  title="ยังไม่ได้เลือกรายการ" 
+                  description="เลือกรายการจากฝั่งซ้ายเพื่อดูรายละเอียดและ metadata ของเหตุการณ์" 
                 />
               )}
             </div>
@@ -267,5 +297,19 @@ export function AuditLogsPage() {
         </div>
       </section>
     </div>
-);
+  );
+}
+
+function mapAuditStatus(action: string) {
+  const normalized = action.toLowerCase();
+
+  if (normalized.includes('reject') || normalized.includes('delete')) {
+    return 'Rejected';
+  }
+
+  if (normalized.includes('approve') || normalized.includes('complete') || normalized.includes('sign')) {
+    return 'Approved';
+  }
+
+  return 'Pending';
 }

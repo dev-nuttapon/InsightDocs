@@ -5,6 +5,7 @@ import { useAuth } from '../context/useAuth';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
+import { StatCard } from '../../../shared/components/ui/StatCard';
 
 export function AdminPasswordResetRequestsPage() {
   const { accessToken } = useAuth();
@@ -92,77 +93,88 @@ export function AdminPasswordResetRequestsPage() {
   return (
     <div className="stack stack--xl">
       <PageHeader
-        title="Password Reset Requests"
+        title="คำขอรีเซ็ตรหัสผ่าน"
         eyebrow="Administration"
-        description="Review and process manual password reset requests. Approved requests generate a secure link that must be manually provided to the user."
+        description="ตรวจสอบคำขอรีเซ็ตรหัสผ่าน อนุมัติหรือปฏิเสธคำขอ และคัดลอกลิงก์รีเซ็ตเพื่อส่งต่อให้ผู้ใช้งานด้วยตนเอง"
       />
 
-      <section className="panel stack">
-        {error ? <div className="callout callout--danger">{error}</div> : null}
-        {notice ? <div className="callout">{notice}</div> : null}
+      <div className="dashboard-summary-grid">
+        <StatCard label="คำขอทั้งหมด" value={requests.length} />
+        <StatCard label="รอพิจารณา" value={requests.filter((request) => request.status === 'Pending').length} />
+        <StatCard label="อนุมัติแล้ว" value={requests.filter((request) => request.status === 'Approved').length} />
+      </div>
 
-        <div className="table-wrap">
-          <table className="table table--premium">
-            <thead>
-              <tr>
-                <th>User Identity</th>
-                <th>Request Date</th>
-                <th>Status</th>
-                <th>Generated Link</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {requests.map((request) => (
-                <tr key={request.id}>
-                  <td>
-                    <div style={{ fontWeight: 700 }}>{request.displayName}</div>
-                    <div className="muted" style={{ fontSize: '11px' }}>{request.email}</div>
-                  </td>
-                  <td>
-                    <div style={{ fontSize: '12px' }}>{new Date(request.requestedAt).toLocaleDateString()}</div>
-                    <div className="muted" style={{ fontSize: '11px' }}>{new Date(request.requestedAt).toLocaleTimeString()}</div>
-                  </td>
-                  <td>
-                    <StatusBadge status={request.status === 'Pending' ? 'Pending' : (request.status === 'Approved' ? 'Approved' : 'Rejected')} />
-                  </td>
-                  <td className="table__link-cell" style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {request.resetUrl ? (
-                      <code style={{ fontSize: '11px', background: 'var(--color-bg-alt)', padding: '2px 4px', borderRadius: '4px' }}>
-                        {request.resetUrl}
-                      </code>
-                    ) : (
-                      <span className="muted">Pending approval</span>
-                    )}
-                  </td>
-                  <td>
-                    <div className="actions actions--compact">
-                      {request.status === 'Pending' ? (
-                        <>
-                          <button className="button" type="button" onClick={() => void handleApprove(request.id)}>Approve</button>
-                          <button className="button button--secondary" type="button" onClick={() => void handleReject(request.id)}>Reject</button>
-                        </>
-                      ) : null}
-                      {request.resetUrl ? (
-                        <button className="button button--secondary" type="button" onClick={() => void handleCopy(request.resetUrl)}>Copy Link</button>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {requests.length === 0 && (
-                <tr>
-                  <td colSpan={5}>
-                    <EmptyState 
-                      title="No active requests" 
-                      description="There are no pending password reset requests in the administrative queue." 
-                    />
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {error ? <div className="callout callout--danger">{error}</div> : null}
+      {notice ? <div className="callout">{notice}</div> : null}
+
+      <section className="panel panel--full stack">
+        <div className="section-heading">
+          <span className="sidebar__eyebrow">Queue</span>
+          <h3>รายการคำขอ</h3>
         </div>
+
+        {requests.length === 0 ? (
+          <EmptyState 
+            title="ไม่มีคำขอรีเซ็ตรหัสผ่าน" 
+            description="คำขอที่ผู้ใช้ส่งเข้ามาเพื่อรีเซ็ตรหัสผ่านจะแสดงในส่วนนี้เมื่อมีรายการใหม่" 
+          />
+        ) : (
+          <div className="registry-list">
+            {requests.map((request) => (
+              <article key={request.id} className="registry-item">
+                <div className="registry-item__main">
+                  <div className="registry-item__header">
+                    <div className="stack stack--compact">
+                      <div className="registry-item__title">{request.displayName}</div>
+                      <p className="muted">{request.email}</p>
+                    </div>
+                    <StatusBadge status={request.status} />
+                  </div>
+
+                  <div className="registry-meta">
+                    <span>ผู้ร้องขอ: {request.requestedByIdentifier}</span>
+                    <span>วันที่ {new Date(request.requestedAt).toLocaleDateString()}</span>
+                    <span>เวลา {new Date(request.requestedAt).toLocaleTimeString()}</span>
+                  </div>
+
+                  {request.reviewComment ? (
+                    <div className="callout">
+                      <strong>ความเห็นการพิจารณา</strong>
+                      <div className="muted">{request.reviewComment}</div>
+                    </div>
+                  ) : null}
+
+                  {request.resetUrl ? (
+                    <div className="callout">
+                      <strong>ลิงก์รีเซ็ตรหัสผ่าน</strong>
+                      <div className="audit-metadata">
+                        <code>{request.resetUrl}</code>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="registry-item__actions registry-item__actions--stack">
+                  {request.status === 'Pending' ? (
+                    <>
+                      <button className="button" type="button" onClick={() => void handleApprove(request.id)}>
+                        อนุมัติ
+                      </button>
+                      <button className="button button--secondary" type="button" onClick={() => void handleReject(request.id)}>
+                        ปฏิเสธ
+                      </button>
+                    </>
+                  ) : null}
+                  {request.resetUrl ? (
+                    <button className="button button--secondary" type="button" onClick={() => void handleCopy(request.resetUrl)}>
+                      คัดลอกลิงก์
+                    </button>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
