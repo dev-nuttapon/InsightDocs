@@ -137,7 +137,7 @@ export function AuditLogsPage() {
             View Document
           </Link>
         ) : null,
-        status: 'neutral',
+        status: 'info',
       },
     ];
   }, [selectedLog]);
@@ -158,14 +158,22 @@ export function AuditLogsPage() {
 
       <section className="panel stack">
         <div className="filter-bar">
-          <span className="filter-bar__label">Explore Logs</span>
-          <div className="hero-grid hero-grid--stacked" style={{ flex: 1, marginTop: 0 }}>
-            <input className="input" placeholder="Actor" value={filters.actor} onChange={(event) => updateFilters({ actor: event.target.value, page: 1 })} />
-            <input className="input" placeholder="Action" value={filters.action} onChange={(event) => updateFilters({ action: event.target.value, page: 1 })} />
-            <input className="input" placeholder="Doc ID" value={filters.documentId} onChange={(event) => updateFilters({ documentId: event.target.value, page: 1 })} />
+          <div className="filter-group">
+            <span className="filter-bar__label">Actor Identity</span>
+            <input className="input" placeholder="Name or Email" value={filters.actor ?? ''} onChange={(event) => updateFilters({ actor: event.target.value, page: 1 })} />
+          </div>
+          <div className="filter-group">
+            <span className="filter-bar__label">Action Type</span>
+            <input className="input" placeholder="e.g. Approved, Create" value={filters.action ?? ''} onChange={(event) => updateFilters({ action: event.target.value, page: 1 })} />
+          </div>
+          <div className="filter-group">
+            <span className="filter-bar__label">Document Context</span>
+            <input className="input" placeholder="UUID" value={filters.documentId ?? ''} onChange={(event) => updateFilters({ documentId: event.target.value, page: 1 })} />
           </div>
           <button 
             className="button button--secondary" 
+            type="button"
+            style={{ height: '42px' }}
             onClick={() => updateFilters(defaultFilters)}
             disabled={Object.entries(filters).every(([k, v]) => k === 'page' || k === 'pageSize' || v === '')}
           >

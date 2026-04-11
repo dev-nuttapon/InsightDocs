@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
-
-
 import { useAuth } from '../../auth/context/useAuth';
 import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 import { deleteUser, disableUser, enableUser, getUsers } from '../api/usersApi';
-import { canDisableUser, canEnableUser, formatUserStatus, getProjectRoleLabels, resolveUserStatus, type AppUser } from '../types';
+import { canDisableUser, canEnableUser, getProjectRoleLabels, resolveUserStatus, type AppUser } from '../types';
 import { StatCard } from '../../../shared/components/ui/StatCard';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 
@@ -156,6 +154,8 @@ export function UsersPage() {
         description="สร้างผู้ใช้งานจากระบบนี้ แล้ว provision บัญชีไปยัง Keycloak พร้อมสร้าง access record ใน InsightDocs ให้เชื่อมกันอัตโนมัติ"
         actions={<Link className="button" to="/users/new">Invite User</Link>}
       />
+
+      {notice ? <div className="callout">{notice}</div> : null}
 
       <div className="dashboard-summary-grid">
         <StatCard label="Total Accounts" value={users.length} />

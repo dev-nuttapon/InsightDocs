@@ -10,6 +10,7 @@ export function AppShell() {
   const location = useLocation();
   const [openSection, setOpenSection] = useState<'workspace' | 'actions' | 'admin'>('workspace');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const access = buildAccessProfile(user?.roles ?? []);
 
   const sections = useMemo(() => {
@@ -49,61 +50,82 @@ export function AppShell() {
 
   useEffect(() => {
     setOpenSection(resolveOpenSection(location.pathname));
+    setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <div 
+        className={`sidebar-overlay ${isMobileMenuOpen ? 'sidebar-overlay--active' : ''}`} 
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
+
+      <aside className={`sidebar ${isMobileMenuOpen ? 'sidebar--open' : ''}`}>
         <div className="sidebar__brand">
           <div className="sidebar__brand-mark" aria-hidden="true">ID</div>
           <div className="sidebar__brand-copy">
             <span className="sidebar__brand-name">InsightDocs</span>
           </div>
+          <button 
+            className="mobile-only sidebar__close-button"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            ×
+          </button>
         </div>
 
-        <nav className="sidebar__nav" aria-label="Primary">
-          {sections.map((section) => {
-            const isOpen = openSection === section.key;
+        <div className="sidebar__scroll-area">
+          <nav className="sidebar__nav sidebar__nav--spaced" aria-label="Primary">
+            {sections.map((section) => {
+              const isOpen = openSection === section.key;
 
-            return (
-              <section key={section.key} className="sidebar__group">
-                <button
-                  className={`sidebar__group-toggle${isOpen ? ' active' : ''}`}
-                  type="button"
-                  onClick={() => setOpenSection(section.key)}
-                >
-                  <span>{section.label}</span>
-                  <span className="sidebar__group-icon" aria-hidden="true">{isOpen ? '−' : '+'}</span>
-                </button>
-                {isOpen ? (
-                  <div className="sidebar__group-links">
-                    {section.links.map((link) => (
-                      <NavLink
-                        key={link.to}
-                        className="sidebar__link"
-                        to={link.to}
-                        end
-                      >
-                        <span>{link.label}</span>
-                        <span className="sidebar__link-arrow" aria-hidden="true">→</span>
-                      </NavLink>
-                    ))}
-                  </div>
-                ) : null}
-              </section>
-            );
-          })}
-        </nav>
+              return (
+                <section key={section.key} className="sidebar__group">
+                  <button
+                    className={`sidebar__group-toggle${isOpen ? ' active' : ''}`}
+                    type="button"
+                    onClick={() => setOpenSection(section.key)}
+                  >
+                    <span>{section.label}</span>
+                    <span className="sidebar__group-icon" aria-hidden="true">{isOpen ? '−' : '+'}</span>
+                  </button>
+                  {isOpen ? (
+                    <div className="sidebar__group-links">
+                      {section.links.map((link) => (
+                        <NavLink
+                          key={link.to}
+                          className="sidebar__link"
+                          to={link.to}
+                          end
+                        >
+                          <span>{link.label}</span>
+                          <span className="sidebar__link-arrow" aria-hidden="true">→</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              );
+            })}
+          </nav>
+        </div>
 
         {isAuthenticated && user && (
-          <div className="sidebar__profile-compact">
-            <div className="sidebar__avatar-sm" aria-hidden="true">
-              {(user.displayName ?? user.username ?? user.email ?? 'ID').slice(0, 2).toUpperCase()}
-            </div>
-            <div className="topbar__profile-copy" style={{ minWidth: 0 }}>
-              <strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {user.displayName ?? user.username}
-              </strong>
+          <div className="sidebar__profile">
+            <div className="topbar__profile-copy sidebar__profile-copy">
+              <div className="sidebar__profile-row">
+                <div className="sidebar__avatar-sm" aria-hidden="true">
+                  {(user.displayName ?? user.username ?? user.email ?? 'ID').slice(0, 2).toUpperCase()}
+                </div>
+                <div className="sidebar__profile-text">
+                  <strong className="sidebar__profile-name">
+                    {user.displayName ?? user.username}
+                  </strong>
+                  <span className="muted sidebar__profile-email">
+                    {user.email ?? user.subject}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -111,6 +133,14 @@ export function AppShell() {
 
       <main className="content">
         <header className="topbar">
+          <div className="topbar__leading">
+            <button 
+              className="mobile-only button button--secondary topbar__mobile-trigger"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              ☰
+            </button>
+          </div>
           <div className="topbar__actions">
             {user ? (
               <div className="topbar__menu">
@@ -126,7 +156,7 @@ export function AppShell() {
                     <strong>{user.displayName ?? user.username ?? user.subject}</strong>
                     <span className="muted">{user.email ?? 'No email claim'}</span>
                   </span>
-                  <span aria-hidden="true">{isUserMenuOpen ? '▴' : '▾'}</span>
+                  <span className="topbar__menu-chevron" aria-hidden="true">{isUserMenuOpen ? '▴' : '▾'}</span>
                 </button>
                 {isUserMenuOpen ? (
                   <div className="topbar__menu-panel">

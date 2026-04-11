@@ -1,4 +1,3 @@
-import React from 'react';
 import { DocumentApprovalHistoryItem, DocumentDetail } from '../types';
 import { Timeline, TimelineItem } from '../../../shared/components/ui/Timeline';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';

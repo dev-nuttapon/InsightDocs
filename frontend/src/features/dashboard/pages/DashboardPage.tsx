@@ -6,9 +6,7 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { StatCard } from '../../../shared/components/ui/StatCard';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
-
-
-import { buildAccessProfile, formatRoleLabel } from '../../../shared/auth/authorization';
+import { buildAccessProfile } from '../../../shared/auth/authorization';
 import { useAuth } from '../../auth/context/useAuth';
 import {
   getDashboardSummary,
@@ -67,67 +65,114 @@ export function DashboardPage() {
   }, [accessToken]);
 
   const quickActions = useMemo(() => {
-    const actions = [
-      {
+    const actions = [];
+
+    if (access.canManageDocuments) {
+      actions.push({
         to: '/documents',
-        label: access.canManageDocuments ? 'Upload or manage documents' : 'Open document registry',
-        description: access.canManageDocuments
-          ? 'Continue controlled upload, metadata maintenance, versioning, and archive work.'
-          : 'Review current controlled documents and their latest statuses.',
-      },
-      {
-        to: '/search',
-        label: 'Search documents',
-        description: 'Run metadata and full-text search with enterprise filters.',
-      },
-    ];
+        label: 'จัดการเอกสาร',
+        description: 'สร้าง อัปโหลดเวอร์ชันใหม่ แก้ไขข้อมูล และดูสถานะเอกสารล่าสุด',
+      });
+    } else {
+      actions.push({
+        to: '/documents',
+        label: 'เปิดรายการเอกสาร',
+        description: 'ดูเอกสารล่าสุดและสถานะที่เกี่ยวข้องกับงานของคุณ',
+      });
+    }
+
+    actions.push({
+      to: '/search',
+      label: 'ค้นหาเอกสาร',
+      description: 'ค้นหาด้วยคำสำคัญ หมวดหมู่ สถานะ และข้อมูลอ้างอิงอื่น ๆ',
+    });
 
     if (access.canReviewDocuments) {
       actions.push({
         to: '/approvals',
-        label: 'Open approvals queue',
-        description: 'Review pending submissions and complete approval decisions quickly.',
+        label: 'ตรวจสอบรายการรออนุมัติ',
+        description: 'เปิดคิวอนุมัติเอกสารที่รอการพิจารณาและดำเนินการต่อได้ทันที',
       });
     }
 
     if (access.canSignDocuments) {
       actions.push({
         to: '/signatures',
-        label: 'Open signatures queue',
-        description: 'Inspect pending signer work and complete sequential signing steps.',
+        label: 'ตรวจสอบรายการรอลงนาม',
+        description: 'เปิดคิวลงนามที่ได้รับมอบหมายและดำเนินการลงนามตามลำดับงาน',
       });
     }
 
     if (access.isAdmin) {
       actions.push(
         {
-          to: '/users/new',
-          label: 'Invite new user',
-          description: 'Provision a new identity to Keycloak and grant initial access roles in InsightDocs.',
-        },
-        {
           to: '/users',
-          label: 'Review users and access',
-          description: 'Inspect Keycloak-backed identity, local access state, and approval controls from the admin workspace.',
+          label: 'จัดการผู้ใช้งาน',
+          description: 'ดูสถานะผู้ใช้งาน กำหนดสิทธิ์ และจัดการการเข้าถึงระบบ',
         },
         {
           to: '/audit-logs',
-          label: 'Review audit logs',
-          description: 'Inspect append-only operational and compliance events across the system.',
+          label: 'ตรวจสอบ Audit Log',
+          description: 'ติดตามเหตุการณ์สำคัญของระบบสำหรับการตรวจสอบย้อนหลัง',
         },
       );
     }
 
-    return actions;
+    return actions.slice(0, 4);
   }, [access.canManageDocuments, access.canReviewDocuments, access.canSignDocuments, access.isAdmin]);
 
-  const summaryCards = [
-    { label: 'Total Documents', value: summary?.totalDocuments ?? 0 },
-    { label: 'Pending Approvals', value: summary?.pendingApprovals ?? 0 },
-    { label: 'Pending Signatures', value: summary?.pendingSignatures ?? 0 },
-    { label: 'Approved Documents', value: summary?.approvedDocuments ?? 0 },
-    { label: 'Archived Documents', value: summary?.archivedDocuments ?? 0 },
-  ];
+  const summaryCards = useMemo(() => {
+    if (!summary) {
+      return [];
+    }
+
+    const cards = [];
+
+    if (access.canReviewDocuments) {
+      cards.push({ label: 'รออนุมัติ', value: summary.pendingApprovals });
+    }
+
+    if (access.canSignDocuments) {
+      cards.push({ label: 'รอลงนาม', value: summary.pendingSignatures });
+    }
+
+    cards.push({ label: 'เอกสารทั้งหมด', value: summary.totalDocuments });
+    cards.push({ label: 'อนุมัติแล้ว', value: summary.approvedDocuments });
+
+    if (access.canManageDocuments || access.isAdmin) {
+      cards.push({ label: 'เก็บถาวร', value: summary.archivedDocuments });
+    }
+
+    return cards.slice(0, 4);
+  }, [access.canManageDocuments, access.canReviewDocuments, access.canSignDocuments, access.isAdmin, summary]);
+
+  const primaryHeading = useMemo(() => {
+    if (access.canReviewDocuments) {
+      return {
+        title: 'งานอนุมัติเอกสาร',
+        description: 'เห็นคิวงานอนุมัติและรายการเอกสารล่าสุดที่ต้องติดตามจากจุดเดียว',
+      };
+    }
+
+    if (access.canSignDocuments) {
+      return {
+        title: 'งานลงนามเอกสาร',
+        description: 'ติดตามคิวลงนามและสถานะเอกสารที่เกี่ยวข้องกับการดำเนินการของคุณ',
+      };
+    }
+
+    if (access.canManageDocuments) {
+      return {
+        title: 'งานจัดการเอกสาร',
+        description: 'เข้าถึงงานอัปโหลด แก้ไข ค้นหา และติดตามสถานะเอกสารที่กำลังดำเนินการ',
+      };
+    }
+
+    return {
+      title: 'ภาพรวมเอกสาร',
+      description: 'ดูรายการเอกสารล่าสุดและเข้าถึงการค้นหาเอกสารที่เกี่ยวข้องกับงานของคุณ',
+    };
+  }, [access.canManageDocuments, access.canReviewDocuments, access.canSignDocuments]);
 
   if (!summary && !error) {
     return <StatePanel eyebrow="Dashboard" title="Loading dashboard" description="Collecting current metrics, recent documents, and operational activity." busy />;
@@ -136,33 +181,28 @@ export function DashboardPage() {
   return (
     <section className="stack stack--xl">
       <PageHeader
-        title="Enterprise document operations"
+        title={primaryHeading.title}
         eyebrow="Operational Dashboard"
-        description="Monitor controlled document activity, route yourself to the next queue, and present the current operational state without hunting across modules."
-        actions={
-          <div className="dashboard-badges">
-            <span className="status-pill">Active workspace</span>
-            <span className="status-pill status-pill--subtle">{user?.username ?? 'Authenticated user'}</span>
-          </div>
-        }
+        description={primaryHeading.description}
       />
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
 
-      <div className="panel panel--hero stack">
-        <div className="dashboard-summary-grid dashboard-summary-grid--hero">
-          {summaryCards.map((card) => (
-            <StatCard key={card.label} label={card.label} value={card.value} />
-          ))}
+      {summaryCards.length > 0 ? (
+        <div className="panel panel--hero stack">
+          <div className="dashboard-summary-grid dashboard-summary-grid--hero">
+            {summaryCards.map((card) => (
+              <StatCard key={card.label} label={card.label} value={card.value} />
+            ))}
+          </div>
         </div>
-
-      </div>
+      ) : null}
 
       <div className="split-layout">
         <section className="panel stack">
           <div className="section-heading">
             <span className="sidebar__eyebrow">Quick Actions</span>
-            <h3>Continue the next operational step</h3>
+            <h3>งานที่ควรทำต่อ</h3>
           </div>
           <div className="action-list">
             {quickActions.map((action) => (
@@ -179,23 +219,45 @@ export function DashboardPage() {
 
         <section className="panel stack">
           <div className="section-heading">
-            <span className="sidebar__eyebrow">Current Session</span>
-            <h3>Identity and access snapshot</h3>
+            <span className="sidebar__eyebrow">Focus</span>
+            <h3>สิ่งที่ควรติดตามตอนนี้</h3>
           </div>
-          <dl className="detail-list">
-            <div>
-              <dt>Username</dt>
-              <dd>{user?.username ?? 'Unavailable'}</dd>
+          <div className="action-list">
+            {access.canReviewDocuments ? (
+              <div className="action-row">
+                <div className="action-row__copy">
+                  <strong>คิวอนุมัติ</strong>
+                  <span className="muted">มีเอกสารรออนุมัติ {summary?.pendingApprovals ?? 0} รายการ</span>
+                </div>
+                <Link className="button button--secondary" to="/approvals">Open</Link>
+              </div>
+            ) : null}
+            {access.canSignDocuments ? (
+              <div className="action-row">
+                <div className="action-row__copy">
+                  <strong>คิวลงนาม</strong>
+                  <span className="muted">มีรายการรอลงนาม {summary?.pendingSignatures ?? 0} รายการ</span>
+                </div>
+                <Link className="button button--secondary" to="/signatures">Open</Link>
+              </div>
+            ) : null}
+            <div className="action-row">
+              <div className="action-row__copy">
+                <strong>ค้นหาเอกสาร</strong>
+                <span className="muted">เข้าถึงเอกสารที่ต้องใช้ได้รวดเร็วผ่านตัวกรองและคำค้น</span>
+              </div>
+              <Link className="button button--secondary" to="/search">Open</Link>
             </div>
-            <div>
-              <dt>Email</dt>
-              <dd>{user?.email ?? 'Unavailable'}</dd>
-            </div>
-            <div>
-              <dt>Roles</dt>
-              <dd>{access.normalizedRoles.length > 0 ? access.normalizedRoles.map(formatRoleLabel).join(', ') : 'No Keycloak roles'}</dd>
-            </div>
-          </dl>
+            {access.isAdmin ? (
+              <div className="action-row">
+                <div className="action-row__copy">
+                  <strong>จัดการผู้ใช้งาน</strong>
+                  <span className="muted">ดูผู้ใช้ ปรับสิทธิ์ และตรวจสอบการเข้าถึงระบบ</span>
+                </div>
+                <Link className="button button--secondary" to="/users">Open</Link>
+              </div>
+            ) : null}
+          </div>
         </section>
       </div>
 
@@ -203,7 +265,7 @@ export function DashboardPage() {
         <section className="panel stack">
           <div className="section-heading">
             <span className="sidebar__eyebrow">Recent Documents</span>
-            <h3>Latest governed content</h3>
+            <h3>เอกสารล่าสุด</h3>
           </div>
           <div className="table-wrap">
             <table className="table table--premium">
@@ -248,7 +310,7 @@ export function DashboardPage() {
         <section className="panel stack">
           <div className="section-heading">
             <span className="sidebar__eyebrow">Recent Activities</span>
-            <h3>Latest operational events</h3>
+            <h3>กิจกรรมล่าสุด</h3>
           </div>
           {recentActivities.length === 0 ? (
             <EmptyState 

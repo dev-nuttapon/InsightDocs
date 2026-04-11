@@ -97,10 +97,16 @@ export function SearchPage() {
 
       <div className="stack stack--compact">
         <div className="filter-bar">
-          <span className="filter-bar__label">Filters</span>
-          <div className="hero-grid hero-grid--stacked" style={{ flex: 1, marginTop: 0 }}>
-            <input className="input" placeholder="Keyword query" value={filters.query} onChange={(event) => updateFilters({ query: event.target.value, page: 1 })} />
+          <div className="filter-group">
+            <span className="filter-bar__label">Knowledge Search</span>
+            <input className="input" placeholder="Keywords..." value={filters.query} onChange={(event) => updateFilters({ query: event.target.value, page: 1 })} />
+          </div>
+          <div className="filter-group">
+            <span className="filter-bar__label">Department / Tag</span>
             <input className="input" placeholder="Category" value={filters.category} onChange={(event) => updateFilters({ category: event.target.value, page: 1 })} />
+          </div>
+          <div className="filter-group" style={{ maxWidth: '240px' }}>
+            <span className="filter-bar__label">Lifecycle State</span>
             <select className="input input--select" value={filters.status} onChange={(event) => updateFilters({ status: event.target.value, page: 1 })}>
               <option value="">Any Status</option>
               <option value="Draft">Draft</option>
@@ -113,6 +119,7 @@ export function SearchPage() {
           <button 
             className="button button--secondary" 
             type="button" 
+            style={{ height: '42px' }}
             onClick={() => updateFilters({ ...defaultFilters, page: 1 })}
             disabled={Object.entries(filters).every(([k, v]) => k === 'page' || k === 'pageSize' || v === '')}
           >

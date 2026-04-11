@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * Normalized status types for Documents and Users.
  */

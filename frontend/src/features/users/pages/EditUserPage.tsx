@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../auth/context/useAuth';
 import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 import { getUser, updateUser } from '../api/usersApi';
-import { AVAILABLE_PROJECT_ROLES, formatBusinessRole, formatBusinessRoleDescription, formatUserStatus, type AppUser, type UpdateUserInput } from '../types';
+import { AVAILABLE_PROJECT_ROLES, formatBusinessRole, formatBusinessRoleDescription, type AppUser, type UpdateUserInput } from '../types';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 
 type EditUserFormState = UpdateUserInput & {
