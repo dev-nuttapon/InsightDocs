@@ -5,8 +5,16 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { StatCard } from '../../../shared/components/ui/StatCard';
+import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
+import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
-import { SampleDocumentsShowcase } from '../../../shared/components/mock/SampleDocumentsShowcase';
+import {
+  demoApproveDocument,
+  demoRejectDocument,
+  getDemoPendingApprovals,
+  getDemoScenarioState,
+} from '../../../shared/mock/demoScenario';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { approveDocument, getPendingApprovals, rejectDocument } from '../../documents/api/documentsApi';
@@ -14,15 +22,25 @@ import type { PendingApproval } from '../../documents/types';
 
 export function ApprovalsPage() {
   const { accessToken } = useAuth();
+  const demoMode = isDemoModeEnabled();
   const [items, setItems] = useState<PendingApproval[]>([]);
   const [comments, setComments] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const scenarioState = getDemoScenarioState('demo-policy-014');
 
   useEffect(() => {
     let ignore = false;
 
     async function load() {
+      if (demoMode) {
+        if (!ignore) {
+          setItems(getDemoPendingApprovals());
+          setError(null);
+        }
+        return;
+      }
+
       if (!accessToken) {
         return;
       }
@@ -45,9 +63,22 @@ export function ApprovalsPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken]);
+  }, [accessToken, demoMode]);
 
   async function runDecision(documentId: string, action: 'approve' | 'reject') {
+    if (demoMode) {
+      if (action === 'approve') {
+        demoApproveDocument(documentId, comments[documentId] ?? '', null);
+      } else {
+        demoRejectDocument(documentId, comments[documentId] ?? '', null);
+      }
+
+      setItems(getDemoPendingApprovals());
+      setNotice(action === 'approve' ? 'อนุมัติเอกสารตัวอย่างแล้วในโหมด demo' : 'ปฏิเสธเอกสารตัวอย่างแล้วในโหมด demo');
+      setError(null);
+      return;
+    }
+
     if (!accessToken) {
       return;
     }
@@ -93,7 +124,21 @@ export function ApprovalsPage() {
         ]}
       />
 
-      <SampleDocumentsShowcase />
+      <DemoScenarioPanel
+        compact
+        state={scenarioState}
+        secondaryAction={{ label: 'เปิดเอกสารที่รออนุมัติ', to: '/documents/demo-policy-014' }}
+      />
+
+      {demoMode ? (
+        <DemoDocumentSpotlight
+          documentId="demo-policy-014"
+          eyebrow="Decision Context"
+          title="เอกสารหลักที่ใช้สาธิตการอนุมัติ"
+          description="กรรมการควรเห็นว่า manager ไม่ได้กดปุ่มอนุมัติอย่างเดียว แต่มีบริบทครบทั้งเวอร์ชันปัจจุบัน การเปลี่ยนแปลงล่าสุด และสถานะถัดไปของเอกสาร"
+          primaryActionLabel="เปิดเอกสารเพื่อพิจารณา"
+        />
+      ) : null}
 
       <div className="dashboard-summary-grid">
         <StatCard label="รออนุมัติทั้งหมด" value={items.length} />

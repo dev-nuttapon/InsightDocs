@@ -4,8 +4,16 @@ import { Link } from 'react-router-dom';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { StatCard } from '../../../shared/components/ui/StatCard';
+import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
+import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
-import { SampleDocumentsShowcase } from '../../../shared/components/mock/SampleDocumentsShowcase';
+import {
+  demoRejectSignature,
+  demoSignSignature,
+  getDemoPendingSignatures,
+  getDemoScenarioState,
+} from '../../../shared/mock/demoScenario';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { getPendingSignatures, rejectDocumentSignature, signDocumentSignature } from '../../documents/api/documentsApi';
@@ -13,15 +21,25 @@ import type { PendingSignature } from '../../documents/types';
 
 export function SignaturesPage() {
   const { accessToken } = useAuth();
+  const demoMode = isDemoModeEnabled();
   const [items, setItems] = useState<PendingSignature[]>([]);
   const [comments, setComments] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const scenarioState = getDemoScenarioState('demo-contract-001');
 
   useEffect(() => {
     let ignore = false;
 
     async function load() {
+      if (demoMode) {
+        if (!ignore) {
+          setItems(getDemoPendingSignatures());
+          setError(null);
+        }
+        return;
+      }
+
       if (!accessToken) {
         return;
       }
@@ -44,9 +62,14 @@ export function SignaturesPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken]);
+  }, [accessToken, demoMode]);
 
   async function refresh() {
+    if (demoMode) {
+      setItems(getDemoPendingSignatures());
+      return;
+    }
+
     if (!accessToken) {
       return;
     }
@@ -56,6 +79,19 @@ export function SignaturesPage() {
   }
 
   async function runAction(item: PendingSignature, action: 'sign' | 'reject') {
+    if (demoMode) {
+      if (action === 'sign') {
+        demoSignSignature(item.documentId, item.signatureRequestId, comments[item.signatureRequestId] ?? '', null);
+      } else {
+        demoRejectSignature(item.documentId, item.signatureRequestId, comments[item.signatureRequestId] ?? '', null);
+      }
+
+      setItems(getDemoPendingSignatures());
+      setNotice(action === 'sign' ? 'ลงนามเอกสารตัวอย่างแล้วในโหมด demo' : 'ปฏิเสธคำขอลงนามตัวอย่างแล้วในโหมด demo');
+      setError(null);
+      return;
+    }
+
     if (!accessToken) {
       return;
     }
@@ -100,7 +136,21 @@ export function SignaturesPage() {
         ]}
       />
 
-      <SampleDocumentsShowcase />
+      <DemoScenarioPanel
+        compact
+        state={scenarioState}
+        secondaryAction={{ label: 'เปิดเอกสารหลักของ demo', to: '/documents/demo-contract-001' }}
+      />
+
+      {demoMode ? (
+        <DemoDocumentSpotlight
+          documentId="demo-contract-001"
+          eyebrow="Signing Context"
+          title="เอกสารหลักที่ใช้สาธิตการลงนาม"
+          description="จุดขายของระบบอยู่ที่การเชื่อมเอกสารจริงกับลำดับผู้ลงนาม ตำแหน่งลายเซ็น และหลักฐานย้อนกลับได้ในหน้าเดียว จึงควรพาเข้าหน้านี้ทุกครั้งก่อนลงนาม"
+          primaryActionLabel="เปิดเอกสารก่อนลงนาม"
+        />
+      ) : null}
 
       <div className="dashboard-summary-grid">
         <StatCard label="รอลงนามทั้งหมด" value={items.length} />
@@ -115,6 +165,19 @@ export function SignaturesPage() {
         <strong>รูปแบบลายเซ็นที่ใช้ใน demo</strong>
         <div className="muted">ระบบสาธิตการลงนามแบบผสม โดยแสดงทั้งข้อมูลการลงนามดิจิทัลและพื้นที่รูปลายเซ็นที่วางบน PDF เพื่อให้ผู้อ่านเห็นร่องรอยการลงนามในเอกสารโดยตรง</div>
       </div>
+
+      <section className="signature-evidence-grid">
+        <div className="signature-evidence-card">
+          <span className="sidebar__eyebrow">Evidence</span>
+          <strong>ลงนามเมื่อไรและในเวอร์ชันไหน</strong>
+          <p className="muted">ทุกคำขอลงนามใน demo แสดงเลขเวอร์ชัน ลำดับการลงนาม ตำแหน่งบนหน้า และความเห็นประกอบ เพื่อให้เห็นหลักฐานที่ควรมีในระบบจริง</p>
+        </div>
+        <div className="signature-evidence-card">
+          <span className="sidebar__eyebrow">Sequence</span>
+          <strong>ปลดล็อกตามลำดับการลงนาม</strong>
+          <p className="muted">ผู้ลงนามลำดับถัดไปจะชัดเจนขึ้นหลังจากลำดับก่อนหน้าดำเนินการแล้ว ทำให้กรรมการเห็นการควบคุม workflow ไม่ใช่แค่ฟอร์มเซ็นเอกสาร</p>
+        </div>
+      </section>
 
       <section className="panel panel--full stack">
         <div className="section-heading">

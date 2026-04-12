@@ -38,12 +38,12 @@ export function DocumentHistoryTab({
     <div className="stack stack--xl">
       {canSubmitReview && (document.status === 'Draft' || document.status === 'Rejected') && (
         <section className="form-section stack--compact">
-          <h3 className="form-section__title">Submit for Review</h3>
-          <p className="muted">Request a manager to review the current document version and its signature placeholders.</p>
+          <h3 className="form-section__title">ส่งเอกสารเข้าพิจารณา</h3>
+          <p className="muted">ใช้ขั้นตอนนี้เพื่อส่งเวอร์ชันปัจจุบันเข้าสู่คิวอนุมัติ โดยสามารถระบุหมายเหตุให้ผู้จัดการเห็นบริบทก่อนตัดสินใจได้ทันที</p>
           <div className="stack stack--compact">
             <textarea
               className="input textarea"
-              placeholder="Optional submission message..."
+              placeholder="ระบุข้อความหรือเงื่อนไขที่ผู้อนุมัติควรรู้ก่อนตัดสินใจ"
               value={reviewComment}
               onChange={(e) => onReviewCommentChange(e.target.value)}
             />
@@ -54,7 +54,7 @@ export function DocumentHistoryTab({
                 type="button"
                 onClick={onSubmitReview}
               >
-                Submit Review
+                ส่งเข้าพิจารณา
               </button>
             </div>
           </div>
@@ -62,7 +62,7 @@ export function DocumentHistoryTab({
       )}
 
       <div>
-        <h3 className="form-section__title" style={{ marginBottom: '24px' }}>Approval & Audit History</h3>
+        <h3 className="form-section__title" style={{ marginBottom: '24px' }}>ประวัติการอนุมัติและเหตุการณ์สำคัญ</h3>
         {timelineItems.length > 0 ? (
           <Timeline items={timelineItems} />
         ) : (

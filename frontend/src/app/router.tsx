@@ -1,88 +1,99 @@
+import { Suspense, lazy, type ReactNode } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 
-import { AppShell } from '../shared/components/layout/AppShell';
-import { ApprovalsPage } from '../features/approvals/pages/ApprovalsPage';
-import { AuditLogsPage } from '../features/audit/pages/AuditLogsPage';
-import { AuthCallbackPage } from '../features/auth/pages/AuthCallbackPage';
-import { AdminPasswordResetRequestsPage } from '../features/auth/pages/AdminPasswordResetRequestsPage';
-import { AccessCheckPage } from '../features/auth/pages/AccessCheckPage';
-import { ForgotPasswordPage } from '../features/auth/pages/ForgotPasswordPage';
-import { LoginPage } from '../features/auth/pages/LoginPage';
-import { LogoutPage } from '../features/auth/pages/LogoutPage';
-import { RegisterPage } from '../features/auth/pages/RegisterPage';
-import { ResetPasswordPage } from '../features/auth/pages/ResetPasswordPage';
-import { UnauthorizedPage } from '../features/auth/pages/UnauthorizedPage';
+import { StatePanel } from '../shared/components/state/StatePanel';
 import { ProtectedRoute } from '../features/auth/routes/ProtectedRoute';
-import { DashboardPage } from '../features/dashboard/pages/DashboardPage';
-import { DocumentDetailPage } from '../features/documents/pages/DocumentDetailPage';
-import { DocumentsPage } from '../features/documents/pages/DocumentsPage';
-import { SearchPage } from '../features/search/pages/SearchPage';
-import { SignaturesPage } from '../features/signatures/pages/SignaturesPage';
-import { CurrentUserPage } from '../features/users/pages/CurrentUserPage';
-import { CreateUserPage } from '../features/users/pages/CreateUserPage';
-import { EditUserPage } from '../features/users/pages/EditUserPage';
-import { UsersPage } from '../features/users/pages/UsersPage';
 import { RoleRoute } from '../shared/routing/RoleRoute';
+
+const AppShell = lazy(async () => ({ default: (await import('../shared/components/layout/AppShell')).AppShell }));
+const ApprovalsPage = lazy(async () => ({ default: (await import('../features/approvals/pages/ApprovalsPage')).ApprovalsPage }));
+const AuditLogsPage = lazy(async () => ({ default: (await import('../features/audit/pages/AuditLogsPage')).AuditLogsPage }));
+const AuthCallbackPage = lazy(async () => ({ default: (await import('../features/auth/pages/AuthCallbackPage')).AuthCallbackPage }));
+const AdminPasswordResetRequestsPage = lazy(async () => ({ default: (await import('../features/auth/pages/AdminPasswordResetRequestsPage')).AdminPasswordResetRequestsPage }));
+const AccessCheckPage = lazy(async () => ({ default: (await import('../features/auth/pages/AccessCheckPage')).AccessCheckPage }));
+const ForgotPasswordPage = lazy(async () => ({ default: (await import('../features/auth/pages/ForgotPasswordPage')).ForgotPasswordPage }));
+const LoginPage = lazy(async () => ({ default: (await import('../features/auth/pages/LoginPage')).LoginPage }));
+const LogoutPage = lazy(async () => ({ default: (await import('../features/auth/pages/LogoutPage')).LogoutPage }));
+const RegisterPage = lazy(async () => ({ default: (await import('../features/auth/pages/RegisterPage')).RegisterPage }));
+const ResetPasswordPage = lazy(async () => ({ default: (await import('../features/auth/pages/ResetPasswordPage')).ResetPasswordPage }));
+const UnauthorizedPage = lazy(async () => ({ default: (await import('../features/auth/pages/UnauthorizedPage')).UnauthorizedPage }));
+const DashboardPage = lazy(async () => ({ default: (await import('../features/dashboard/pages/DashboardPage')).DashboardPage }));
+const DocumentDetailPage = lazy(async () => ({ default: (await import('../features/documents/pages/DocumentDetailPage')).DocumentDetailPage }));
+const DocumentsPage = lazy(async () => ({ default: (await import('../features/documents/pages/DocumentsPage')).DocumentsPage }));
+const SearchPage = lazy(async () => ({ default: (await import('../features/search/pages/SearchPage')).SearchPage }));
+const SignaturesPage = lazy(async () => ({ default: (await import('../features/signatures/pages/SignaturesPage')).SignaturesPage }));
+const CurrentUserPage = lazy(async () => ({ default: (await import('../features/users/pages/CurrentUserPage')).CurrentUserPage }));
+const CreateUserPage = lazy(async () => ({ default: (await import('../features/users/pages/CreateUserPage')).CreateUserPage }));
+const EditUserPage = lazy(async () => ({ default: (await import('../features/users/pages/EditUserPage')).EditUserPage }));
+const UsersPage = lazy(async () => ({ default: (await import('../features/users/pages/UsersPage')).UsersPage }));
+
+function withPageLoader(node: ReactNode) {
+  return (
+    <Suspense fallback={<StatePanel eyebrow="Loading" title="Opening workspace" description="Preparing the next InsightDocs screen." busy />}>
+      {node}
+    </Suspense>
+  );
+}
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <AccessCheckPage />,
+    element: withPageLoader(<AccessCheckPage />),
   },
   {
     path: '/login',
-    element: <LoginPage />,
+    element: withPageLoader(<LoginPage />),
   },
   {
     path: '/register',
-    element: <RegisterPage />,
+    element: withPageLoader(<RegisterPage />),
   },
   {
     path: '/forgot-password',
-    element: <ForgotPasswordPage />,
+    element: withPageLoader(<ForgotPasswordPage />),
   },
   {
     path: '/reset-password',
-    element: <ResetPasswordPage />,
+    element: withPageLoader(<ResetPasswordPage />),
   },
   {
     path: '/auth/callback',
-    element: <AuthCallbackPage />,
+    element: withPageLoader(<AuthCallbackPage />),
   },
   {
     path: '/logout',
-    element: <LogoutPage />,
+    element: withPageLoader(<LogoutPage />),
   },
   {
     path: '/unauthorized',
-    element: <UnauthorizedPage />,
+    element: withPageLoader(<UnauthorizedPage />),
   },
   {
     element: <ProtectedRoute />,
     children: [
       {
         path: '/',
-        element: <AppShell />,
+        element: withPageLoader(<AppShell />),
         children: [
           {
             path: 'me',
-            element: <CurrentUserPage />,
+            element: withPageLoader(<CurrentUserPage />),
           },
           {
             path: 'dashboard',
-            element: <DashboardPage />,
+            element: withPageLoader(<DashboardPage />),
           },
           {
             path: 'documents',
-            element: <DocumentsPage />,
+            element: withPageLoader(<DocumentsPage />),
           },
           {
             path: 'search',
-            element: <SearchPage />,
+            element: withPageLoader(<SearchPage />),
           },
           {
             path: 'documents/:id',
-            element: <DocumentDetailPage />,
+            element: withPageLoader(<DocumentDetailPage />),
           },
           {
             path: 'approvals',
@@ -90,7 +101,7 @@ export const router = createBrowserRouter([
             children: [
               {
                 index: true,
-                element: <ApprovalsPage />,
+                element: withPageLoader(<ApprovalsPage />),
               },
             ],
           },
@@ -100,7 +111,7 @@ export const router = createBrowserRouter([
             children: [
               {
                 index: true,
-                element: <SignaturesPage />,
+                element: withPageLoader(<SignaturesPage />),
               },
             ],
           },
@@ -109,15 +120,15 @@ export const router = createBrowserRouter([
             children: [
               {
                 path: 'users',
-                element: <UsersPage />,
+                element: withPageLoader(<UsersPage />),
               },
               {
                 path: 'users/new',
-                element: <CreateUserPage />,
+                element: withPageLoader(<CreateUserPage />),
               },
               {
                 path: 'users/:id/edit',
-                element: <EditUserPage />,
+                element: withPageLoader(<EditUserPage />),
               },
             ],
           },
@@ -126,7 +137,7 @@ export const router = createBrowserRouter([
             children: [
               {
                 path: 'admin/password-reset-requests',
-                element: <AdminPasswordResetRequestsPage />,
+                element: withPageLoader(<AdminPasswordResetRequestsPage />),
               },
             ],
           },
@@ -135,7 +146,7 @@ export const router = createBrowserRouter([
             children: [
               {
                 path: 'audit-logs',
-                element: <AuditLogsPage />,
+                element: withPageLoader(<AuditLogsPage />),
               },
             ],
           },

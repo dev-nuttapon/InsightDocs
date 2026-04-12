@@ -14,17 +14,17 @@ export function DocumentDetailsTab({ document, form, canManage, onFormChange, on
     <div className="stack stack--xl">
       <div className="grid-2">
         <article className="card stack">
-          <span className="card__label">Lifecycle</span>
-          <div>Versions tracked: {document.versionCount}</div>
-          <div>Review status: {document.status}</div>
-          <div>Category: {document.category ?? 'Uncategorized'}</div>
-          <div>Signed PDF: {document.currentVersionNumber ? 'Available (if signed)' : 'Not available'}</div>
+          <span className="card__label">Document Lifecycle</span>
+          <div>เวอร์ชันทั้งหมด: {document.versionCount}</div>
+          <div>สถานะปัจจุบัน: {document.status}</div>
+          <div>หมวดหมู่: {document.category ?? 'Uncategorized'}</div>
+          <div>Signed PDF: {document.currentVersionNumber ? 'พร้อมเมื่อจบการลงนาม' : 'ยังไม่มีเวอร์ชันปัจจุบัน'}</div>
         </article>
 
         <article className="card stack">
-          <span className="card__label">Audit</span>
-          <div>Created at: {new Date(document.createdAt).toLocaleString()}</div>
-          <div>Updated at: {document.updatedAt ? new Date(document.updatedAt).toLocaleString() : 'Not updated'}</div>
+          <span className="card__label">Ownership & Traceability</span>
+          <div>สร้างเมื่อ: {new Date(document.createdAt).toLocaleString()}</div>
+          <div>อัปเดตล่าสุด: {document.updatedAt ? new Date(document.updatedAt).toLocaleString() : 'Not updated'}</div>
           <div>Owner: {document.ownerDisplayName ?? 'Unassigned'}</div>
           <div>Controller: {document.controllerDisplayName ?? 'Unassigned'}</div>
         </article>
@@ -32,11 +32,11 @@ export function DocumentDetailsTab({ document, form, canManage, onFormChange, on
 
       {canManage && (
         <section className="form-section stack--compact">
-          <h3 className="form-section__title">Update Document Metadata</h3>
-          <p className="muted">Modifying these details will return the document to Draft status if it is currently Approved or In Review.</p>
+          <h3 className="form-section__title">แก้ไขข้อมูลเอกสาร</h3>
+          <p className="muted">เมื่อปรับ metadata ของเอกสาร ระบบจะพากลับไป Draft หากเอกสารเคยอยู่ในขั้นอนุมัติหรืออนุมัติแล้ว เพื่อรักษาความถูกต้องของ workflow</p>
           <form className="form-grid" onSubmit={onSave}>
             <div>
-              <label className="sidebar__status-label">Title</label>
+              <label className="sidebar__status-label">ชื่อเอกสาร</label>
               <input
                 className="input"
                 value={form.title}
@@ -44,7 +44,7 @@ export function DocumentDetailsTab({ document, form, canManage, onFormChange, on
               />
             </div>
             <div>
-              <label className="sidebar__status-label">Description</label>
+              <label className="sidebar__status-label">คำอธิบาย</label>
               <textarea
                 className="input textarea"
                 value={form.description ?? ''}
@@ -52,16 +52,16 @@ export function DocumentDetailsTab({ document, form, canManage, onFormChange, on
               />
             </div>
             <div>
-              <label className="sidebar__status-label">Category</label>
+              <label className="sidebar__status-label">หมวดหมู่</label>
               <input
                 className="input"
-                placeholder="e.g. Finance, Legal, HR"
+                placeholder="เช่น Finance, Legal, HR"
                 value={form.category ?? ''}
                 onChange={(e) => onFormChange({ category: e.target.value })}
               />
             </div>
             <div className="actions">
-              <button className="button" type="submit">Save Changes</button>
+              <button className="button" type="submit">บันทึกการเปลี่ยนแปลง</button>
             </div>
           </form>
         </section>

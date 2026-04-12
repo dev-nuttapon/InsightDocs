@@ -7,7 +7,9 @@ import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { StatCard } from '../../../shared/components/ui/StatCard';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { SampleDocumentsShowcase } from '../../../shared/components/mock/SampleDocumentsShowcase';
-import { SAMPLE_DOCUMENTS } from '../../../shared/mock/sampleDocuments';
+import { useTranslation } from '../../../i18n/useTranslation';
+import { getDemoDocumentSummaries } from '../../../shared/mock/demoScenario';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { buildAccessProfile } from '../../../shared/auth/authorization';
@@ -16,6 +18,8 @@ import type { CreateDocumentInput, DocumentStatus, DocumentSummary } from '../ty
 
 export function DocumentsPage() {
   const { accessToken, user } = useAuth();
+  const { language, t } = useTranslation();
+  const demoMode = isDemoModeEnabled();
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
   const [form, setForm] = useState<CreateDocumentInput>({ title: '', description: '', category: '' });
   const [query, setQuery] = useState('');
@@ -29,6 +33,14 @@ export function DocumentsPage() {
     let ignore = false;
 
     async function load() {
+      if (demoMode) {
+        if (!ignore) {
+          setDocuments(getDemoDocumentSummaries(language));
+          setError(null);
+        }
+        return;
+      }
+
       if (!accessToken) {
         return;
       }
@@ -51,10 +63,35 @@ export function DocumentsPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken]);
+  }, [accessToken, demoMode, language]);
 
   async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (demoMode) {
+      const createdAt = new Date().toISOString();
+      const created: DocumentSummary = {
+        id: `demo-created-${Date.now()}`,
+        title: form.title.trim(),
+        description: form.description?.trim() || null,
+        category: form.category?.trim() || null,
+        ownerUserId: null,
+        ownerDisplayName: user?.displayName ?? user?.username ?? 'Current user',
+        controllerUserId: null,
+        controllerDisplayName: user?.displayName ?? user?.username ?? 'Current user',
+        status: 'Draft',
+        versionCount: 0,
+        currentVersionNumber: null,
+        createdAt,
+        createdBy: user?.username ?? 'demo.user',
+      };
+
+      setDocuments((current) => [created, ...current]);
+      setForm({ title: '', description: '', category: '' });
+      setNotice(t('documents.createdDemo', { title: created.title }));
+      setError(null);
+      return;
+    }
 
     if (!accessToken) {
       return;
@@ -81,7 +118,7 @@ export function DocumentsPage() {
         ...current,
       ]);
       setForm({ title: '', description: '', category: '' });
-      setNotice(`Created document "${created.title}".`);
+      setNotice(t('documents.createdLive', { title: created.title }));
       setError(null);
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : 'Unable to create document.');
@@ -90,11 +127,11 @@ export function DocumentsPage() {
   }
 
   const summaryCards = useMemo(() => [
-    { label: 'เอกสารทั้งหมด', value: documents.length > 0 ? documents.length : SAMPLE_DOCUMENTS.length },
-    { label: 'ฉบับร่าง', value: (documents.length > 0 ? documents : SAMPLE_DOCUMENTS).filter((document) => document.status === 'Draft').length },
-    { label: 'รอตรวจสอบ', value: (documents.length > 0 ? documents : SAMPLE_DOCUMENTS).filter((document) => document.status === 'InReview').length },
-    { label: 'อนุมัติแล้ว', value: (documents.length > 0 ? documents : SAMPLE_DOCUMENTS).filter((document) => document.status === 'Approved').length },
-  ], [documents]);
+    { label: t('documents.totalDocuments'), value: documents.length },
+    { label: t('documents.draftDocuments'), value: documents.filter((document) => document.status === 'Draft').length },
+    { label: t('documents.reviewDocuments'), value: documents.filter((document) => document.status === 'InReview').length },
+    { label: t('documents.approvedDocuments'), value: documents.filter((document) => document.status === 'Approved').length },
+  ], [documents, t]);
 
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -114,61 +151,31 @@ export function DocumentsPage() {
   }, [documents, query, statusFilter]);
 
   const displayedDocuments = useMemo(() => {
-    if (documents.length > 0) {
+    if (!demoMode || documents.length > 0) {
       return filteredDocuments;
     }
 
-    return SAMPLE_DOCUMENTS
-      .filter((document) => {
-        const matchesStatus = statusFilter === 'all' || document.status === statusFilter;
-        const matchesQuery =
-          normalizedQuery.length === 0 ||
-          document.title.toLowerCase().includes(normalizedQuery) ||
-          document.category.toLowerCase().includes(normalizedQuery) ||
-          document.owner.toLowerCase().includes(normalizedQuery) ||
-          document.controller.toLowerCase().includes(normalizedQuery);
-
-        return matchesStatus && matchesQuery;
-      })
-      .map((document, index) => ({
-        id: document.id,
-        title: document.title,
-        description: `เอกสารตัวอย่างสำหรับ demo workflow ของ ${document.category}`,
-        category: document.category,
-        ownerUserId: null,
-        ownerDisplayName: document.owner,
-        controllerUserId: null,
-        controllerDisplayName: document.controller,
-        status: document.status as DocumentStatus,
-        versionCount: Number(document.currentVersion.replace('v', '')),
-        currentVersionNumber: Number(document.currentVersion.replace('v', '')),
-        createdAt: new Date(Date.now() - index * 86400000).toISOString(),
-        createdBy: 'demo.system',
-      }));
-  }, [documents.length, filteredDocuments, query, statusFilter]);
+    return [];
+  }, [demoMode, documents.length, filteredDocuments]);
 
   return (
     <div className="stack stack--xl">
       <PageHeader
-        title="Document Registry"
-        eyebrow="Documents"
-        description="ดูรายการเอกสารที่อยู่ภายใต้การควบคุม ค้นหาเอกสารที่ต้องใช้ และเปิดดูรายละเอียดเพื่อจัดการเวอร์ชัน อนุมัติ และลงนาม"
-        actions={<Link className="button button--secondary" to="/search">ค้นหาเอกสารขั้นสูง</Link>}
+        title={t('documents.title')}
+        eyebrow={t('documents.eyebrow')}
+        description={t('documents.description')}
+        actions={<Link className="button button--secondary" to="/search">{t('common.advancedSearch')}</Link>}
       />
 
       <ModuleMockup
-        eyebrow="Registry Mockup"
-        title="ศูนย์ทะเบียนเอกสารและการติดตามสถานะ"
-        description="ใช้เป็นหน้าหลักสำหรับสร้างเอกสารใหม่ ตรวจสถานะปัจจุบัน และเข้าไปดูเวอร์ชัน อนุมัติ และลายเซ็นของเอกสารแต่ละรายการ"
-        highlights={['ลงทะเบียนเอกสาร', 'ติดตามสถานะ', 'เปิดเอกสาร', 'ควบคุมเวอร์ชัน']}
-        steps={[
-          'สร้างรายการเอกสารหรือค้นหารายการเดิมจาก registry',
-          'เปิดเอกสารเพื่อจัดการเวอร์ชัน อนุมัติ และการลงนาม',
-          'ใช้ตัวกรองเพื่อดูเฉพาะชุดเอกสารที่กำลังทำงานอยู่',
-        ]}
+        eyebrow={t('documents.registryEyebrow')}
+        title={t('documents.registryTitle')}
+        description={t('documents.registryDescription')}
+        highlights={t('documents.registryHighlights').split('|||')}
+        steps={t('documents.registrySteps').split('|||')}
         metrics={[
-          { label: 'มุมมองหลัก', value: 'Document Registry' },
-          { label: 'งานต่อเนื่อง', value: access.canManageDocuments ? 'Create + Manage' : 'Review + View' },
+          { label: t('documents.registrySectionEyebrow'), value: t('documents.registryMetricView') },
+          { label: t('dashboard.focusNow'), value: access.canManageDocuments ? t('documents.registryMetricFlowManage') : t('documents.registryMetricFlowReview') },
         ]}
       />
 
@@ -186,43 +193,43 @@ export function DocumentsPage() {
       {access.canManageDocuments ? (
         <section className="panel panel--full stack">
           <div className="section-heading">
-            <span className="sidebar__eyebrow">Register</span>
-            <h3>ลงทะเบียนเอกสารใหม่</h3>
+            <span className="sidebar__eyebrow">{t('documents.registerEyebrow')}</span>
+            <h3>{t('documents.registerTitle')}</h3>
           </div>
           <div className="user-form-panel">
             <form className="stack" onSubmit={handleCreate}>
               <div className="grid-2">
                 <label className="stack">
-                  <span className="card__label">ชื่อเอกสาร</span>
+                  <span className="card__label">{t('documents.documentName')}</span>
                   <input
                     className="input"
-                    placeholder="เช่น สัญญาจ้าง, ระเบียบการเงิน"
+                    placeholder={t('documents.documentNamePlaceholder')}
                     value={form.title}
                     onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
                     required
                   />
                 </label>
                 <label className="stack">
-                  <span className="card__label">หมวดหมู่</span>
+                  <span className="card__label">{t('documents.category')}</span>
                   <input
                     className="input"
-                    placeholder="เช่น Legal, HR, Finance"
+                    placeholder={t('documents.categoryPlaceholder')}
                     value={form.category ?? ''}
                     onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
                   />
                 </label>
               </div>
               <label className="stack">
-                <span className="card__label">คำอธิบาย</span>
+                <span className="card__label">{t('documents.descriptionField')}</span>
                 <textarea
                   className="input textarea textarea--compact"
-                  placeholder="สรุปวัตถุประสงค์หรือขอบเขตของเอกสารนี้"
+                  placeholder={t('documents.descriptionPlaceholder')}
                   value={form.description ?? ''}
                   onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
                 />
               </label>
               <div className="actions actions--compact">
-                <button className="button" type="submit">สร้างรายการเอกสาร</button>
+                <button className="button" type="submit">{t('documents.createDocument')}</button>
               </div>
             </form>
           </div>
@@ -231,28 +238,28 @@ export function DocumentsPage() {
 
       <section className="panel panel--full stack">
         <div className="section-heading">
-          <span className="sidebar__eyebrow">Registry</span>
-          <h3>รายการเอกสาร</h3>
+          <span className="sidebar__eyebrow">{t('documents.registrySectionEyebrow')}</span>
+          <h3>{t('documents.registrySectionTitle')}</h3>
         </div>
 
         <div className="filter-bar">
           <div className="filter-group">
-            <span className="filter-bar__label">ค้นหาเอกสาร</span>
+            <span className="filter-bar__label">{t('documents.searchLabel')}</span>
             <input
               className="input"
-              placeholder="ค้นหาจากชื่อ คำอธิบาย หมวดหมู่ หรือผู้รับผิดชอบ"
+              placeholder={t('documents.searchPlaceholder')}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
           </div>
           <div className="filter-group">
-            <span className="filter-bar__label">สถานะ</span>
+            <span className="filter-bar__label">{t('documents.statusLabel')}</span>
             <select
-              className="input"
+              className="input input--select"
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value as 'all' | DocumentStatus)}
             >
-              <option value="all">ทั้งหมด</option>
+              <option value="all">{t('documents.allStatuses')}</option>
               <option value="Draft">Draft</option>
               <option value="InReview">In Review</option>
               <option value="Approved">Approved</option>
@@ -264,18 +271,14 @@ export function DocumentsPage() {
 
         <div className="registry-toolbar">
           <span className="muted">
-            พบ {displayedDocuments.length} จาก {documents.length > 0 ? documents.length : SAMPLE_DOCUMENTS.length} รายการ
+            {t('documents.foundResults', { count: displayedDocuments.length, total: documents.length })}
           </span>
         </div>
 
         {displayedDocuments.length === 0 ? (
           <EmptyState
-            title={documents.length === 0 ? 'ไม่พบเอกสารตัวอย่างที่ตรงเงื่อนไข' : 'ไม่พบเอกสารที่ตรงเงื่อนไข'}
-            description={
-              documents.length === 0
-                ? 'ลองเปลี่ยนคำค้นหรือสถานะ เพื่อดูเอกสารตัวอย่างชุดอื่นใน mockup'
-                : 'ลองเปลี่ยนคำค้นหรือสถานะที่เลือก เพื่อดูเอกสารรายการอื่น'
-            }
+            title={t('documents.noDocumentsTitle')}
+            description={t('documents.noDocumentsDescription')}
           />
         ) : (
           <div className="registry-list">
@@ -288,17 +291,17 @@ export function DocumentsPage() {
                         {document.title}
                       </Link>
                       <p className="muted">
-                        {document.description || 'ไม่มีคำอธิบายเอกสาร'}
+                        {document.description || '-'}
                       </p>
                     </div>
                     <StatusBadge status={document.status} />
                   </div>
 
                   <div className="registry-meta">
-                    <span className="status-pill status-pill--subtle">{document.category || 'ไม่ระบุหมวดหมู่'}</span>
-                    <span>เวอร์ชันปัจจุบัน v{document.currentVersionNumber || 0}</span>
-                    <span>ทั้งหมด {document.versionCount} เวอร์ชัน</span>
-                    <span>สร้างเมื่อ {new Date(document.createdAt).toLocaleDateString()}</span>
+                    <span className="status-pill status-pill--subtle">{document.category || '-'}</span>
+                    <span>v{document.currentVersionNumber || 0}</span>
+                    <span>{document.versionCount}</span>
+                    <span>{new Date(document.createdAt).toLocaleDateString()}</span>
                   </div>
 
                   <div className="registry-meta">
@@ -309,7 +312,7 @@ export function DocumentsPage() {
 
                 <div className="registry-item__actions">
                   <Link className="button button--secondary" to={`/documents/${document.id}`}>
-                    เปิดเอกสาร
+                    {t('documents.openDocument')}
                   </Link>
                 </div>
               </article>

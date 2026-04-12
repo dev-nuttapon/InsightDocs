@@ -2,11 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { ThemeToggle } from '../../../components/ThemeToggle';
+import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
+import { useTranslation } from '../../../i18n/useTranslation';
 import { useAuth } from '../../../features/auth/context/useAuth';
 import { buildAccessProfile } from '../../auth/authorization';
 
 export function AppShell() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const location = useLocation();
   const [openSection, setOpenSection] = useState<'workspace' | 'actions' | 'admin'>('workspace');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -17,35 +20,35 @@ export function AppShell() {
     const items = [
       {
         key: 'workspace' as const,
-        label: 'Workspace',
+        label: t('shell.workspace'),
         links: [
-          { to: '/dashboard', label: 'Dashboard' },
-          { to: '/documents', label: 'Documents' },
-          { to: '/search', label: 'Search' },
+          { to: '/dashboard', label: t('shell.dashboard') },
+          { to: '/documents', label: t('shell.documents') },
+          { to: '/search', label: t('shell.search') },
         ],
       },
       {
         key: 'actions' as const,
-        label: 'My Actions',
+        label: t('shell.actions'),
         links: [
-          ...(access.canReviewDocuments ? [{ to: '/approvals', label: 'Approvals' }] : []),
-          ...(access.canSignDocuments ? [{ to: '/signatures', label: 'Signatures' }] : []),
+          ...(access.canReviewDocuments ? [{ to: '/approvals', label: t('shell.approvals') }] : []),
+          ...(access.canSignDocuments ? [{ to: '/signatures', label: t('shell.signatures') }] : []),
         ],
       },
       {
         key: 'admin' as const,
-        label: 'Administration',
+        label: t('shell.admin'),
         links: [
-          ...(access.canAccessUsers ? [{ to: '/users', label: 'Users & Access' }] : []),
-          ...(access.canAccessUsers ? [{ to: '/users/new', label: 'Invite User' }] : []),
-          ...(access.canAccessPasswordResetAdmin ? [{ to: '/admin/password-reset-requests', label: 'Password Reset Requests' }] : []),
-          ...(access.canAccessAuditLogs ? [{ to: '/audit-logs', label: 'Audit Logs' }] : []),
+          ...(access.canAccessUsers ? [{ to: '/users', label: t('shell.users') }] : []),
+          ...(access.canAccessUsers ? [{ to: '/users/new', label: t('shell.inviteUser') }] : []),
+          ...(access.canAccessPasswordResetAdmin ? [{ to: '/admin/password-reset-requests', label: t('shell.passwordResetRequests') }] : []),
+          ...(access.canAccessAuditLogs ? [{ to: '/audit-logs', label: t('shell.auditLogs') }] : []),
         ],
       },
     ];
 
     return items.filter((section) => section.links.length > 0);
-  }, [access.canAccessAuditLogs, access.canAccessPasswordResetAdmin, access.canAccessUsers, access.canReviewDocuments, access.canSignDocuments]);
+  }, [access.canAccessAuditLogs, access.canAccessPasswordResetAdmin, access.canAccessUsers, access.canReviewDocuments, access.canSignDocuments, t]);
 
   useEffect(() => {
     setOpenSection(resolveOpenSection(location.pathname));
@@ -134,21 +137,25 @@ export function AppShell() {
                   </span>
                   <span className="topbar__profile-copy">
                     <strong>{user.displayName ?? user.username ?? user.subject}</strong>
-                    <span className="muted">{user.email ?? 'No email claim'}</span>
+                    <span className="muted">{user.email ?? t('shell.noEmail')}</span>
                   </span>
                   <span className="topbar__menu-chevron" aria-hidden="true">{isUserMenuOpen ? '▴' : '▾'}</span>
                 </button>
                 {isUserMenuOpen ? (
                   <div className="topbar__menu-panel">
                     <NavLink className="topbar__menu-link" to="/me" onClick={() => setIsUserMenuOpen(false)}>
-                      My Profile
+                      {t('shell.myProfile')}
                     </NavLink>
                     <div className="topbar__menu-theme">
-                      <span className="topbar__menu-label">Theme</span>
+                      <span className="topbar__menu-label">{t('language.label')}</span>
+                      <LanguageSwitcher variant="menu" />
+                    </div>
+                    <div className="topbar__menu-theme">
+                      <span className="topbar__menu-label">{t('theme.label')}</span>
                       <ThemeToggle variant="menu" />
                     </div>
                     <NavLink className="topbar__menu-link" to="/logout" onClick={() => setIsUserMenuOpen(false)}>
-                      Logout
+                      {t('shell.logout')}
                     </NavLink>
                   </div>
                 ) : null}

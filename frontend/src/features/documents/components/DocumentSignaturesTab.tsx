@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AssignDocumentSignatureInput, DocumentSignatureRequest } from '../types';
 import { AppUser } from '../../users/types';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
@@ -21,10 +21,14 @@ export function DocumentSignaturesTab({
   onFormChange,
   onAssign,
 }: DocumentSignaturesTabProps) {
+  const DEMO_PAGE_WIDTH = 720;
+  const DEMO_PAGE_HEIGHT = 980;
   const [isDemoMode, setIsDemoMode] = useState(true);
   const [signatureMode, setSignatureMode] = useState<'hybrid' | 'digital' | 'image'>('hybrid');
   const [appearanceLabel, setAppearanceLabel] = useState('ลงนามอิเล็กทรอนิกส์');
   const [demoRequests, setDemoRequests] = useState<DocumentSignatureRequest[]>(signatures);
+  const [dragState, setDragState] = useState<{ offsetX: number; offsetY: number } | null>(null);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
   const selectedSigner = useMemo(
     () => signers.find((signer) => signer.id === signatureForm.signerUserId) ?? null,
     [signatureForm.signerUserId, signers],
@@ -56,6 +60,43 @@ export function DocumentSignaturesTab({
   useEffect(() => {
     setDemoRequests(signatures);
   }, [signatures]);
+
+  useEffect(() => {
+    if (!dragState) {
+      return;
+    }
+
+    const activeDragState = dragState;
+
+    function handlePointerMove(event: PointerEvent) {
+      const canvas = canvasRef.current;
+
+      if (!canvas) {
+        return;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      const nextX = clamp(((event.clientX - rect.left - activeDragState.offsetX) / rect.width) * DEMO_PAGE_WIDTH, 0, DEMO_PAGE_WIDTH - signatureForm.width);
+      const nextY = clamp(((event.clientY - rect.top - activeDragState.offsetY) / rect.height) * DEMO_PAGE_HEIGHT, 0, DEMO_PAGE_HEIGHT - signatureForm.height);
+
+      onFormChange({
+        positionX: Math.round(nextX),
+        positionY: Math.round(nextY),
+      });
+    }
+
+    function handlePointerUp() {
+      setDragState(null);
+    }
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [DEMO_PAGE_HEIGHT, DEMO_PAGE_WIDTH, dragState, onFormChange, signatureForm.height, signatureForm.width]);
 
   function generateId(prefix: string) {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -138,6 +179,42 @@ export function DocumentSignaturesTab({
 
   function resetDemoFlow() {
     setDemoRequests(signatures);
+  }
+
+  function beginDrag(event: React.PointerEvent<HTMLDivElement>) {
+    if (!isDemoMode) {
+      return;
+    }
+
+    event.stopPropagation();
+
+    const box = event.currentTarget.getBoundingClientRect();
+
+    setDragState({
+      offsetX: event.clientX - box.left,
+      offsetY: event.clientY - box.top,
+    });
+  }
+
+  function movePlacementToPoint(event: React.PointerEvent<HTMLDivElement>) {
+    if (!isDemoMode || dragState) {
+      return;
+    }
+
+    const canvas = canvasRef.current;
+
+    if (!canvas) {
+      return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const nextX = clamp(((event.clientX - rect.left) / rect.width) * DEMO_PAGE_WIDTH - signatureForm.width / 2, 0, DEMO_PAGE_WIDTH - signatureForm.width);
+    const nextY = clamp(((event.clientY - rect.top) / rect.height) * DEMO_PAGE_HEIGHT - signatureForm.height / 2, 0, DEMO_PAGE_HEIGHT - signatureForm.height);
+
+    onFormChange({
+      positionX: Math.round(nextX),
+      positionY: Math.round(nextY),
+    });
   }
 
   return (
@@ -294,6 +371,61 @@ export function DocumentSignaturesTab({
                     <span>X:{signatureForm.positionX}</span>
                     <span>Y:{signatureForm.positionY}</span>
                     <span>{signatureForm.width} × {signatureForm.height}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="signature-canvas-section">
+              <div className="signature-canvas-section__header">
+                <div className="stack stack--compact">
+                  <strong>กำหนดตำแหน่งลายเซ็นบนหน้าเอกสาร</strong>
+                  <span className="muted">ลากกรอบลายเซ็นบนหน้าจำลองได้โดยตรง หรือคลิกบนหน้ากระดาษเพื่อย้ายกรอบไปยังจุดที่ต้องการ</span>
+                </div>
+                <div className="tag-list">
+                  <span className="tag">Page {signatureForm.pageNumber}</span>
+                  <span className="tag">X {signatureForm.positionX}</span>
+                  <span className="tag">Y {signatureForm.positionY}</span>
+                </div>
+              </div>
+
+              <div
+                ref={canvasRef}
+                className="signature-canvas"
+                onPointerDown={movePlacementToPoint}
+                role="presentation"
+              >
+                <div className="signature-canvas__sheet">
+                  <div className="signature-canvas__header">
+                    <strong>Document Page Preview</strong>
+                    <span>หน้า {signatureForm.pageNumber}</span>
+                  </div>
+                  <div className="signature-canvas__body">
+                    <div className="signature-canvas__line signature-canvas__line--short" />
+                    <div className="signature-canvas__line" />
+                    <div className="signature-canvas__line" />
+                    <div className="signature-canvas__line signature-canvas__line--mid" />
+                    <div className="signature-canvas__line" />
+
+                    {activeSignatures.map((signature) => (
+                      <div
+                        key={signature.id}
+                        className={`signature-canvas__placed signature-canvas__placed--${signature.status.toLowerCase()}`}
+                        style={toCanvasStyle(signature.positionX, signature.positionY, signature.width, signature.height, DEMO_PAGE_WIDTH, DEMO_PAGE_HEIGHT)}
+                      >
+                        <span>{signature.signerDisplayName}</span>
+                      </div>
+                    ))}
+
+                    <div
+                      className={`signature-canvas__draft signature-canvas__draft--${signatureMode}`}
+                      style={toCanvasStyle(signatureForm.positionX, signatureForm.positionY, signatureForm.width, signatureForm.height, DEMO_PAGE_WIDTH, DEMO_PAGE_HEIGHT)}
+                      onPointerDown={beginDrag}
+                      role="presentation"
+                    >
+                      <span>{previewSignerName}</span>
+                      <small>{appearanceLabel}</small>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -460,4 +592,17 @@ export function DocumentSignaturesTab({
       </div>
     </div>
   );
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function toCanvasStyle(x: number, y: number, width: number, height: number, pageWidth: number, pageHeight: number) {
+  return {
+    left: `${(x / pageWidth) * 100}%`,
+    top: `${(y / pageHeight) * 100}%`,
+    width: `${(width / pageWidth) * 100}%`,
+    height: `${(height / pageHeight) * 100}%`,
+  };
 }

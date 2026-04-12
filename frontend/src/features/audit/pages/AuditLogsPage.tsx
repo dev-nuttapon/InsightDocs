@@ -10,7 +10,10 @@ import { StatCard } from '../../../shared/components/ui/StatCard';
 import { Timeline, TimelineItem } from '../../../shared/components/ui/Timeline';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
+import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { getDemoAuditLog, getDemoAuditLogs, getDemoScenarioState } from '../../../shared/mock/demoScenario';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 
 const defaultFilters: AuditLogFilters = {
   actor: '',
@@ -24,6 +27,7 @@ const defaultFilters: AuditLogFilters = {
 
 export function AuditLogsPage() {
   const { accessToken } = useAuth();
+  const demoMode = isDemoModeEnabled();
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<AuditLogFilters>({
     actor: searchParams.get('actor') ?? '',
@@ -37,11 +41,22 @@ export function AuditLogsPage() {
   const [results, setResults] = useState<AuditLogListResponse | null>(null);
   const [selectedLog, setSelectedLog] = useState<AuditLogDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const scenarioState = getDemoScenarioState('demo-contract-001');
 
   useEffect(() => {
     let ignore = false;
 
     async function load() {
+      if (demoMode) {
+        if (!ignore) {
+          const payload = getDemoAuditLogs(filters);
+          setResults(payload);
+          setSelectedLog(payload.items.length > 0 ? getDemoAuditLog(payload.items[0].id) : null);
+          setError(null);
+        }
+        return;
+      }
+
       if (!accessToken) {
         return;
       }
@@ -64,9 +79,15 @@ export function AuditLogsPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken, filters]);
+  }, [accessToken, demoMode, filters]);
 
   async function handleSelectAuditLog(id: string) {
+    if (demoMode) {
+      setSelectedLog(getDemoAuditLog(id));
+      setError(null);
+      return;
+    }
+
     if (!accessToken) {
       return;
     }
@@ -141,6 +162,13 @@ export function AuditLogsPage() {
     ];
   }, [selectedLog]);
 
+  const eventLabelMap: Record<string, string> = {
+    'document.version.created': 'สร้างเวอร์ชันใหม่',
+    'document.approval.submitted': 'ส่งเข้าพิจารณา',
+    'document.approval.approved': 'อนุมัติเอกสาร',
+    'document.signature.signed': 'ลงนามเอกสาร',
+  };
+
   return (
     <div className="stack stack--xl">
       <PageHeader
@@ -163,6 +191,18 @@ export function AuditLogsPage() {
           { label: 'รายการทั้งหมด', value: `${results?.totalCount ?? 0} เหตุการณ์` },
           { label: 'มุมมอง', value: 'Operational Traceability' },
         ]}
+      />
+
+      <DemoScenarioPanel
+        compact
+        state={{
+          ...scenarioState,
+          badge: 'Audit Trail Available',
+          headline: 'เหตุการณ์ของเอกสารตัวอย่างถูกเชื่อมกลับจาก version, approval และ signature มาไว้ใน timeline เดียว',
+          nextStep: 'เลือกรายการทางซ้ายเพื่อแสดง metadata ของเหตุการณ์และย้อนกลับไปยังเอกสารที่เกี่ยวข้อง',
+          primaryAction: { label: 'เปิดเอกสารตัวอย่าง', to: '/documents/demo-contract-001' },
+        }}
+        secondaryAction={{ label: 'กลับไป dashboard', to: '/dashboard' }}
       />
 
       <div className="dashboard-summary-grid">
@@ -232,7 +272,7 @@ export function AuditLogsPage() {
                     <div className="registry-item__main">
                       <div className="registry-item__header">
                         <div className="stack stack--compact">
-                          <div className="registry-item__title">{item.action}</div>
+                          <div className="registry-item__title">{eventLabelMap[item.action] ?? item.action}</div>
                           <p className="muted">
                             {item.actorDisplayName ?? item.actorUsername ?? 'System'} • {item.entityType}
                           </p>
@@ -271,7 +311,7 @@ export function AuditLogsPage() {
                   <dl className="detail-list">
                     <div>
                       <dt>เหตุการณ์</dt>
-                      <dd>{selectedLog.action}</dd>
+                      <dd>{eventLabelMap[selectedLog.action] ?? selectedLog.action}</dd>
                     </div>
                     <div>
                       <dt>ผู้กระทำ</dt>

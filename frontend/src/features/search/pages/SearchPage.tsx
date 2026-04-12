@@ -4,10 +4,11 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
+import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { SampleDocumentsShowcase } from '../../../shared/components/mock/SampleDocumentsShowcase';
-
-
+import { getDemoScenarioState, getDemoSearchResults } from '../../../shared/mock/demoScenario';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { searchDocuments } from '../api/searchApi';
@@ -27,6 +28,7 @@ const defaultFilters: SearchFilters = {
 
 export function SearchPage() {
   const { accessToken } = useAuth();
+  const demoMode = isDemoModeEnabled();
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<SearchFilters>({
     ...defaultFilters,
@@ -42,11 +44,20 @@ export function SearchPage() {
   });
   const [results, setResults] = useState<SearchDocumentsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const scenarioState = getDemoScenarioState('demo-contract-001');
 
   useEffect(() => {
     let ignore = false;
 
     async function load() {
+      if (demoMode) {
+        if (!ignore) {
+          setResults(getDemoSearchResults(filters));
+          setError(null);
+        }
+        return;
+      }
+
       if (!accessToken) {
         return;
       }
@@ -69,7 +80,7 @@ export function SearchPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken, filters]);
+  }, [accessToken, demoMode, filters]);
 
   function updateFilters(patch: Partial<SearchFilters>) {
     const next = { ...filters, ...patch };
@@ -108,6 +119,18 @@ export function SearchPage() {
           { label: 'รูปแบบการค้นหา', value: 'Metadata + Full-text' },
           { label: 'ผลลัพธ์ที่คาดหวัง', value: results ? `${results.totalCount} รายการ` : 'พร้อมค้นหา' },
         ]}
+      />
+
+      <DemoScenarioPanel
+        compact
+        state={{
+          ...scenarioState,
+          badge: 'Searchable Workflow',
+          headline: 'ค้นหาเอกสารตัวอย่างจาก keyword, status, category และข้อมูลผู้เกี่ยวข้องได้ในมุมมองเดียว',
+          nextStep: 'เปิดผลลัพธ์ที่ต้องการเพื่อกระโดดกลับไปยัง document detail, approval หรือ signature flow ต่อได้ทันที',
+          primaryAction: { label: 'เปิดเอกสารหลักของ demo', to: '/documents/demo-contract-001' },
+        }}
+        secondaryAction={{ label: 'ดูทะเบียนเอกสาร', to: '/documents' }}
       />
 
       <SampleDocumentsShowcase />
@@ -177,57 +200,59 @@ export function SearchPage() {
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
 
-      <div className="table-wrap">
-        <table className="table table--premium">
-          <thead>
-            <tr>
-              <th>Document</th>
-              <th>Status</th>
-              <th>Category</th>
-              <th>Owner / Controller</th>
-              <th>Current Version</th>
-              <th>Signature Summary</th>
-            </tr>
-          </thead>
-          <tbody>
-            {results?.items.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <Link to={`/documents/${item.id}`} style={{ fontWeight: 700, fontSize: '15px' }}>{item.title}</Link>
-                  <div className="muted" style={{ marginTop: '2px' }}>{item.description ?? 'No description'}</div>
-                </td>
-                <td>
-                  <StatusBadge status={item.status} />
-                </td>
-
-                <td>{item.category ?? 'Uncategorized'}</td>
-                <td>
-                  <div>{item.ownerDisplayName ?? item.ownerUsername ?? 'None'}</div>
-                  <div className="muted" style={{ fontSize: '12px' }}>Ctrl: {item.controllerDisplayName ?? item.controllerUsername ?? 'None'}</div>
-                </td>
-                <td>{item.currentVersionNumber ? `v${item.currentVersionNumber}` : 'None'}</td>
-                <td>
-                  <div style={{ fontSize: '13px', fontWeight: 600 }}>Total: {item.signatureSummary.totalRequests}</div>
-                  <div className="muted" style={{ fontSize: '12px' }}>
-                    Signed {item.signatureSummary.signedCount} / Pending {item.signatureSummary.pendingCount}
+      {(results?.items.length ?? 0) === 0 ? (
+        <EmptyState 
+          title="No results" 
+          description="No documents matched your search criteria. Try adjusting your filters." 
+        />
+      ) : (
+        <div className="registry-list">
+          {results?.items.map((item) => (
+            <article key={item.id} className="registry-item">
+              <div className="registry-item__main">
+                <div className="registry-item__header">
+                  <div className="stack stack--compact">
+                    <Link className="registry-item__title" to={`/documents/${item.id}`}>{item.title}</Link>
+                    <p className="muted">{item.description ?? 'ไม่มีคำอธิบายเพิ่มเติมสำหรับผลลัพธ์นี้'}</p>
                   </div>
-                </td>
-              </tr>
-            ))}
-            {(results?.items.length ?? 0) === 0 ? (
-              <tr>
-                <td colSpan={7}>
-                  <EmptyState 
-                    title="No results" 
-                    description="No documents matched your search criteria. Try adjusting your filters." 
-                  />
-                </td>
-              </tr>
-            ) : null}
+                  <StatusBadge status={item.status} />
+                </div>
 
-          </tbody>
-        </table>
-      </div>
+                <div className="registry-meta">
+                  <span className="status-pill status-pill--subtle">{item.category ?? 'Uncategorized'}</span>
+                  <span>เวอร์ชันปัจจุบัน {item.currentVersionNumber ? `v${item.currentVersionNumber}` : 'None'}</span>
+                  <span>Owner: {item.ownerDisplayName ?? item.ownerUsername ?? 'None'}</span>
+                  <span>Controller: {item.controllerDisplayName ?? item.controllerUsername ?? 'None'}</span>
+                </div>
+
+                <div className="search-result-summary">
+                  <div className="search-result-summary__item">
+                    <strong>{item.signatureSummary.totalRequests}</strong>
+                    <span>คำขอลงนาม</span>
+                  </div>
+                  <div className="search-result-summary__item">
+                    <strong>{item.signatureSummary.signedCount}</strong>
+                    <span>ลงนามแล้ว</span>
+                  </div>
+                  <div className="search-result-summary__item">
+                    <strong>{item.signatureSummary.pendingCount}</strong>
+                    <span>รอดำเนินการ</span>
+                  </div>
+                  <div className="search-result-summary__item">
+                    <strong>{item.signatureSummary.fullySigned ? 'Yes' : 'No'}</strong>
+                    <span>Fully signed</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="registry-item__actions registry-item__actions--stack">
+                <Link className="button" to={`/documents/${item.id}`}>เปิดรายละเอียด</Link>
+                <Link className="button button--secondary" to="/audit-logs">ดูร่องรอยย้อนหลัง</Link>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
 
       <div className="actions">
         <button className="button button--secondary" disabled={filters.page <= 1} type="button" onClick={() => updateFilters({ page: filters.page - 1 })}>

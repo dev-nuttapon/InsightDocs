@@ -7,8 +7,18 @@ import { StatCard } from '../../../shared/components/ui/StatCard';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
-import { SAMPLE_DOCUMENTS } from '../../../shared/mock/sampleDocuments';
+import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
+import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
+import { useTranslation } from '../../../i18n/useTranslation';
 import { buildAccessProfile } from '../../../shared/auth/authorization';
+import {
+  resetDemoScenario,
+  getDemoDashboardSummary,
+  getDemoRecentDashboardActivities,
+  getDemoRecentDashboardDocuments,
+  getDemoScenarioState,
+} from '../../../shared/mock/demoScenario';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 import { useAuth } from '../../auth/context/useAuth';
 import {
   getDashboardSummary,
@@ -23,6 +33,8 @@ import type {
 
 export function DashboardPage() {
   const { accessToken, user } = useAuth();
+  const { language, t } = useTranslation();
+  const demoMode = isDemoModeEnabled();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [recentDocuments, setRecentDocuments] = useState<RecentDashboardDocument[]>([]);
   const [recentActivities, setRecentActivities] = useState<RecentDashboardActivity[]>([]);
@@ -35,6 +47,16 @@ export function DashboardPage() {
     let ignore = false;
 
     async function loadDashboard() {
+      if (demoMode) {
+        if (!ignore) {
+          setSummary(getDemoDashboardSummary());
+          setRecentDocuments(getDemoRecentDashboardDocuments(language));
+          setRecentActivities(getDemoRecentDashboardActivities());
+          setError(null);
+        }
+        return;
+      }
+
       if (!accessToken) {
         return;
       }
@@ -64,7 +86,7 @@ export function DashboardPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken]);
+  }, [accessToken, demoMode, language]);
 
   const quickActions = useMemo(() => {
     const actions = [];
@@ -72,36 +94,36 @@ export function DashboardPage() {
     if (access.canManageDocuments) {
       actions.push({
         to: '/documents',
-        label: 'จัดการเอกสาร',
-        description: 'สร้าง อัปโหลดเวอร์ชันใหม่ แก้ไขข้อมูล และดูสถานะเอกสารล่าสุด',
+        label: t('dashboard.manageDocuments'),
+        description: t('dashboard.manageDocumentsDescription'),
       });
     } else {
       actions.push({
         to: '/documents',
-        label: 'เปิดรายการเอกสาร',
-        description: 'ดูเอกสารล่าสุดและสถานะที่เกี่ยวข้องกับงานของคุณ',
+        label: t('dashboard.openDocuments'),
+        description: t('dashboard.openDocumentsDescription'),
       });
     }
 
     actions.push({
       to: '/search',
-      label: 'ค้นหาเอกสาร',
-      description: 'ค้นหาด้วยคำสำคัญ หมวดหมู่ สถานะ และข้อมูลอ้างอิงอื่น ๆ',
+      label: t('dashboard.searchDocuments'),
+      description: t('dashboard.searchDocumentsDescription'),
     });
 
     if (access.canReviewDocuments) {
       actions.push({
         to: '/approvals',
-        label: 'ตรวจสอบรายการรออนุมัติ',
-        description: 'เปิดคิวอนุมัติเอกสารที่รอการพิจารณาและดำเนินการต่อได้ทันที',
+        label: t('dashboard.reviewApprovals'),
+        description: t('dashboard.reviewApprovalsDescription'),
       });
     }
 
     if (access.canSignDocuments) {
       actions.push({
         to: '/signatures',
-        label: 'ตรวจสอบรายการรอลงนาม',
-        description: 'เปิดคิวลงนามที่ได้รับมอบหมายและดำเนินการลงนามตามลำดับงาน',
+        label: t('dashboard.reviewSignatures'),
+        description: t('dashboard.reviewSignaturesDescription'),
       });
     }
 
@@ -109,19 +131,19 @@ export function DashboardPage() {
       actions.push(
         {
           to: '/users',
-          label: 'จัดการผู้ใช้งาน',
-          description: 'ดูสถานะผู้ใช้งาน กำหนดสิทธิ์ และจัดการการเข้าถึงระบบ',
+          label: t('dashboard.manageUsers'),
+          description: t('dashboard.manageUsersDescription'),
         },
         {
           to: '/audit-logs',
-          label: 'ตรวจสอบ Audit Log',
-          description: 'ติดตามเหตุการณ์สำคัญของระบบสำหรับการตรวจสอบย้อนหลัง',
+          label: t('dashboard.reviewAudit'),
+          description: t('dashboard.reviewAuditDescription'),
         },
       );
     }
 
     return actions.slice(0, 4);
-  }, [access.canManageDocuments, access.canReviewDocuments, access.canSignDocuments, access.isAdmin]);
+  }, [access.canManageDocuments, access.canReviewDocuments, access.canSignDocuments, access.isAdmin, t]);
 
   const summaryCards = useMemo(() => {
     if (!summary) {
@@ -131,142 +153,153 @@ export function DashboardPage() {
     const cards = [];
 
     if (access.canReviewDocuments) {
-      cards.push({ label: 'รออนุมัติ', value: summary.pendingApprovals });
+      cards.push({ label: t('dashboard.pendingApprovalsCard'), value: summary.pendingApprovals });
     }
 
     if (access.canSignDocuments) {
-      cards.push({ label: 'รอลงนาม', value: summary.pendingSignatures });
+      cards.push({ label: t('dashboard.pendingSignaturesCard'), value: summary.pendingSignatures });
     }
 
-    cards.push({ label: 'เอกสารทั้งหมด', value: summary.totalDocuments });
-    cards.push({ label: 'อนุมัติแล้ว', value: summary.approvedDocuments });
+    cards.push({ label: t('dashboard.totalDocuments'), value: summary.totalDocuments });
+    cards.push({ label: t('dashboard.approvedDocuments'), value: summary.approvedDocuments });
 
     if (access.canManageDocuments || access.isAdmin) {
-      cards.push({ label: 'เก็บถาวร', value: summary.archivedDocuments });
+      cards.push({ label: t('dashboard.archivedDocuments'), value: summary.archivedDocuments });
     }
 
     return cards.slice(0, 4);
-  }, [access.canManageDocuments, access.canReviewDocuments, access.canSignDocuments, access.isAdmin, summary]);
+  }, [access.canManageDocuments, access.canReviewDocuments, access.canSignDocuments, access.isAdmin, summary, t]);
 
   const primaryHeading = useMemo(() => {
     if (access.canReviewDocuments) {
       return {
-        title: 'งานอนุมัติเอกสาร',
-        description: 'เห็นคิวงานอนุมัติและรายการเอกสารล่าสุดที่ต้องติดตามจากจุดเดียว',
+        title: t('dashboard.approvalsTitle'),
+        description: t('dashboard.approvalsDescription'),
       };
     }
 
     if (access.canSignDocuments) {
       return {
-        title: 'งานลงนามเอกสาร',
-        description: 'ติดตามคิวลงนามและสถานะเอกสารที่เกี่ยวข้องกับการดำเนินการของคุณ',
+        title: t('dashboard.signaturesTitle'),
+        description: t('dashboard.signaturesDescription'),
       };
     }
 
     if (access.canManageDocuments) {
       return {
-        title: 'งานจัดการเอกสาร',
-        description: 'เข้าถึงงานอัปโหลด แก้ไข ค้นหา และติดตามสถานะเอกสารที่กำลังดำเนินการ',
+        title: t('dashboard.documentsTitle'),
+        description: t('dashboard.documentsDescription'),
       };
     }
 
     return {
-      title: 'ภาพรวมเอกสาร',
-      description: 'ดูรายการเอกสารล่าสุดและเข้าถึงการค้นหาเอกสารที่เกี่ยวข้องกับงานของคุณ',
+      title: t('dashboard.overviewTitle'),
+      description: t('dashboard.overviewDescription'),
     };
-  }, [access.canManageDocuments, access.canReviewDocuments, access.canSignDocuments]);
+  }, [access.canManageDocuments, access.canReviewDocuments, access.canSignDocuments, t]);
 
   const displayedRecentDocuments = useMemo(() => {
-    if (recentDocuments.length > 0) {
-      return recentDocuments;
-    }
-
-    return SAMPLE_DOCUMENTS.map((document, index) => ({
-      id: document.id,
-      title: document.title,
-      category: document.category,
-      status: document.status,
-      currentVersionNumber: Number(document.currentVersion.replace('v', '')),
-      ownerDisplayName: document.owner,
-      controllerDisplayName: document.controller,
-      lastActivityAt: new Date(Date.now() - index * 3600000).toISOString(),
-    }));
+    return recentDocuments;
   }, [recentDocuments]);
 
   const displayedRecentActivities = useMemo(() => {
-    if (recentActivities.length > 0) {
-      return recentActivities;
-    }
-
-    return SAMPLE_DOCUMENTS.map((document, index) => ({
-      id: `mock-activity-${document.id}`,
-      action: document.status === 'Approved' ? 'document.approval.approved' : document.status === 'InReview' ? 'document.approval.submitted' : 'document.created',
-      entityType: 'Document',
-      entityId: document.id,
-      relatedDocumentId: document.id,
-      relatedVersionId: document.currentVersion,
-      relatedDocumentTitle: document.title,
-      actorDisplayName: document.controller,
-      actorUsername: null,
-      timestamp: new Date(Date.now() - index * 5400000).toISOString(),
-    }));
+    return recentActivities;
   }, [recentActivities]);
 
+  const scenarioState = getDemoScenarioState(undefined, language);
+
+  function handleResetDemo() {
+    resetDemoScenario();
+    window.location.assign('/dashboard');
+  }
+
   if (!summary && !error) {
-    return <StatePanel eyebrow="Dashboard" title="Loading dashboard" description="Collecting current metrics, recent documents, and operational activity." busy />;
+    return <StatePanel eyebrow={t('dashboard.eyebrow')} title={t('common.loadingDashboardTitle')} description={t('common.loadingDashboardDescription')} busy />;
   }
 
   return (
     <section className="stack stack--xl">
       <PageHeader
         title={primaryHeading.title}
-        eyebrow="Operational Dashboard"
+        eyebrow={t('dashboard.eyebrow')}
         description={primaryHeading.description}
       />
 
-      <ModuleMockup
-        eyebrow="Dashboard Mockup"
-        title="ศูนย์ควบคุมภาพรวมงานเอกสาร"
-        description="ใช้หน้านี้เป็นจุดเริ่มต้นสำหรับดูสถานะงานรายวัน เห็นคิวที่ต้องทำต่อ เอกสารล่าสุด และกิจกรรมสำคัญในภาพเดียว"
-        highlights={['ภาพรวมรายวัน', 'งานเร่งด่วน', 'คิวรออนุมัติ/ลงนาม', 'เอกสารล่าสุด']}
-        steps={[
-          'เปิดดู metric สำคัญของบทบาทที่คุณรับผิดชอบ',
-          'เลือกงานที่ต้องดำเนินการต่อจาก Quick Actions',
-          'ตรวจเอกสารล่าสุดและกิจกรรมที่เพิ่งเกิดขึ้น',
-        ]}
-        metrics={[
-          { label: 'บทบาทการใช้งาน', value: access.isAdmin ? 'Admin Workspace' : access.canReviewDocuments ? 'Review Workspace' : access.canSignDocuments ? 'Signature Workspace' : 'General Workspace' },
-          { label: 'โฟกัสหลัก', value: access.canReviewDocuments ? 'Approvals' : access.canSignDocuments ? 'Signing Queue' : 'Document Operations' },
-        ]}
-      />
-
-      <section className="panel stack">
-        <div className="action-row">
-          <div className="action-row__copy">
-            <strong>ตัวอย่างเอกสารสำหรับ demo</strong>
-            <span className="muted">ดูชุดเอกสารตัวอย่างและไฟล์ PDF ตัวอย่างจากหน้า Documents เพื่อให้เห็น workflow ของเอกสารในบริบทที่เกี่ยวข้องจริง</span>
+      <section className="dashboard-flagship">
+        <div className="dashboard-flagship__hero">
+          <div className="dashboard-flagship__copy">
+            <span className="sidebar__eyebrow">{t('dashboard.flagshipEyebrow')}</span>
+            <h2>{t('dashboard.flagshipTitle')}</h2>
+            <p className="dashboard-hero__lead muted">
+              {t('dashboard.flagshipDescription')}
+            </p>
+            <div className="dashboard-flagship__cta">
+              <Link className="button" to="/documents/demo-contract-001">{t('dashboard.openPrimaryDemo')}</Link>
+              <Link className="button button--secondary" to="/documents">{t('dashboard.openRegistry')}</Link>
+              {demoMode ? (
+                <button className="button button--secondary" type="button" onClick={handleResetDemo}>{t('dashboard.resetDemo')}</button>
+              ) : null}
+            </div>
           </div>
-          <Link className="button" to="/documents">เปิดตัวอย่างเอกสาร</Link>
+
+          <div className="dashboard-flagship__signal">
+            <div className="dashboard-flagship__signal-card">
+              <span className="dashboard-flagship__signal-label">{t('dashboard.focusLabel')}</span>
+              <strong>{t('dashboard.focusTitle')}</strong>
+              <span className="muted">{t('dashboard.focusDescription')}</span>
+            </div>
+            <div className="dashboard-flagship__signal-grid">
+              {summaryCards.map((card) => (
+                <StatCard key={card.label} label={card.label} value={card.value} />
+              ))}
+            </div>
+          </div>
         </div>
+
+        <DemoScenarioPanel
+          state={scenarioState}
+          secondaryAction={{ label: t('dashboard.openRegistry'), to: '/documents' }}
+        />
       </section>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
 
-      {summaryCards.length > 0 ? (
-        <div className="panel panel--hero stack">
-          <div className="dashboard-summary-grid dashboard-summary-grid--hero">
-            {summaryCards.map((card) => (
-              <StatCard key={card.label} label={card.label} value={card.value} />
-            ))}
-          </div>
-        </div>
+      <ModuleMockup
+        eyebrow={t('dashboard.narrativeEyebrow')}
+        title={t('dashboard.narrativeTitle')}
+        description={t('dashboard.narrativeDescription')}
+        highlights={t('dashboard.narrativeHighlights').split('|||')}
+        steps={t('dashboard.narrativeSteps').split('|||')}
+        metrics={[
+          { label: t('language.label'), value: language.toUpperCase() },
+          { label: t('dashboard.focusNow'), value: access.canReviewDocuments ? t('dashboard.focusApprovals') : access.canSignDocuments ? t('dashboard.focusSignatures') : t('dashboard.focusOperations') },
+        ]}
+      />
+
+      {demoMode ? (
+        <section className="dashboard-launch-grid">
+          <DemoDocumentSpotlight
+            documentId="demo-contract-001"
+            eyebrow={t('dashboard.primaryStoryEyebrow')}
+            title={t('dashboard.primaryStoryTitle')}
+            description={t('dashboard.primaryStoryDescription')}
+            primaryActionLabel={t('dashboard.startFromPrimary')}
+          />
+          <DemoDocumentSpotlight
+            documentId="demo-policy-014"
+            eyebrow={t('dashboard.managerStoryEyebrow')}
+            title={t('dashboard.managerStoryTitle')}
+            description={t('dashboard.managerStoryDescription')}
+            primaryActionLabel={t('dashboard.startFromApproval')}
+          />
+        </section>
       ) : null}
 
       <div className="split-layout">
         <section className="panel stack">
           <div className="section-heading">
-            <span className="sidebar__eyebrow">Quick Actions</span>
-            <h3>งานที่ควรทำต่อ</h3>
+            <span className="sidebar__eyebrow">{t('dashboard.quickActions')}</span>
+            <h3>{t('dashboard.quickActions')}</h3>
           </div>
           <div className="action-list">
             {quickActions.map((action) => (
@@ -275,7 +308,7 @@ export function DashboardPage() {
                   <strong>{action.label}</strong>
                   <span className="muted">{action.description}</span>
                 </div>
-                <Link className="button" to={action.to}>Open</Link>
+                <Link className="button" to={action.to}>{t('common.open')}</Link>
               </div>
             ))}
           </div>
@@ -283,42 +316,42 @@ export function DashboardPage() {
 
         <section className="panel stack">
           <div className="section-heading">
-            <span className="sidebar__eyebrow">Focus</span>
-            <h3>สิ่งที่ควรติดตามตอนนี้</h3>
+            <span className="sidebar__eyebrow">{t('dashboard.focusNow')}</span>
+            <h3>{t('dashboard.focusNow')}</h3>
           </div>
           <div className="action-list">
             {access.canReviewDocuments ? (
               <div className="action-row">
                 <div className="action-row__copy">
-                  <strong>คิวอนุมัติ</strong>
-                  <span className="muted">มีเอกสารรออนุมัติ {summary?.pendingApprovals ?? 0} รายการ</span>
+                  <strong>{t('dashboard.pendingApprovalsLabel')}</strong>
+                  <span className="muted">{t('dashboard.pendingApprovalsDescription', { count: summary?.pendingApprovals ?? 0 })}</span>
                 </div>
-                <Link className="button button--secondary" to="/approvals">Open</Link>
+                <Link className="button button--secondary" to="/approvals">{t('common.open')}</Link>
               </div>
             ) : null}
             {access.canSignDocuments ? (
               <div className="action-row">
                 <div className="action-row__copy">
-                  <strong>คิวลงนาม</strong>
-                  <span className="muted">มีรายการรอลงนาม {summary?.pendingSignatures ?? 0} รายการ</span>
+                  <strong>{t('dashboard.pendingSignaturesLabel')}</strong>
+                  <span className="muted">{t('dashboard.pendingSignaturesDescription', { count: summary?.pendingSignatures ?? 0 })}</span>
                 </div>
-                <Link className="button button--secondary" to="/signatures">Open</Link>
+                <Link className="button button--secondary" to="/signatures">{t('common.open')}</Link>
               </div>
             ) : null}
             <div className="action-row">
               <div className="action-row__copy">
-                <strong>ค้นหาเอกสาร</strong>
-                <span className="muted">เข้าถึงเอกสารที่ต้องใช้ได้รวดเร็วผ่านตัวกรองและคำค้น</span>
+                <strong>{t('dashboard.searchDocuments')}</strong>
+                <span className="muted">{t('dashboard.searchDocumentsDescription')}</span>
               </div>
-              <Link className="button button--secondary" to="/search">Open</Link>
+              <Link className="button button--secondary" to="/search">{t('common.open')}</Link>
             </div>
             {access.isAdmin ? (
               <div className="action-row">
                 <div className="action-row__copy">
-                  <strong>จัดการผู้ใช้งาน</strong>
-                  <span className="muted">ดูผู้ใช้ ปรับสิทธิ์ และตรวจสอบการเข้าถึงระบบ</span>
+                  <strong>{t('dashboard.manageUsers')}</strong>
+                  <span className="muted">{t('dashboard.manageUsersDescription')}</span>
                 </div>
-                <Link className="button button--secondary" to="/users">Open</Link>
+                <Link className="button button--secondary" to="/users">{t('common.open')}</Link>
               </div>
             ) : null}
           </div>
@@ -328,15 +361,15 @@ export function DashboardPage() {
       <div className="split-layout split-layout--wide">
         <section className="panel stack">
           <div className="section-heading">
-            <span className="sidebar__eyebrow">Recent Documents</span>
-            <h3>เอกสารล่าสุด</h3>
+            <span className="sidebar__eyebrow">{t('dashboard.recentDocuments')}</span>
+            <h3>{t('dashboard.recentDocuments')}</h3>
           </div>
           <div className="table-wrap">
             <table className="table table--premium">
               <thead>
                 <tr>
-                  <th>Document</th>
-                  <th>Status</th>
+                  <th>{t('shell.documents')}</th>
+                  <th>{t('documents.statusLabel')}</th>
                   <th>Activity</th>
                 </tr>
               </thead>
@@ -345,7 +378,7 @@ export function DashboardPage() {
                   <tr key={document.id}>
                     <td>
                       <Link to={`/documents/${document.id}`} style={{ fontWeight: 700 }}>{document.title}</Link>
-                      <div className="muted" style={{ fontSize: '11px' }}>{document.category ?? 'Uncategorized'}</div>
+                      <div className="muted" style={{ fontSize: '11px' }}>{document.category ?? '-'}</div>
                     </td>
                     <td>
                       <StatusBadge status={document.status} />
@@ -360,8 +393,8 @@ export function DashboardPage() {
                   <tr>
                     <td colSpan={3}>
                       <EmptyState 
-                        title="No documents" 
-                        description="There are no documents in the system yet." 
+                        title={t('dashboard.noDocuments')} 
+                        description={t('dashboard.noDocumentsDescription')} 
                       />
                     </td>
                   </tr>
@@ -373,13 +406,13 @@ export function DashboardPage() {
 
         <section className="panel stack">
           <div className="section-heading">
-            <span className="sidebar__eyebrow">Recent Activities</span>
-            <h3>กิจกรรมล่าสุด</h3>
+            <span className="sidebar__eyebrow">{t('dashboard.recentActivities')}</span>
+            <h3>{t('dashboard.recentActivities')}</h3>
           </div>
           {displayedRecentActivities.length === 0 ? (
             <EmptyState 
-              title="No activity" 
-              description="Recent operational events will appear here." 
+              title={t('dashboard.noActivity')} 
+              description={t('dashboard.noActivityDescription')} 
             />
           ) : (
             <div className="timeline" style={{ padding: '8px' }}>
@@ -392,13 +425,13 @@ export function DashboardPage() {
                     <div className="muted" style={{ fontSize: '12px' }}>
                       {activity.relatedDocumentId ? (
                         <Link to={`/documents/${activity.relatedDocumentId}`} style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
-                          {activity.relatedDocumentTitle ?? 'Open document'}
+                          {activity.relatedDocumentTitle ?? t('demo.openDocument')}
                         </Link>
                       ) : (
                         activity.entityType
                       )}
                       {" • "}
-                      {activity.actorDisplayName ?? activity.actorUsername ?? 'System'}
+                      {activity.actorDisplayName ?? activity.actorUsername ?? t('common.currentUser')}
                     </div>
                   </div>
                 </div>
