@@ -4,8 +4,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../auth/context/useAuth';
 import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 import { getUser, updateUser } from '../api/usersApi';
-import { AVAILABLE_PROJECT_ROLES, formatBusinessRole, formatBusinessRoleDescription, type AppUser, type UpdateUserInput } from '../types';
+import { AVAILABLE_PROJECT_ROLES, formatBusinessRole, formatBusinessRoleDescription, formatUserStatus, type AppUser, type UpdateUserInput } from '../types';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
+import { FeatureHeroPanel } from '../../../shared/components/mock/FeatureHeroPanel';
 import { useTranslation } from '../../../i18n/useTranslation';
 
 type EditUserFormState = UpdateUserInput & {
@@ -128,126 +129,190 @@ export function EditUserPage() {
         actions={<Link className="button button--secondary" to="/users">{t('users.backToUsers')}</Link>}
       />
 
-      <section className="panel stack">
-        <div className="stack user-form-panel">
-          <form className="stack stack--xl" onSubmit={handleSubmit}>
-            <div className="form-grid">
-              <label className="stack" htmlFor="edit-user-email">
-                <span className="card__label">{t('users.signInEmail')}</span>
-                <input
-                  id="edit-user-email"
-                  className="input"
-                  placeholder={t('users.emailPlaceholder')}
-                  type="email"
-                  value={form.email}
-                  onChange={(event) => {
-                    const email = event.target.value;
-                    setForm((current) => ({ ...current, email, username: email }));
-                  }}
-                />
-              </label>
+      <FeatureHeroPanel
+        eyebrow={t('users.workspaceEyebrow')}
+        title={t('users.editWorkspaceTitle')}
+        description={t('users.editWorkspaceDescription')}
+        actions={[
+          { label: t('users.backToUsers'), to: '/users', tone: 'secondary' },
+        ]}
+        stats={[
+          {
+            label: t('users.listStatus'),
+            value: formatUserStatus(user.status, user.approvedAt, language),
+            detail: t('users.editWorkspaceStatusDetail'),
+          },
+          {
+            label: t('users.listRoles'),
+            value: form.roles.length,
+            detail: t('users.editWorkspaceRoleDetail'),
+          },
+          {
+            label: t('users.signInEmail'),
+            value: form.email || '-',
+            detail: t('users.editWorkspaceIdentityDetail'),
+          },
+        ]}
+      />
 
-              <div className="grid-2">
-                <label className="stack" htmlFor="edit-user-first-name">
-                  <span className="card__label">{t('users.firstName')}</span>
-                  <input
-                    id="edit-user-first-name"
-                    className="input"
-                    placeholder={t('users.firstNamePlaceholder')}
-                    value={form.firstName}
-                    onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))}
-                  />
-                </label>
-                <label className="stack" htmlFor="edit-user-last-name">
-                  <span className="card__label">{t('users.lastName')}</span>
-                  <input
-                    id="edit-user-last-name"
-                    className="input"
-                    placeholder={t('users.lastNamePlaceholder')}
-                    value={form.lastName}
-                    onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))}
-                  />
-                </label>
-              </div>
+      <section className="panel panel--full stack">
+        <div className="workspace-layout workspace-layout--form">
+          <div className="workspace-layout__main">
+            <div className="stack user-form-panel">
+              <form className="stack stack--xl" onSubmit={handleSubmit}>
+                <div className="form-grid">
+                  <label className="stack" htmlFor="edit-user-email">
+                    <span className="card__label">{t('users.signInEmail')}</span>
+                    <input
+                      id="edit-user-email"
+                      className="input"
+                      placeholder={t('users.emailPlaceholder')}
+                      type="email"
+                      value={form.email}
+                      onChange={(event) => {
+                        const email = event.target.value;
+                        setForm((current) => ({ ...current, email, username: email }));
+                      }}
+                    />
+                  </label>
 
-              <div className="grid-2">
-                <label className="stack" htmlFor="edit-user-password">
-                  <span className="card__label">{t('users.newPassword')}</span>
-                  <input
-                    id="edit-user-password"
-                    className="input"
-                    placeholder={t('users.leaveBlank')}
-                    type="password"
-                    value={form.password ?? ''}
-                    onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-                  />
-                </label>
-                <label className="stack" htmlFor="edit-user-confirm-password">
-                  <span className="card__label">{t('users.confirmNewPassword')}</span>
-                  <input
-                    id="edit-user-confirm-password"
-                    className="input"
-                    placeholder={t('users.confirmNewPassword')}
-                    type="password"
-                    value={form.confirmPassword}
-                    onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
-                  />
-                </label>
-              </div>
+                  <div className="grid-2">
+                    <label className="stack" htmlFor="edit-user-first-name">
+                      <span className="card__label">{t('users.firstName')}</span>
+                      <input
+                        id="edit-user-first-name"
+                        className="input"
+                        placeholder={t('users.firstNamePlaceholder')}
+                        value={form.firstName}
+                        onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))}
+                      />
+                    </label>
+                    <label className="stack" htmlFor="edit-user-last-name">
+                      <span className="card__label">{t('users.lastName')}</span>
+                      <input
+                        id="edit-user-last-name"
+                        className="input"
+                        placeholder={t('users.lastNamePlaceholder')}
+                        value={form.lastName}
+                        onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="grid-2">
+                    <label className="stack" htmlFor="edit-user-password">
+                      <span className="card__label">{t('users.newPassword')}</span>
+                      <input
+                        id="edit-user-password"
+                        className="input"
+                        placeholder={t('users.leaveBlank')}
+                        type="password"
+                        value={form.password ?? ''}
+                        onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                      />
+                    </label>
+                    <label className="stack" htmlFor="edit-user-confirm-password">
+                      <span className="card__label">{t('users.confirmNewPassword')}</span>
+                      <input
+                        id="edit-user-confirm-password"
+                        className="input"
+                        placeholder={t('users.confirmNewPassword')}
+                        type="password"
+                        value={form.confirmPassword}
+                        onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <fieldset className="stack role-group">
+                  <div className="section-heading">
+                    <span className="sidebar__eyebrow">{t('users.accessEyebrow')}</span>
+                    <h3>{t('users.rolePermissions')}</h3>
+                  </div>
+                  <div className="table-wrap role-table-wrap">
+                    <table className="table role-table table--premium">
+                      <thead>
+                        <tr>
+                          <th className="users-form__checkbox-col">{t('users.selectColumn')}</th>
+                          <th>{t('users.roleColumn')}</th>
+                          <th>{t('users.capabilityColumn')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {AVAILABLE_PROJECT_ROLES.map((role) => (
+                          <tr key={role} onClick={() => {
+                            const isChecked = form.roles.includes(role);
+                            setForm((current) => ({
+                              ...current,
+                              roles: !isChecked
+                                ? [...current.roles, role]
+                                : current.roles.filter((value) => value !== role),
+                            }));
+                          }} className="table__row--interactive">
+                            <td onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                checked={form.roles.includes(role)}
+                                onChange={(event) =>
+                                  setForm((current) => ({
+                                    ...current,
+                                    roles: event.target.checked
+                                      ? [...current.roles, role]
+                                      : current.roles.filter((value) => value !== role),
+                                  }))
+                                }
+                              />
+                            </td>
+                            <td className="users-form__role-name">{formatBusinessRole(role, language)}</td>
+                            <td className="muted users-form__role-description">{formatBusinessRoleDescription(role, language)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </fieldset>
+
+                <div className="actions users-form__actions">
+                  <button className="button users-form__submit" disabled={isSaving} type="submit">
+                    {isSaving ? t('users.savingEdit') : t('users.saveEdit')}
+                  </button>
+                  <Link className="button button--secondary" to="/users">{t('users.cancel')}</Link>
+                </div>
+              </form>
             </div>
+          </div>
 
-            <fieldset className="stack role-group">
-              <span className="card__label users-form__section-label">{t('users.rolePermissions')}</span>
-              <div className="table-wrap role-table-wrap">
-                <table className="table role-table table--premium">
-                  <thead>
-                    <tr>
-                      <th className="users-form__checkbox-col">{t('users.selectColumn')}</th>
-                      <th>{t('users.roleColumn')}</th>
-                      <th>{t('users.capabilityColumn')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {AVAILABLE_PROJECT_ROLES.map((role) => (
-                      <tr key={role} onClick={() => {
-                        const isChecked = form.roles.includes(role);
-                        setForm((current) => ({
-                          ...current,
-                          roles: !isChecked
-                            ? [...current.roles, role]
-                            : current.roles.filter((value) => value !== role),
-                        }));
-                      }} className="table__row--interactive">
-                        <td onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            checked={form.roles.includes(role)}
-                            onChange={(event) =>
-                              setForm((current) => ({
-                                ...current,
-                                roles: event.target.checked
-                                  ? [...current.roles, role]
-                                  : current.roles.filter((value) => value !== role),
-                              }))
-                            }
-                          />
-                        </td>
-                        <td className="users-form__role-name">{formatBusinessRole(role, language)}</td>
-                        <td className="muted users-form__role-description">{formatBusinessRoleDescription(role, language)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </fieldset>
+          <aside className="workspace-layout__side workspace-rail">
+            <section className="workspace-rail__panel">
+              <span className="sidebar__eyebrow">{t('users.listStatus')}</span>
+              <h3>{t('users.listStatus')}</h3>
+              <strong>{formatUserStatus(user.status, user.approvedAt, language)}</strong>
+              <p className="muted">{t('users.editWorkspaceStatusDetail')}</p>
+            </section>
 
-            <div className="actions users-form__actions">
-              <button className="button users-form__submit" disabled={isSaving} type="submit">
-                {isSaving ? t('users.savingEdit') : t('users.saveEdit')}
-              </button>
-              <Link className="button button--secondary" to="/users">{t('users.cancel')}</Link>
-            </div>
-          </form>
+            <section className="workspace-rail__panel">
+              <span className="card__label">{t('users.listRoles')}</span>
+              {form.roles.length > 0 ? (
+                <div className="tag-list">
+                  {form.roles.map((role) => (
+                    <span key={`edit-${role}`} className="tag">
+                      {formatBusinessRole(role, language)}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="muted">{t('users.noRoles')}</p>
+              )}
+              <p className="muted">{t('users.editWorkspaceRoleDetail')}</p>
+            </section>
+
+            <section className="workspace-rail__panel">
+              <span className="card__label">{t('users.signInEmail')}</span>
+              <strong>{form.email || '-'}</strong>
+              <p className="muted">{t('users.editWorkspaceIdentityDetail')}</p>
+            </section>
+          </aside>
         </div>
 
         <ErrorModal message={error} onClose={() => setError(null)} />

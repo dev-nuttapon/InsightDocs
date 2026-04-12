@@ -6,6 +6,8 @@ import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
+import { DemoWorkflowContext } from '../../../shared/components/mock/DemoWorkflowContext';
 import { SampleDocumentsShowcase } from '../../../shared/components/mock/SampleDocumentsShowcase';
 import { getDemoScenarioState, getDemoSearchResults } from '../../../shared/mock/demoScenario';
 import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
@@ -130,6 +132,46 @@ export function SearchPage() {
         }}
         secondaryAction={{ label: t('common.backToRegistry'), to: '/documents' }}
       />
+
+      {demoMode ? (
+        <DemoDocumentSpotlight
+          documentId="demo-contract-001"
+          eyebrow={t('search.discoveryEyebrow')}
+          title={t('search.discoveryTitle')}
+          description={t('search.discoveryDescription')}
+          primaryActionLabel={t('search.openPrimaryDemo')}
+        />
+      ) : null}
+
+      {demoMode ? (
+        <DemoWorkflowContext
+          eyebrow={t('search.contextEyebrow')}
+          title={t('search.contextTitle')}
+          description={t('search.contextDescription')}
+          documentId="demo-contract-001"
+          primaryActionLabel={t('search.openPrimaryDemo')}
+          primaryActionTo="/documents/demo-contract-001"
+          secondaryActionLabel={t('search.openAudit')}
+          secondaryActionTo="/audit-logs"
+          stats={[
+            {
+              label: t('search.contextQueryLabel'),
+              value: filters.query || t('search.contextQueryValue'),
+              detail: t('search.contextQueryDetail'),
+            },
+            {
+              label: t('search.contextFilterLabel'),
+              value: filters.status || t('search.anyStatus'),
+              detail: t('search.contextFilterDetail'),
+            },
+            {
+              label: t('search.contextOutcomeLabel'),
+              value: results?.totalCount ?? 0,
+              detail: t('search.contextOutcomeDetail'),
+            },
+          ]}
+        />
+      ) : null}
 
       <SampleDocumentsShowcase />
 

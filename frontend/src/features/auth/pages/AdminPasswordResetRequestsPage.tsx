@@ -7,6 +7,7 @@ import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { StatCard } from '../../../shared/components/ui/StatCard';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { FeatureHeroPanel } from '../../../shared/components/mock/FeatureHeroPanel';
 import { useTranslation } from '../../../i18n/useTranslation';
 
 export function AdminPasswordResetRequestsPage() {
@@ -113,6 +114,33 @@ export function AdminPasswordResetRequestsPage() {
         ]}
       />
 
+      <FeatureHeroPanel
+        eyebrow={t('passwordReset.workspaceEyebrow')}
+        title={t('passwordReset.workspaceTitle')}
+        description={t('passwordReset.workspaceDescription')}
+        actions={[
+          { label: t('shell.users'), to: '/users', tone: 'secondary' },
+          { label: t('shell.auditLogs'), to: '/audit-logs', tone: 'secondary' },
+        ]}
+        stats={[
+          {
+            label: t('passwordReset.pending'),
+            value: requests.filter((request) => request.status === 'Pending').length,
+            detail: t('passwordReset.workspacePendingDetail'),
+          },
+          {
+            label: t('passwordReset.approved'),
+            value: requests.filter((request) => request.status === 'Approved').length,
+            detail: t('passwordReset.workspaceApprovedDetail'),
+          },
+          {
+            label: t('passwordReset.manualHandOff'),
+            value: t('passwordReset.workspaceManualValue'),
+            detail: t('passwordReset.workspaceManualDetail'),
+          },
+        ]}
+      />
+
       <div className="dashboard-summary-grid">
         <StatCard label={t('passwordReset.totalRequests')} value={requests.length} />
         <StatCard label={t('passwordReset.pending')} value={requests.filter((request) => request.status === 'Pending').length} />
@@ -123,6 +151,8 @@ export function AdminPasswordResetRequestsPage() {
       {notice ? <div className="callout">{notice}</div> : null}
 
       <section className="panel panel--full stack">
+        <div className="workspace-layout">
+          <div className="workspace-layout__main stack">
         <div className="section-heading">
           <span className="sidebar__eyebrow">{t('passwordReset.queueEyebrow')}</span>
           <h3>{t('passwordReset.queueTitle')}</h3>
@@ -143,7 +173,7 @@ export function AdminPasswordResetRequestsPage() {
                       <div className="registry-item__title">{request.displayName}</div>
                       <p className="muted">{request.email}</p>
                     </div>
-                    <StatusBadge status={request.status} />
+                    <StatusBadge status={request.status} label={formatPasswordResetStatus(request.status, t)} />
                   </div>
 
                   <div className="registry-meta">
@@ -190,7 +220,47 @@ export function AdminPasswordResetRequestsPage() {
             ))}
           </div>
         )}
+          </div>
+
+          <aside className="workspace-layout__side workspace-rail">
+            <section className="workspace-rail__panel">
+              <span className="sidebar__eyebrow">{t('passwordReset.manualHandOff')}</span>
+              <h3>{t('passwordReset.manualHandOff')}</h3>
+              <p className="muted">{t('passwordReset.workspaceManualDetail')}</p>
+            </section>
+
+            <section className="workspace-rail__panel">
+              <span className="card__label">{t('passwordReset.pending')}</span>
+              <strong>{requests.filter((request) => request.status === 'Pending').length}</strong>
+              <p className="muted">{t('passwordReset.workspacePendingDetail')}</p>
+            </section>
+
+            <section className="workspace-rail__panel">
+              <span className="card__label">{t('passwordReset.approved')}</span>
+              <strong>{requests.filter((request) => request.status === 'Approved').length}</strong>
+              <p className="muted">{t('passwordReset.workspaceApprovedDetail')}</p>
+            </section>
+          </aside>
+        </div>
       </section>
     </div>
   );
+}
+
+function formatPasswordResetStatus(
+  status: PasswordResetRequest['status'],
+  t: ReturnType<typeof useTranslation>['t'],
+) {
+  switch (status) {
+    case 'Pending':
+      return t('passwordReset.statusPending');
+    case 'Approved':
+      return t('passwordReset.statusApproved');
+    case 'Rejected':
+      return t('passwordReset.statusRejected');
+    case 'Completed':
+      return t('passwordReset.statusCompleted');
+    default:
+      return status;
+  }
 }

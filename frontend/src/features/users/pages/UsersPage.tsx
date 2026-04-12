@@ -5,10 +5,11 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { useAuth } from '../../auth/context/useAuth';
 import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 import { deleteUser, disableUser, enableUser, getUsers } from '../api/usersApi';
-import { canDisableUser, canEnableUser, getProjectRoleLabels, getProjectRoles, resolveUserStatus, type AppUser } from '../types';
+import { canDisableUser, canEnableUser, formatUserStatus, getProjectRoleLabels, getProjectRoles, resolveUserStatus, type AppUser } from '../types';
 import { StatCard } from '../../../shared/components/ui/StatCard';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { FeatureHeroPanel } from '../../../shared/components/mock/FeatureHeroPanel';
 import { useTranslation } from '../../../i18n/useTranslation';
 
 type PendingAction =
@@ -170,6 +171,33 @@ export function UsersPage() {
         ]}
       />
 
+      <FeatureHeroPanel
+        eyebrow={t('users.workspaceEyebrow')}
+        title={t('users.workspaceTitle')}
+        description={t('users.workspaceDescription')}
+        actions={[
+          { label: t('users.createAction'), to: '/users/new' },
+          { label: t('shell.auditLogs'), to: '/audit-logs', tone: 'secondary' },
+        ]}
+        stats={[
+          {
+            label: t('users.workspaceActiveLabel'),
+            value: users.filter((user) => resolveUserStatus(user.status, user.approvedAt) === 'Active').length,
+            detail: t('users.workspaceActiveDetail'),
+          },
+          {
+            label: t('users.workspaceRoleLabel'),
+            value: users.reduce((total, user) => total + getProjectRoles(user.roles).length, 0),
+            detail: t('users.workspaceRoleDetail'),
+          },
+          {
+            label: t('users.workspaceProvisionLabel'),
+            value: t('users.destinationValue'),
+            detail: t('users.workspaceProvisionDetail'),
+          },
+        ]}
+      />
+
       {notice ? <div className="callout">{notice}</div> : null}
 
       <div className="dashboard-summary-grid">
@@ -179,7 +207,10 @@ export function UsersPage() {
       </div>
 
       <section className="panel panel--full stack">
-
+        <div className="section-heading">
+          <span className="sidebar__eyebrow">{t('users.title')}</span>
+          <h3>{t('users.mockupTitle')}</h3>
+        </div>
 
       {isLoading ? (
         <p className="muted">{t('users.loading')}</p>
@@ -204,7 +235,10 @@ export function UsersPage() {
                   </td>
                   <td>{user.email}</td>
                   <td>
-                    <StatusBadge status={resolveUserStatus(user.status, user.approvedAt)} />
+                    <StatusBadge
+                      status={resolveUserStatus(user.status, user.approvedAt)}
+                      label={formatUserStatus(user.status, user.approvedAt, language)}
+                    />
                     <div className="muted users-table__status-note">
                       {user.approvedAt ? t('users.approvedOn', { value: new Date(user.approvedAt).toLocaleDateString() }) : t('users.approvalPending')}
                     </div>

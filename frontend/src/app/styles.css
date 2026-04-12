@@ -2890,6 +2890,100 @@ button {
   line-height: 1.55;
 }
 
+.feature-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-card-hover) 80%, transparent), var(--color-surface-strong));
+}
+
+.feature-hero__copy,
+.feature-hero__stats,
+.feature-hero__stat {
+  display: grid;
+  gap: 12px;
+}
+
+.feature-hero__copy h3,
+.feature-hero__copy p,
+.feature-hero__stat p {
+  margin: 0;
+}
+
+.feature-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.feature-hero__stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.feature-hero__stat {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--color-card) 92%, transparent);
+}
+
+.feature-hero__stat p {
+  color: var(--color-text-soft);
+  line-height: 1.55;
+}
+
+.workspace-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.workspace-layout--form {
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+}
+
+.workspace-layout__main,
+.workspace-layout__side {
+  min-width: 0;
+}
+
+.workspace-layout__side {
+  position: sticky;
+  top: 24px;
+}
+
+.workspace-rail {
+  display: grid;
+  gap: 16px;
+}
+
+.workspace-rail__panel {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--color-card) 92%, transparent);
+}
+
+.workspace-rail__panel h3,
+.workspace-rail__panel p,
+.workspace-rail__panel strong {
+  margin: 0;
+}
+
+.workspace-rail__panel p {
+  color: var(--color-text-soft);
+  line-height: 1.55;
+}
+
 .tag--button {
   cursor: pointer;
   border: 1px solid var(--color-border);
@@ -3669,6 +3763,8 @@ button {
   .document-flagship__hero,
   .dashboard-launch-grid,
   .demo-spotlight,
+  .feature-hero,
+  .workspace-layout,
   .workflow-context__hero,
   .signature-evidence-grid,
   .search-result-summary,
@@ -3681,6 +3777,7 @@ button {
   .demo-control__lenses,
   .document-evidence__grid,
   .dashboard-flagship__signal-grid,
+  .feature-hero__stats,
   .workflow-ribbon,
   .workflow-context__stats {
     grid-template-columns: 1fr;
@@ -3688,6 +3785,11 @@ button {
 
   .document-evidence__header {
     flex-direction: column;
+  }
+
+  .workspace-layout__side {
+    position: static;
+    top: auto;
   }
 
   .signature-canvas-section__header {

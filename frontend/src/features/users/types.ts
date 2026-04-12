@@ -134,18 +134,20 @@ export function resolveUserStatus(status: UserStatusValue, approvedAt?: string |
   return normalizedStatus;
 }
 
-export function formatUserStatus(status: UserStatusValue, approvedAt?: string | null) {
+export function formatUserStatus(status: UserStatusValue, approvedAt?: string | null, language: Language = 'th') {
+  const isThai = language === 'th';
+
   switch (resolveUserStatus(status, approvedAt)) {
     case 'Active':
-      return 'ใช้งาน';
+      return isThai ? 'ใช้งาน' : 'Active';
     case 'Disabled':
-      return 'ปิดการใช้งาน';
+      return isThai ? 'ปิดการใช้งาน' : 'Disabled';
     case 'Deleted':
-      return 'ลบ';
+      return isThai ? 'ลบ' : 'Deleted';
     case 'Pending':
-      return 'รออนุมัติ';
+      return isThai ? 'รออนุมัติ' : 'Pending approval';
     default:
-      return status;
+      return String(status);
   }
 }
 

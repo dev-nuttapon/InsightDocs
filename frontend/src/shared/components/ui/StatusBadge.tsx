@@ -14,16 +14,17 @@ export type StatusType =
 
 interface StatusBadgeProps {
   status: string;
+  label?: string;
 }
 
-export function StatusBadge({ status }: StatusBadgeProps) {
+export function StatusBadge({ status, label }: StatusBadgeProps) {
   const statusString = String(status ?? '');
   const normalizedStatus = statusString.replace(/\s+/g, '');
   const variant = getVariant(normalizedStatus);
   
   return (
     <span className={`status-badge status-badge--${variant}`}>
-      {status}
+      {label ?? status}
     </span>
   );
 }

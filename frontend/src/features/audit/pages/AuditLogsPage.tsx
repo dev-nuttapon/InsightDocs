@@ -12,6 +12,8 @@ import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
+import { DemoWorkflowContext } from '../../../shared/components/mock/DemoWorkflowContext';
 import { getDemoAuditLog, getDemoAuditLogs, getDemoScenarioState } from '../../../shared/mock/demoScenario';
 import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 import { useTranslation } from '../../../i18n/useTranslation';
@@ -202,6 +204,46 @@ export function AuditLogsPage() {
         }}
         secondaryAction={{ label: t('search.backToDashboard'), to: '/dashboard' }}
       />
+
+      {demoMode ? (
+        <DemoDocumentSpotlight
+          documentId="demo-contract-001"
+          eyebrow={t('audit.trailEyebrow')}
+          title={t('audit.trailTitle')}
+          description={t('audit.trailDescription')}
+          primaryActionLabel={t('audit.openDemoDocument')}
+        />
+      ) : null}
+
+      {demoMode ? (
+        <DemoWorkflowContext
+          eyebrow={t('audit.contextEyebrow')}
+          title={t('audit.contextTitle')}
+          description={t('audit.contextDescription')}
+          documentId="demo-contract-001"
+          primaryActionLabel={t('audit.openDemoDocument')}
+          primaryActionTo="/documents/demo-contract-001"
+          secondaryActionLabel={t('audit.openAuditList')}
+          secondaryActionTo="/audit-logs"
+          stats={[
+            {
+              label: t('audit.contextEventLabel'),
+              value: results?.items.length ?? 0,
+              detail: t('audit.contextEventDetail'),
+            },
+            {
+              label: t('audit.contextActorLabel'),
+              value: selectedLog?.actorDisplayName ?? selectedLog?.actorUsername ?? t('audit.system'),
+              detail: t('audit.contextActorDetail'),
+            },
+            {
+              label: t('audit.contextTraceLabel'),
+              value: selectedLog?.relatedDocumentId ? t('audit.linked') : t('audit.none'),
+              detail: t('audit.contextTraceDetail'),
+            },
+          ]}
+        />
+      ) : null}
 
       <div className="dashboard-summary-grid">
         <StatCard label={t('audit.totalActivities')} value={results?.totalCount ?? 0} />
