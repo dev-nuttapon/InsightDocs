@@ -260,11 +260,11 @@ export function DocumentsPage() {
               onChange={(event) => setStatusFilter(event.target.value as 'all' | DocumentStatus)}
             >
               <option value="all">{t('documents.allStatuses')}</option>
-              <option value="Draft">Draft</option>
-              <option value="InReview">In Review</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Archived">Archived</option>
+              <option value="Draft">{t('documents.statusDraft')}</option>
+              <option value="InReview">{t('documents.statusInReview')}</option>
+              <option value="Approved">{t('documents.statusApproved')}</option>
+              <option value="Rejected">{t('documents.statusRejected')}</option>
+              <option value="Archived">{t('documents.statusArchived')}</option>
             </select>
           </div>
         </div>

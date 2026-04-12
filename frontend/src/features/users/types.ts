@@ -1,3 +1,5 @@
+import type { Language } from '../../i18n/messages';
+
 export type UserStatus = 'Pending' | 'Active' | 'Disabled' | 'Deleted';
 export type UserStatusValue = UserStatus | 0 | 1 | 2 | 3;
 
@@ -52,28 +54,44 @@ export const AVAILABLE_PROJECT_ROLES: ProjectRole[] = [
   'insightdocs:viewer',
 ];
 
-export function formatBusinessRole(role: string) {
-  return formatProjectRoleLabel(normalizeProjectRole(role));
+export function formatBusinessRole(role: string, language: Language = 'th') {
+  return formatProjectRoleLabel(normalizeProjectRole(role), language);
 }
 
-export function formatBusinessRoleDescription(role: string) {
+export function formatBusinessRoleDescription(role: string, language: Language = 'th') {
   switch (normalizeProjectRole(role)) {
     case 'insightdocs:admin':
-      return 'สิทธิ์ผู้ดูแลระบบเต็มรูปแบบสำหรับ InsightDocs สามารถจัดการผู้ใช้ บทบาท การอนุมัติคำขอรีเซ็ตรหัสผ่าน ตรวจสอบ audit log และควบคุมการทำงานข้ามทุกโมดูลของระบบได้';
+      return language === 'th'
+        ? 'สิทธิ์ผู้ดูแลระบบเต็มรูปแบบสำหรับ InsightDocs สามารถจัดการผู้ใช้ บทบาท การอนุมัติคำขอรีเซ็ตรหัสผ่าน ตรวจสอบ audit log และควบคุมการทำงานข้ามทุกโมดูลของระบบได้'
+        : 'Full administrative access to InsightDocs across users, roles, password reset approvals, audit review, and cross-module operations.';
     case 'insightdocs:audit_reader':
-      return 'สามารถเข้าดูข้อมูล audit log เพื่อการตรวจสอบด้าน compliance และการติดตามการทำงานของระบบ โดยไม่มีสิทธิ์บริหารจัดการส่วนอื่น';
+      return language === 'th'
+        ? 'สามารถเข้าดูข้อมูล audit log เพื่อการตรวจสอบด้าน compliance และการติดตามการทำงานของระบบ โดยไม่มีสิทธิ์บริหารจัดการส่วนอื่น'
+        : 'Read-only access to audit logs for compliance and operational traceability without broader administrative permissions.';
     case 'insightdocs:document_controller':
-      return 'สามารถสร้างเอกสาร จัดการข้อมูลเอกสาร อัปโหลดไฟล์ PDF เวอร์ชันใหม่ และส่งเอกสารเข้าสู่กระบวนการตรวจสอบอนุมัติได้';
+      return language === 'th'
+        ? 'สามารถสร้างเอกสาร จัดการข้อมูลเอกสาร อัปโหลดไฟล์ PDF เวอร์ชันใหม่ และส่งเอกสารเข้าสู่กระบวนการตรวจสอบอนุมัติได้'
+        : 'Can create documents, manage metadata, upload new PDF versions, and submit documents into the approval workflow.';
     case 'insightdocs:manager':
-      return 'สามารถตรวจสอบเอกสารในคิวอนุมัติ และดำเนินการอนุมัติหรือปฏิเสธเอกสาร พร้อมบันทึกความเห็นประกอบใน workflow ได้';
+      return language === 'th'
+        ? 'สามารถตรวจสอบเอกสารในคิวอนุมัติ และดำเนินการอนุมัติหรือปฏิเสธเอกสาร พร้อมบันทึกความเห็นประกอบใน workflow ได้'
+        : 'Can review approval queue items and make approve or reject decisions with workflow comments.';
     case 'insightdocs:signer':
-      return 'สามารถเข้าถึงงานลงนามที่ได้รับมอบหมาย ตรวจสอบเอกสารที่ผ่านการอนุมัติแล้ว และดำเนินการลงนามหรือปฏิเสธการลงนามตามลำดับขั้นที่กำหนดได้';
+      return language === 'th'
+        ? 'สามารถเข้าถึงงานลงนามที่ได้รับมอบหมาย ตรวจสอบเอกสารที่ผ่านการอนุมัติแล้ว และดำเนินการลงนามหรือปฏิเสธการลงนามตามลำดับขั้นที่กำหนดได้'
+        : 'Can access assigned signature tasks, review approved documents, and sign or reject in the configured sequence.';
     case 'insightdocs:user_admin':
-      return 'สามารถจัดการข้อมูลผู้ใช้ การอนุมัติผู้ใช้ และการกำหนดบทบาทในระบบได้ โดยไม่จำเป็นต้องมีสิทธิ์ผู้ดูแลระบบเต็มรูปแบบ';
+      return language === 'th'
+        ? 'สามารถจัดการข้อมูลผู้ใช้ การอนุมัติผู้ใช้ และการกำหนดบทบาทในระบบได้ โดยไม่จำเป็นต้องมีสิทธิ์ผู้ดูแลระบบเต็มรูปแบบ'
+        : 'Can manage user records, approval states, and role assignments without requiring full system administration.';
     case 'insightdocs:viewer':
-      return 'สิทธิ์สำหรับการเข้าดูข้อมูลเป็นหลัก สามารถดู dashboard ค้นหาเอกสาร และเปิดดูรายละเอียดเอกสารตามสิทธิ์ที่ระบบอนุญาตได้';
+      return language === 'th'
+        ? 'สิทธิ์สำหรับการเข้าดูข้อมูลเป็นหลัก สามารถดู dashboard ค้นหาเอกสาร และเปิดดูรายละเอียดเอกสารตามสิทธิ์ที่ระบบอนุญาตได้'
+        : 'Read-oriented access for dashboards, document search, and document detail views where permitted.';
     default:
-      return 'บทบาทสำหรับกำหนดสิทธิ์การใช้งานใน InsightDocs';
+      return language === 'th'
+        ? 'บทบาทสำหรับกำหนดสิทธิ์การใช้งานใน InsightDocs'
+        : 'Role used to determine access inside InsightDocs.';
   }
 }
 
@@ -87,8 +105,8 @@ export function getProjectRoles(roles: string[]) {
   );
 }
 
-export function getProjectRoleLabels(roles: string[]) {
-  return getProjectRoles(roles).map(formatProjectRoleLabel);
+export function getProjectRoleLabels(roles: string[], language: Language = 'th') {
+  return getProjectRoles(roles).map((role) => formatProjectRoleLabel(role, language));
 }
 
 export function normalizeUserStatus(status: UserStatusValue): UserStatus {
@@ -177,23 +195,23 @@ function normalizeProjectRole(role: string) {
   }
 }
 
-function formatProjectRoleLabel(role: ProjectRole | null) {
+function formatProjectRoleLabel(role: ProjectRole | null, language: Language = 'th') {
   switch (role) {
     case 'insightdocs:admin':
-      return 'ผู้ดูแลระบบ';
+      return language === 'th' ? 'ผู้ดูแลระบบ' : 'Administrator';
     case 'insightdocs:audit_reader':
-      return 'ผู้อ่าน Audit Log';
+      return language === 'th' ? 'ผู้อ่าน Audit Log' : 'Audit Reader';
     case 'insightdocs:document_controller':
-      return 'ผู้ควบคุมเอกสาร';
+      return language === 'th' ? 'ผู้ควบคุมเอกสาร' : 'Document Controller';
     case 'insightdocs:manager':
-      return 'ผู้อนุมัติ';
+      return language === 'th' ? 'ผู้อนุมัติ' : 'Manager';
     case 'insightdocs:signer':
-      return 'ผู้ลงนาม';
+      return language === 'th' ? 'ผู้ลงนาม' : 'Signer';
     case 'insightdocs:user_admin':
-      return 'ผู้ดูแลผู้ใช้';
+      return language === 'th' ? 'ผู้ดูแลผู้ใช้' : 'User Administrator';
     case 'insightdocs:viewer':
-      return 'ผู้ใช้งานทั่วไป';
+      return language === 'th' ? 'ผู้ใช้งานทั่วไป' : 'Viewer';
     default:
-      return 'ไม่ระบุบทบาท';
+      return language === 'th' ? 'ไม่ระบุบทบาท' : 'Unassigned role';
   }
 }

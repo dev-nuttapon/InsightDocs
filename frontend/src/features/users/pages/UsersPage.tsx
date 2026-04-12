@@ -5,10 +5,11 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { useAuth } from '../../auth/context/useAuth';
 import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 import { deleteUser, disableUser, enableUser, getUsers } from '../api/usersApi';
-import { canDisableUser, canEnableUser, getProjectRoleLabels, resolveUserStatus, type AppUser } from '../types';
+import { canDisableUser, canEnableUser, getProjectRoleLabels, getProjectRoles, resolveUserStatus, type AppUser } from '../types';
 import { StatCard } from '../../../shared/components/ui/StatCard';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { useTranslation } from '../../../i18n/useTranslation';
 
 type PendingAction =
   | {
@@ -19,6 +20,7 @@ type PendingAction =
 
 export function UsersPage() {
   const { accessToken } = useAuth();
+  const { language, t } = useTranslation();
   const location = useLocation();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export function UsersPage() {
         }
       } catch (loadError) {
         if (!ignore) {
-          setError(loadError instanceof Error ? loadError.message : 'Unable to load users.');
+          setError(loadError instanceof Error ? loadError.message : t('users.loadError'));
         }
       } finally {
         if (!ignore) {
@@ -58,7 +60,7 @@ export function UsersPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken]);
+  }, [accessToken, t]);
 
   async function runRowAction(
     userId: string,
@@ -88,7 +90,7 @@ export function UsersPage() {
       setError(null);
       setOpenMenuUserId(null);
     } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : 'Action failed.');
+      setError(actionError instanceof Error ? actionError.message : t('users.actionFailed'));
       setNotice(null);
     } finally {
       setBusyUserId(null);
@@ -103,7 +105,7 @@ export function UsersPage() {
     await runRowAction(
       user.id,
       () => deleteUser(user.id, accessToken),
-      'ลบผู้ใช้งานสำเร็จ',
+      t('users.deleteSuccess'),
       { remove: true },
     );
   }
@@ -112,7 +114,7 @@ export function UsersPage() {
     await runRowAction(
       user.id,
       () => disableUser(user.id, accessToken!),
-      'ปิดการใช้งานผู้ใช้สำเร็จ',
+      t('users.disableSuccess'),
     );
   }
 
@@ -120,7 +122,7 @@ export function UsersPage() {
     await runRowAction(
       user.id,
       () => enableUser(user.id, accessToken!),
-      'เปิดการใช้งานผู้ใช้สำเร็จ',
+      t('users.enableSuccess'),
     );
   }
 
@@ -145,55 +147,51 @@ export function UsersPage() {
     await handleDelete(user);
   }
 
-  const pendingActionCopy = getPendingActionCopy(pendingAction);
+  const pendingActionCopy = getPendingActionCopy(pendingAction, t);
 
   return (
     <div className="stack stack--xl">
       <PageHeader
-        title="Users & Access"
-        eyebrow="Administration"
-        description="สร้างผู้ใช้งานจากระบบนี้ แล้ว provision บัญชีไปยัง Keycloak พร้อมสร้าง access record ใน InsightDocs ให้เชื่อมกันอัตโนมัติ"
-        actions={<Link className="button" to="/users/new">Invite User</Link>}
+        title={t('users.title')}
+        eyebrow={t('users.eyebrow')}
+        description={t('users.description')}
+        actions={<Link className="button" to="/users/new">{t('users.createAction')}</Link>}
       />
 
       <ModuleMockup
-        eyebrow="Users Mockup"
-        title="ศูนย์จัดการผู้ใช้งานและสิทธิ์ของระบบ"
-        description="ใช้หน้านี้ในการดูรายชื่อผู้ใช้ ปรับสถานะการใช้งาน และเข้าถึงงานสร้างหรือแก้ไขผู้ใช้งานจากจุดเดียว"
-        highlights={['ผู้ใช้งานทั้งหมด', 'สถานะบัญชี', 'บทบาทในระบบ', 'Provision ไป Keycloak']}
-        steps={[
-          'ดูรายการผู้ใช้งานและบทบาทปัจจุบัน',
-          'เปิดเมนูตัวเลือกเพื่อแก้ไข เปิดใช้งาน หรือปิดการใช้งาน',
-          'สร้างผู้ใช้งานใหม่ผ่านหน้าเฉพาะแล้วผูกเข้ากับ Keycloak',
-        ]}
+        eyebrow={t('users.mockupEyebrow')}
+        title={t('users.mockupTitle')}
+        description={t('users.mockupDescription')}
+        highlights={t('users.mockupHighlights').split('|||')}
+        steps={t('users.mockupSteps').split('|||')}
         metrics={[
-          { label: 'จำนวนบัญชี', value: `${users.length} รายการ` },
-          { label: 'สถานะระบบ', value: 'Provisioned Access' },
+          { label: t('users.totalAccounts'), value: t('approvals.queueItems', { count: users.length }) },
+          { label: t('audit.operationalView'), value: t('users.provisionedAccess') },
         ]}
       />
 
       {notice ? <div className="callout">{notice}</div> : null}
 
       <div className="dashboard-summary-grid">
-        <StatCard label="Total Accounts" value={users.length} />
-        <StatCard label="Active Signers" value={users.filter(u => u.roles.includes('signer')).length} />
-        <StatCard label="Pending Approval" value={users.filter(u => !u.approvedAt).length} />
+        <StatCard label={t('users.totalAccounts')} value={users.length} />
+        <StatCard label={t('users.activeSigners')} value={users.filter((user) => getProjectRoles(user.roles).includes('insightdocs:signer')).length} />
+        <StatCard label={t('users.pendingApproval')} value={users.filter(u => !u.approvedAt).length} />
       </div>
 
       <section className="panel panel--full stack">
 
 
       {isLoading ? (
-        <p className="muted">Loading users...</p>
+        <p className="muted">{t('users.loading')}</p>
       ) : (
         <div className="table-wrap">
           <table className="table table--premium">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Sign-in Email</th>
-                <th>Status</th>
-                <th>Roles</th>
+                <th>{t('users.listName')}</th>
+                <th>{t('users.listEmail')}</th>
+                <th>{t('users.listStatus')}</th>
+                <th>{t('users.listRoles')}</th>
                 <th />
               </tr>
             </thead>
@@ -201,36 +199,36 @@ export function UsersPage() {
               {users.map((user) => (
                 <tr key={user.id}>
                   <td>
-                    <Link to={`/users/${user.id}/edit`} style={{ fontWeight: 700 }}>{formatUserName(user)}</Link>
-                    <div className="muted" style={{ fontSize: '12px' }}>ID: {user.id.slice(0, 8)}...</div>
+                    <Link className="users-table__name-link" to={`/users/${user.id}/edit`}>{formatUserName(user)}</Link>
+                    <div className="muted users-table__id">ID: {user.id.slice(0, 8)}...</div>
                   </td>
                   <td>{user.email}</td>
                   <td>
                     <StatusBadge status={resolveUserStatus(user.status, user.approvedAt)} />
-                    <div className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>
-                      {user.approvedAt ? `Approved ${new Date(user.approvedAt).toLocaleDateString()}` : 'Approval Pending'}
+                    <div className="muted users-table__status-note">
+                      {user.approvedAt ? t('users.approvedOn', { value: new Date(user.approvedAt).toLocaleDateString() }) : t('users.approvalPending')}
                     </div>
                   </td>
                   <td>
-                    {getProjectRoleLabels(user.roles).length > 0 ? (
+                    {getProjectRoleLabels(user.roles, language).length > 0 ? (
                       <div className="tag-list">
-                        {getProjectRoleLabels(user.roles).map((role) => (
+                        {getProjectRoleLabels(user.roles, language).map((role) => (
                           <span key={`${user.id}-${role}`} className="tag">
                             {role}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      'ไม่มีบทบาทในระบบ'
+                      t('users.noRoles')
                     )}
                   </td>
                   <td>
                     <div className="row-menu">
                       <button
                         className="button button--secondary row-menu__trigger"
-                        aria-label="ตัวเลือกการจัดการผู้ใช้"
+                        aria-label={t('users.actionMenuTitle')}
                         disabled={busyUserId === user.id}
-                        title="ตัวเลือก"
+                        title={t('users.actionMenuTitle')}
                         type="button"
                         onClick={() => setOpenMenuUserId((current) => (current === user.id ? null : user.id))}
                       >
@@ -238,14 +236,14 @@ export function UsersPage() {
                       </button>
                       {openMenuUserId === user.id ? (
                         <div className="topbar__menu-panel row-menu__panel">
-                          <p className="row-menu__title">จัดการผู้ใช้</p>
+                          <p className="row-menu__title">{t('users.actionMenuTitle')}</p>
                           <div className="row-menu__actions">
                             <Link
                               className="topbar__menu-link"
                               to={`/users/${user.id}/edit`}
                               onClick={() => setOpenMenuUserId(null)}
                             >
-                              แก้ไขข้อมูล
+                              {t('users.editAction')}
                             </Link>
                             {canDisableUser(user.status, user.approvedAt) ? (
                               <button
@@ -257,7 +255,7 @@ export function UsersPage() {
                                   setPendingAction({ type: 'disable', user });
                                 }}
                               >
-                                ปิดการใช้งาน
+                                {t('users.disableAction')}
                               </button>
                             ) : null}
                             {canEnableUser(user.status, user.approvedAt) ? (
@@ -270,7 +268,7 @@ export function UsersPage() {
                                   setPendingAction({ type: 'enable', user });
                                 }}
                               >
-                                เปิดการใช้งาน
+                                {t('users.enableAction')}
                               </button>
                             ) : null}
                             <button
@@ -282,7 +280,7 @@ export function UsersPage() {
                                 setPendingAction({ type: 'delete', user });
                               }}
                             >
-                              ลบผู้ใช้งาน
+                              {t('users.deleteAction')}
                             </button>
                           </div>
                         </div>
@@ -306,7 +304,7 @@ export function UsersPage() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="stack stack--compact">
-              <span className="sidebar__eyebrow">Confirm</span>
+              <span className="sidebar__eyebrow">{t('users.confirmEyebrow')}</span>
               <h3 id="users-action-modal-title">{pendingActionCopy.title}</h3>
               <p className="muted">{pendingActionCopy.message}</p>
             </div>
@@ -317,7 +315,7 @@ export function UsersPage() {
                 type="button"
                 onClick={() => void handleConfirmAction()}
               >
-                {busyUserId === pendingAction.user.id ? 'กำลังบันทึก...' : pendingActionCopy.confirmLabel}
+                {busyUserId === pendingAction.user.id ? t('users.saving') : pendingActionCopy.confirmLabel}
               </button>
               <button
                 className="button button--secondary"
@@ -325,7 +323,7 @@ export function UsersPage() {
                 type="button"
                 onClick={() => setPendingAction(null)}
               >
-                ยกเลิก
+                {t('users.cancel')}
               </button>
             </div>
           </div>
@@ -347,7 +345,7 @@ function formatUserName(user: AppUser) {
   return fullName || user.username;
 }
 
-function getPendingActionCopy(pendingAction: PendingAction) {
+function getPendingActionCopy(pendingAction: PendingAction, t: ReturnType<typeof useTranslation>['t']) {
   if (!pendingAction) {
     return null;
   }
@@ -357,23 +355,23 @@ function getPendingActionCopy(pendingAction: PendingAction) {
   switch (pendingAction.type) {
     case 'disable':
       return {
-        title: 'ยืนยันการปิดการใช้งานผู้ใช้',
-        message: `ต้องการปิดการใช้งาน ${userName} ใช่หรือไม่ ผู้ใช้นี้จะไม่สามารถเข้าสู่ระบบได้จนกว่าจะเปิดใช้งานอีกครั้ง`,
-        confirmLabel: 'ยืนยันการปิดการใช้งาน',
+        title: t('users.confirmDisableTitle'),
+        message: t('users.confirmDisableMessage', { name: userName }),
+        confirmLabel: t('users.confirmDisableButton'),
         tone: 'default' as const,
       };
     case 'enable':
       return {
-        title: 'ยืนยันการเปิดการใช้งานผู้ใช้',
-        message: `ต้องการเปิดการใช้งาน ${userName} ใช่หรือไม่ ผู้ใช้นี้จะสามารถกลับเข้าสู่ระบบได้อีกครั้ง`,
-        confirmLabel: 'ยืนยันการเปิดการใช้งาน',
+        title: t('users.confirmEnableTitle'),
+        message: t('users.confirmEnableMessage', { name: userName }),
+        confirmLabel: t('users.confirmEnableButton'),
         tone: 'default' as const,
       };
     case 'delete':
       return {
-        title: 'ยืนยันการลบผู้ใช้',
-        message: `ต้องการลบ ${userName} ออกจาก InsightDocs และ Keycloak ใช่หรือไม่ การดำเนินการนี้ไม่สามารถย้อนกลับได้`,
-        confirmLabel: 'ยืนยันการลบ',
+        title: t('users.confirmDeleteTitle'),
+        message: t('users.confirmDeleteMessage', { name: userName }),
+        confirmLabel: t('users.confirmDeleteButton'),
         tone: 'danger' as const,
       };
     default:

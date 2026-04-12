@@ -6,10 +6,12 @@ import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { useAuth } from '../../../features/auth/context/useAuth';
 import { buildAccessProfile } from '../../auth/authorization';
+import { isDemoModeEnabled } from '../../mock/demoMode';
 
 export function AppShell() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const demoMode = isDemoModeEnabled();
   const location = useLocation();
   const [openSection, setOpenSection] = useState<'workspace' | 'actions' | 'admin'>('workspace');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -117,6 +119,12 @@ export function AppShell() {
       <main className="content">
         <header className="topbar">
           <div className="topbar__leading">
+            {demoMode ? (
+              <NavLink className="topbar__demo-chip" to="/dashboard">
+                <span className="topbar__demo-dot" aria-hidden="true" />
+                <span>{t('demo.controlTopbar')}</span>
+              </NavLink>
+            ) : null}
             <button 
               className="mobile-only button button--secondary topbar__mobile-trigger"
               onClick={() => setIsMobileMenuOpen(true)}

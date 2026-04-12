@@ -3,9 +3,11 @@ import { Navigate, useLocation } from 'react-router-dom';
 
 import { buildAccessProfile, canAccessPath, resolveDefaultAuthorizedPath } from '../../../shared/auth/authorization';
 import { useAuth } from '../context/useAuth';
+import { useTranslation } from '../../../i18n/useTranslation';
 
 export function LoginPage() {
   const location = useLocation();
+  const { t } = useTranslation();
   const { authState, isAuthenticated, isReady, login, error, user } = useAuth();
   const redirectTarget = readRedirectTarget(location.state);
   const entryError = readEntryError(location.state) ?? error;
@@ -29,7 +31,7 @@ export function LoginPage() {
   }, [entryError, isAuthenticated, isExpiredSession, isReady, login, redirectTarget]);
 
   if (isAuthenticated && !hasMappedAccess) {
-    return <Navigate replace to="/unauthorized" state={{ errorMessage: 'This account is authenticated but does not have any mapped InsightDocs roles.' }} />;
+    return <Navigate replace to="/unauthorized" state={{ errorMessage: t('auth.noMappedRoles') }} />;
   }
 
   if (isAuthenticated) {
@@ -38,20 +40,20 @@ export function LoginPage() {
 
   const isBusy = !isReady || authState === 'loading';
   const heading = entryError && !isExpiredSession
-    ? 'Keycloak sign-in needs attention'
+    ? t('auth.loginAttentionTitle')
     : authState === 'expired'
-      ? 'Session expired'
-      : 'Checking your session';
+      ? t('auth.sessionExpiredTitle')
+      : t('auth.checkingSessionTitle');
   const description = entryError && !isExpiredSession
-    ? 'The sign-in flow returned with an error. Review the message below, then retry once Keycloak or the backend is ready.'
+    ? t('auth.loginAttentionDescription')
     : authState === 'expired'
-      ? 'เซสชันเดิมไม่สามารถใช้งานต่อได้ ระบบจะพาคุณไปเริ่ม login ใหม่ผ่าน Keycloak'
-      : 'กำลังตรวจสอบ session ปัจจุบัน และจะส่งคุณไปยังหน้า login ของ Keycloak โดยอัตโนมัติถ้ายังไม่ได้เข้าสู่ระบบ';
+      ? t('auth.sessionExpiredDescription')
+      : t('auth.checkingSessionDescription');
 
   return (
     <section className="auth-layout">
       <article className="panel auth-panel auth-panel--form">
-        <span className="sidebar__eyebrow">Authentication</span>
+        <span className="sidebar__eyebrow">{t('auth.eyebrow')}</span>
         <h2>{heading}</h2>
         <p className="muted">{description}</p>
 
@@ -60,24 +62,24 @@ export function LoginPage() {
         {entryError && !isExpiredSession ? (
           <div className="actions">
             <button className="button button--wide" type="button" onClick={() => void login(redirectTarget)} disabled={isBusy}>
-              {isBusy ? 'Redirecting...' : 'Retry Keycloak Login'}
+              {isBusy ? t('auth.redirecting') : t('auth.retryLogin')}
             </button>
           </div>
         ) : (
           <div className="card">
-            <span className="card__label">Automatic Redirect</span>
-            <strong>Sending you to Keycloak now</strong>
+            <span className="card__label">{t('auth.automaticRedirect')}</span>
+            <strong>{t('auth.sendingToKeycloak')}</strong>
             <div className="muted">
-              If nothing happens, check that `auth.localhost` is reachable and reload this page.
+              {t('auth.redirectHint')}
             </div>
           </div>
         )}
 
         <div className="auth-metadata">
           <div className="card">
-            <span className="card__label">Session Return</span>
+            <span className="card__label">{t('auth.sessionReturn')}</span>
             <strong>{redirectTarget}</strong>
-            <div className="muted">If access to that page is not permitted, the app will send you to the first page allowed by your InsightDocs roles.</div>
+            <div className="muted">{t('auth.sessionReturnDescription')}</div>
           </div>
         </div>
       </article>

@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { createForgotPasswordRequest } from '../api/authApi';
+import { useTranslation } from '../../../i18n/useTranslation';
 
 export function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [value, setValue] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -14,8 +16,8 @@ export function ForgotPasswordPage() {
       <div className="auth-card stack">
         <div className="auth-header">
           <div className="auth-brand">ID</div>
-          <h2 className="auth-title">Password Reset</h2>
-          <p className="muted">An Admin will review your request and manually provide a secure reset link.</p>
+          <h2 className="auth-title">{t('auth.forgotPasswordTitle')}</h2>
+          <p className="muted">{t('auth.forgotPasswordDescription')}</p>
         </div>
 
         {error ? <div className="callout callout--danger">{error}</div> : null}
@@ -28,11 +30,11 @@ export function ForgotPasswordPage() {
             setIsSubmitting(true);
             try {
               await createForgotPasswordRequest(value);
-              setNotice('Password reset request submitted for Admin review.');
+              setNotice(t('auth.forgotPasswordNotice'));
               setError(null);
               setValue('');
             } catch (submitError) {
-              setError(submitError instanceof Error ? submitError.message : 'Unable to create reset request.');
+              setError(submitError instanceof Error ? submitError.message : t('auth.forgotPasswordError'));
               setNotice(null);
             } finally {
               setIsSubmitting(false);
@@ -40,23 +42,23 @@ export function ForgotPasswordPage() {
           }}
         >
           <div className="stack">
-            <span className="card__label">Account Email</span>
+            <span className="card__label">{t('auth.accountEmail')}</span>
             <input 
               className="input input--large" 
-              placeholder="name@organization.com" 
+              placeholder={t('auth.emailPlaceholder')} 
               type="email" 
               value={value} 
               onChange={(event) => setValue(event.target.value)} 
               required
             />
           </div>
-          <button className="button button--large" disabled={isSubmitting} type="submit" style={{ marginTop: '12px' }}>
-            {isSubmitting ? 'Submitting Request...' : 'Request Reset Link'}
+          <button className="button button--large auth-submit-button" disabled={isSubmitting} type="submit">
+            {isSubmitting ? t('auth.submittingRequest') : t('auth.requestResetLink')}
           </button>
         </form>
 
-        <div className="actions" style={{ justifyContent: 'center', marginTop: '24px', borderTop: '1px solid var(--color-border)', paddingTop: '24px' }}>
-          <Link className="button button--secondary" to="/login">Back to Sign In</Link>
+        <div className="actions auth-footer-actions">
+          <Link className="button button--secondary" to="/login">{t('auth.backToSignIn')}</Link>
         </div>
       </div>
     </div>

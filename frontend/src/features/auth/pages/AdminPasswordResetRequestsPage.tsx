@@ -7,9 +7,11 @@ import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { StatCard } from '../../../shared/components/ui/StatCard';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { useTranslation } from '../../../i18n/useTranslation';
 
 export function AdminPasswordResetRequestsPage() {
   const { accessToken } = useAuth();
+  const { t } = useTranslation();
   const [requests, setRequests] = useState<PasswordResetRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export function AdminPasswordResetRequestsPage() {
         }
       } catch (loadError) {
         if (!ignore) {
-          setError(loadError instanceof Error ? loadError.message : 'Unable to load reset requests.');
+          setError(loadError instanceof Error ? loadError.message : t('passwordReset.loadError'));
         }
       }
     }
@@ -39,7 +41,7 @@ export function AdminPasswordResetRequestsPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken]);
+  }, [accessToken, t]);
 
   async function refresh() {
     if (!accessToken) {
@@ -56,12 +58,12 @@ export function AdminPasswordResetRequestsPage() {
     }
 
     try {
-      const result = await approvePasswordResetRequest(id, 'Approved by admin.', accessToken);
+      const result = await approvePasswordResetRequest(id, t('passwordReset.approveComment'), accessToken);
       await refresh();
-      setNotice(result.resetUrl ? `Reset link generated: ${result.resetUrl}` : 'Request approved.');
+      setNotice(result.resetUrl ? t('passwordReset.generatedLink', { url: result.resetUrl }) : t('passwordReset.approvedNotice'));
       setError(null);
     } catch (approveError) {
-      setError(approveError instanceof Error ? approveError.message : 'Approval failed.');
+      setError(approveError instanceof Error ? approveError.message : t('passwordReset.approveError'));
       setNotice(null);
     }
   }
@@ -72,12 +74,12 @@ export function AdminPasswordResetRequestsPage() {
     }
 
     try {
-      await rejectPasswordResetRequest(id, 'Rejected by admin.', accessToken);
+      await rejectPasswordResetRequest(id, t('passwordReset.rejectComment'), accessToken);
       await refresh();
-      setNotice('Request rejected.');
+      setNotice(t('passwordReset.rejectedNotice'));
       setError(null);
     } catch (rejectError) {
-      setError(rejectError instanceof Error ? rejectError.message : 'Rejection failed.');
+      setError(rejectError instanceof Error ? rejectError.message : t('passwordReset.rejectError'));
       setNotice(null);
     }
   }
@@ -88,37 +90,33 @@ export function AdminPasswordResetRequestsPage() {
     }
 
     await navigator.clipboard.writeText(resetUrl);
-    setNotice('Reset link copied.');
+    setNotice(t('passwordReset.copiedNotice'));
   }
 
   return (
     <div className="stack stack--xl">
       <PageHeader
-        title="คำขอรีเซ็ตรหัสผ่าน"
-        eyebrow="Administration"
-        description="ตรวจสอบคำขอรีเซ็ตรหัสผ่าน อนุมัติหรือปฏิเสธคำขอ และคัดลอกลิงก์รีเซ็ตเพื่อส่งต่อให้ผู้ใช้งานด้วยตนเอง"
+        title={t('passwordReset.title')}
+        eyebrow={t('passwordReset.eyebrow')}
+        description={t('passwordReset.description')}
       />
 
       <ModuleMockup
-        eyebrow="Reset Flow Mockup"
-        title="คิวคำขอรีเซ็ตรหัสผ่านที่ดูแลโดยผู้ดูแลระบบ"
-        description="ใช้ตรวจคำขอรีเซ็ตรหัสผ่านแบบไม่ส่งอีเมลอัตโนมัติ อนุมัติหรือปฏิเสธ และคัดลอกลิงก์รีเซ็ตเพื่อส่งให้ผู้ใช้ด้วยตนเอง"
-        highlights={['Pending Request', 'Approve / Reject', 'Manual Link Sharing', 'Audit-ready Flow']}
-        steps={[
-          'เปิดคำขอที่ผู้ใช้ส่งเข้ามา',
-          'อนุมัติหรือปฏิเสธตามนโยบายขององค์กร',
-          'คัดลอกลิงก์รีเซ็ตและส่งต่อให้ผู้ใช้ด้วยช่องทางภายใน',
-        ]}
+        eyebrow={t('passwordReset.mockupEyebrow')}
+        title={t('passwordReset.mockupTitle')}
+        description={t('passwordReset.mockupDescription')}
+        highlights={t('passwordReset.mockupHighlights').split('|||')}
+        steps={t('passwordReset.mockupSteps').split('|||')}
         metrics={[
-          { label: 'คำขอทั้งหมด', value: `${requests.length} รายการ` },
-          { label: 'รูปแบบการส่งลิงก์', value: 'Manual Admin Hand-off' },
+          { label: t('passwordReset.totalRequests'), value: t('approvals.queueItems', { count: requests.length }) },
+          { label: t('users.accountDestination'), value: t('passwordReset.manualHandOff') },
         ]}
       />
 
       <div className="dashboard-summary-grid">
-        <StatCard label="คำขอทั้งหมด" value={requests.length} />
-        <StatCard label="รอพิจารณา" value={requests.filter((request) => request.status === 'Pending').length} />
-        <StatCard label="อนุมัติแล้ว" value={requests.filter((request) => request.status === 'Approved').length} />
+        <StatCard label={t('passwordReset.totalRequests')} value={requests.length} />
+        <StatCard label={t('passwordReset.pending')} value={requests.filter((request) => request.status === 'Pending').length} />
+        <StatCard label={t('passwordReset.approved')} value={requests.filter((request) => request.status === 'Approved').length} />
       </div>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
@@ -126,14 +124,14 @@ export function AdminPasswordResetRequestsPage() {
 
       <section className="panel panel--full stack">
         <div className="section-heading">
-          <span className="sidebar__eyebrow">Queue</span>
-          <h3>รายการคำขอ</h3>
+          <span className="sidebar__eyebrow">{t('passwordReset.queueEyebrow')}</span>
+          <h3>{t('passwordReset.queueTitle')}</h3>
         </div>
 
         {requests.length === 0 ? (
           <EmptyState 
-            title="ไม่มีคำขอรีเซ็ตรหัสผ่าน" 
-            description="คำขอที่ผู้ใช้ส่งเข้ามาเพื่อรีเซ็ตรหัสผ่านจะแสดงในส่วนนี้เมื่อมีรายการใหม่" 
+            title={t('passwordReset.emptyTitle')} 
+            description={t('passwordReset.emptyDescription')} 
           />
         ) : (
           <div className="registry-list">
@@ -149,21 +147,21 @@ export function AdminPasswordResetRequestsPage() {
                   </div>
 
                   <div className="registry-meta">
-                    <span>ผู้ร้องขอ: {request.requestedByIdentifier}</span>
-                    <span>วันที่ {new Date(request.requestedAt).toLocaleDateString()}</span>
-                    <span>เวลา {new Date(request.requestedAt).toLocaleTimeString()}</span>
+                    <span>{t('passwordReset.requestedBy', { value: request.requestedByIdentifier })}</span>
+                    <span>{t('passwordReset.requestedDate', { value: new Date(request.requestedAt).toLocaleDateString() })}</span>
+                    <span>{t('passwordReset.requestedTime', { value: new Date(request.requestedAt).toLocaleTimeString() })}</span>
                   </div>
 
                   {request.reviewComment ? (
                     <div className="callout">
-                      <strong>ความเห็นการพิจารณา</strong>
+                      <strong>{t('passwordReset.reviewComment')}</strong>
                       <div className="muted">{request.reviewComment}</div>
                     </div>
                   ) : null}
 
                   {request.resetUrl ? (
                     <div className="callout">
-                      <strong>ลิงก์รีเซ็ตรหัสผ่าน</strong>
+                      <strong>{t('passwordReset.resetLink')}</strong>
                       <div className="audit-metadata">
                         <code>{request.resetUrl}</code>
                       </div>
@@ -175,16 +173,16 @@ export function AdminPasswordResetRequestsPage() {
                   {request.status === 'Pending' ? (
                     <>
                       <button className="button" type="button" onClick={() => void handleApprove(request.id)}>
-                        อนุมัติ
+                        {t('passwordReset.approve')}
                       </button>
                       <button className="button button--secondary" type="button" onClick={() => void handleReject(request.id)}>
-                        ปฏิเสธ
+                        {t('passwordReset.reject')}
                       </button>
                     </>
                   ) : null}
                   {request.resetUrl ? (
                     <button className="button button--secondary" type="button" onClick={() => void handleCopy(request.resetUrl)}>
-                      คัดลอกลิงก์
+                      {t('passwordReset.copyLink')}
                     </button>
                   ) : null}
                 </div>

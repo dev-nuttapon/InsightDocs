@@ -14,6 +14,7 @@ import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioP
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { getDemoAuditLog, getDemoAuditLogs, getDemoScenarioState } from '../../../shared/mock/demoScenario';
 import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
+import { useTranslation } from '../../../i18n/useTranslation';
 
 const defaultFilters: AuditLogFilters = {
   actor: '',
@@ -27,6 +28,7 @@ const defaultFilters: AuditLogFilters = {
 
 export function AuditLogsPage() {
   const { accessToken } = useAuth();
+  const { language, t } = useTranslation();
   const demoMode = isDemoModeEnabled();
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<AuditLogFilters>({
@@ -41,7 +43,7 @@ export function AuditLogsPage() {
   const [results, setResults] = useState<AuditLogListResponse | null>(null);
   const [selectedLog, setSelectedLog] = useState<AuditLogDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const scenarioState = getDemoScenarioState('demo-contract-001');
+  const scenarioState = getDemoScenarioState('demo-contract-001', language);
 
   useEffect(() => {
     let ignore = false;
@@ -49,9 +51,9 @@ export function AuditLogsPage() {
     async function load() {
       if (demoMode) {
         if (!ignore) {
-          const payload = getDemoAuditLogs(filters);
+          const payload = getDemoAuditLogs(filters, language);
           setResults(payload);
-          setSelectedLog(payload.items.length > 0 ? getDemoAuditLog(payload.items[0].id) : null);
+          setSelectedLog(payload.items.length > 0 ? getDemoAuditLog(payload.items[0].id, language) : null);
           setError(null);
         }
         return;
@@ -69,7 +71,7 @@ export function AuditLogsPage() {
         }
       } catch (loadError) {
         if (!ignore) {
-          setError(loadError instanceof Error ? loadError.message : 'Unable to load audit logs.');
+          setError(loadError instanceof Error ? loadError.message : t('audit.loadError'));
         }
       }
     }
@@ -79,11 +81,11 @@ export function AuditLogsPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken, demoMode, filters]);
+  }, [accessToken, demoMode, filters, language, t]);
 
   async function handleSelectAuditLog(id: string) {
     if (demoMode) {
-      setSelectedLog(getDemoAuditLog(id));
+      setSelectedLog(getDemoAuditLog(id, language));
       setError(null);
       return;
     }
@@ -97,7 +99,7 @@ export function AuditLogsPage() {
       setSelectedLog(detail);
       setError(null);
     } catch (detailError) {
-      setError(detailError instanceof Error ? detailError.message : 'Unable to load audit log detail.');
+      setError(detailError instanceof Error ? detailError.message : t('audit.detailError'));
     }
   }
 
@@ -121,7 +123,7 @@ export function AuditLogsPage() {
   );
   const formattedMetadata = useMemo(() => {
     if (!selectedLog?.metadataJson) {
-      return 'No metadata';
+      return t('audit.noMetadata');
     }
 
     try {
@@ -136,60 +138,56 @@ export function AuditLogsPage() {
     return [
       {
         id: 'actor',
-        title: 'Actor Information',
-        time: selectedLog.actorDisplayName ?? selectedLog.actorUsername ?? 'System',
-        body: <div className="muted">{selectedLog.actorUserId ? `User ID: ${selectedLog.actorUserId}` : 'Internal Event'}</div>,
+        title: t('audit.actorValue'),
+        time: selectedLog.actorDisplayName ?? selectedLog.actorUsername ?? t('audit.system'),
+        body: <div className="muted">{selectedLog.actorUserId ? t('audit.userIdLabel', { value: selectedLog.actorUserId }) : t('audit.internalEvent')}</div>,
         status: 'info',
       },
       {
         id: 'action',
-        title: 'Action Performed',
+        title: t('audit.eventLabel'),
         time: selectedLog.action,
-        body: <div className="muted">Target: {selectedLog.entityType} ({selectedLog.entityId ?? 'N/A'})</div>,
+        body: <div className="muted">{t('audit.targetLabel', { type: selectedLog.entityType, id: selectedLog.entityId ?? '-' })}</div>,
         status: selectedLog.action.toLowerCase().includes('reject') || selectedLog.action.toLowerCase().includes('delete') ? 'danger' : 'success',
       },
       {
         id: 'document',
-        title: 'Related Document',
-        time: selectedLog.relatedDocumentId ? 'Linked' : 'None',
+        title: t('documents.title'),
+        time: selectedLog.relatedDocumentId ? t('audit.linked') : t('audit.none'),
         body: selectedLog.relatedDocumentId ? (
-          <Link to={`/documents/${selectedLog.relatedDocumentId}`} className="button button--secondary" style={{ padding: '4px 8px', fontSize: '11px' }}>
-            View Document
+          <Link to={`/documents/${selectedLog.relatedDocumentId}`} className="button button--secondary audit-linked-button">
+            {t('audit.viewDocument')}
           </Link>
         ) : null,
         status: 'info',
       },
     ];
-  }, [selectedLog]);
+  }, [selectedLog, t]);
 
   const eventLabelMap: Record<string, string> = {
-    'document.version.created': 'สร้างเวอร์ชันใหม่',
-    'document.approval.submitted': 'ส่งเข้าพิจารณา',
-    'document.approval.approved': 'อนุมัติเอกสาร',
-    'document.signature.signed': 'ลงนามเอกสาร',
+    'document.version.created': t('audit.eventVersionCreated'),
+    'document.approval.submitted': t('audit.eventApprovalSubmitted'),
+    'document.approval.approved': t('audit.eventApprovalApproved'),
+    'document.signature.signed': t('audit.eventSignatureSigned'),
   };
 
   return (
     <div className="stack stack--xl">
       <PageHeader
-        title="Audit log"
-        eyebrow="Audit"
-        description="ติดตามเหตุการณ์สำคัญของระบบย้อนหลัง ตรวจสอบผู้กระทำ รายการที่เกี่ยวข้อง และดู metadata ของเหตุการณ์แต่ละรายการ"
+        title={t('audit.title')}
+        eyebrow={t('audit.eyebrow')}
+        description={t('audit.description')}
       />
 
       <ModuleMockup
-        eyebrow="Audit Mockup"
-        title="ศูนย์ติดตามเหตุการณ์สำคัญของระบบ"
-        description="ใช้หน้านี้ในการสืบค้นเหตุการณ์ย้อนหลัง เลือกดูรายละเอียดเชิงลึก และเชื่อมกลับไปยังเอกสารหรือผู้ใช้งานที่เกี่ยวข้อง"
-        highlights={['Append-only Log', 'Actor Traceability', 'Event Detail', 'Related Document Link']}
-        steps={[
-          'กรองเหตุการณ์ด้วยผู้กระทำ ประเภทเหตุการณ์ หรือ document id',
-          'เลือก event ที่ต้องการเพื่อตรวจ metadata และ timeline',
-          'ย้อนกลับไปยังเอกสารหรือผู้ใช้งานที่เกี่ยวข้องเมื่อจำเป็น',
-        ]}
+        eyebrow={t('audit.mockupEyebrow')}
+        title={t('audit.mockupTitle')}
+        description={t('audit.mockupDescription')}
+        highlights={t('audit.mockupHighlights').split('|||')}
+        steps={t('audit.mockupSteps').split('|||')}
         metrics={[
-          { label: 'รายการทั้งหมด', value: `${results?.totalCount ?? 0} เหตุการณ์` },
-          { label: 'มุมมอง', value: 'Operational Traceability' },
+          { label: t('audit.totalItems'), value: t('approvals.queueItems', { count: results?.totalCount ?? 0 }) },
+          { label: t('audit.operationalView'), value: t('audit.traceability') },
         ]}
       />
 
@@ -197,48 +195,47 @@ export function AuditLogsPage() {
         compact
         state={{
           ...scenarioState,
-          badge: 'Audit Trail Available',
-          headline: 'เหตุการณ์ของเอกสารตัวอย่างถูกเชื่อมกลับจาก version, approval และ signature มาไว้ใน timeline เดียว',
-          nextStep: 'เลือกรายการทางซ้ายเพื่อแสดง metadata ของเหตุการณ์และย้อนกลับไปยังเอกสารที่เกี่ยวข้อง',
-          primaryAction: { label: 'เปิดเอกสารตัวอย่าง', to: '/documents/demo-contract-001' },
+          badge: t('audit.trailBadge'),
+          headline: t('audit.trailHeadline'),
+          nextStep: t('audit.trailNextStep'),
+          primaryAction: { label: t('audit.openDemoDocument'), to: '/documents/demo-contract-001' },
         }}
-        secondaryAction={{ label: 'กลับไป dashboard', to: '/dashboard' }}
+        secondaryAction={{ label: t('search.backToDashboard'), to: '/dashboard' }}
       />
 
       <div className="dashboard-summary-grid">
-        <StatCard label="Total Activities" value={results?.totalCount ?? 0} />
-        <StatCard label="Recent Events" value={results?.items.length ?? 0} />
-        <StatCard label="Active Filters" value={Object.values(filters).filter(v => typeof v === 'string' && v.trim() !== '' && v !== '1' && v !== '20').length} />
+        <StatCard label={t('audit.totalActivities')} value={results?.totalCount ?? 0} />
+        <StatCard label={t('audit.recentEvents')} value={results?.items.length ?? 0} />
+        <StatCard label={t('audit.activeFilters')} value={Object.values(filters).filter(v => typeof v === 'string' && v.trim() !== '' && v !== '1' && v !== '20').length} />
       </div>
 
       <section className="panel panel--full stack">
         <div className="filter-bar">
           <div className="filter-group">
-            <span className="filter-bar__label">ผู้กระทำ</span>
-            <input className="input" placeholder="ชื่อหรืออีเมล" value={filters.actor ?? ''} onChange={(event) => updateFilters({ actor: event.target.value, page: 1 })} />
+            <span className="filter-bar__label">{t('audit.actorLabel')}</span>
+            <input className="input" placeholder={t('audit.actorPlaceholder')} value={filters.actor ?? ''} onChange={(event) => updateFilters({ actor: event.target.value, page: 1 })} />
           </div>
           <div className="filter-group">
-            <span className="filter-bar__label">เหตุการณ์</span>
-            <input className="input" placeholder="เช่น Approved, Created, Signed" value={filters.action ?? ''} onChange={(event) => updateFilters({ action: event.target.value, page: 1 })} />
+            <span className="filter-bar__label">{t('audit.actionLabel')}</span>
+            <input className="input" placeholder={t('audit.actionPlaceholder')} value={filters.action ?? ''} onChange={(event) => updateFilters({ action: event.target.value, page: 1 })} />
           </div>
           <div className="filter-group">
-            <span className="filter-bar__label">Document ID</span>
-            <input className="input" placeholder="UUID ของเอกสาร" value={filters.documentId ?? ''} onChange={(event) => updateFilters({ documentId: event.target.value, page: 1 })} />
+            <span className="filter-bar__label">{t('audit.documentIdLabel')}</span>
+            <input className="input" placeholder={t('audit.documentIdPlaceholder')} value={filters.documentId ?? ''} onChange={(event) => updateFilters({ documentId: event.target.value, page: 1 })} />
           </div>
-          <button 
-            className="button button--secondary" 
+          <button
+            className="button button--secondary filter-action-button"
             type="button"
-            style={{ height: '42px' }}
             onClick={() => updateFilters(defaultFilters)}
             disabled={Object.entries(filters).every(([k, v]) => k === 'page' || k === 'pageSize' || v === '')}
           >
-            Reset
+            {t('audit.reset')}
           </button>
         </div>
 
         <div className="filter-chip-list">
-          {filters.from && <span className="filter-chip"><span className="filter-chip__label">From:</span> {filters.from} <button className="filter-chip__remove" onClick={() => updateFilters({ from: '' })}>×</button></span>}
-          {filters.to && <span className="filter-chip"><span className="filter-chip__label">To:</span> {filters.to} <button className="filter-chip__remove" onClick={() => updateFilters({ to: '' })}>×</button></span>}
+          {filters.from && <span className="filter-chip"><span className="filter-chip__label">{t('audit.fromChip')}</span> {filters.from} <button className="filter-chip__remove" onClick={() => updateFilters({ from: '' })}>×</button></span>}
+          {filters.to && <span className="filter-chip"><span className="filter-chip__label">{t('audit.toChip')}</span> {filters.to} <button className="filter-chip__remove" onClick={() => updateFilters({ to: '' })}>×</button></span>}
         </div>
 
         {error ? <div className="callout callout--danger">{error}</div> : null}
@@ -247,12 +244,12 @@ export function AuditLogsPage() {
           <section className="stack">
             <div className="registry-toolbar">
               <span className="muted">
-                แสดง {results?.items.length ?? 0} จาก {results?.totalCount ?? 0} รายการ
+                {t('audit.showingCount', { count: results?.items.length ?? 0, total: results?.totalCount ?? 0 })}
               </span>
             </div>
 
             {(results?.items.length ?? 0) === 0 ? (
-              <EmptyState title="ไม่พบรายการ" description="ลองเปลี่ยนเงื่อนไขการค้นหาเพื่อดูเหตุการณ์เพิ่มเติม" />
+              <EmptyState title={t('audit.emptyTitle')} description={t('audit.emptyDescription')} />
             ) : (
               <div className="registry-list">
                 {results?.items.map((item) => (
@@ -274,7 +271,7 @@ export function AuditLogsPage() {
                         <div className="stack stack--compact">
                           <div className="registry-item__title">{eventLabelMap[item.action] ?? item.action}</div>
                           <p className="muted">
-                            {item.actorDisplayName ?? item.actorUsername ?? 'System'} • {item.entityType}
+                            {item.actorDisplayName ?? item.actorUsername ?? t('audit.system')} • {item.entityType}
                           </p>
                         </div>
                         <StatusBadge status={mapAuditStatus(item.action)} />
@@ -283,18 +280,18 @@ export function AuditLogsPage() {
                       <div className="registry-meta">
                         <span>{new Date(item.timestamp).toLocaleDateString()}</span>
                         <span>{new Date(item.timestamp).toLocaleTimeString()}</span>
-                        <span>Entity ID: {item.entityId ?? '-'}</span>
+                        <span>{t('audit.entityIdValue', { value: item.entityId ?? '-' })}</span>
                       </div>
 
                       <div className="registry-meta">
-                        <span>Actor ID: {item.actorUserId ?? '-'}</span>
-                        <span>Document: {item.relatedDocumentId ?? '-'}</span>
+                        <span>{t('audit.actorIdValue', { value: item.actorUserId ?? '-' })}</span>
+                        <span>{t('audit.documentValue', { value: item.relatedDocumentId ?? '-' })}</span>
                       </div>
                     </div>
 
                     <div className="registry-item__actions">
                       <button className="button button--secondary" type="button">
-                        ดูรายละเอียด
+                        {t('audit.detailButton')}
                       </button>
                     </div>
                   </article>
@@ -304,39 +301,39 @@ export function AuditLogsPage() {
           </section>
 
           <aside className="stack">
-            <div className="panel stack" style={{ padding: '24px', position: 'sticky', top: '24px' }}>
-              <h3 className="form-section__title">รายละเอียดเหตุการณ์</h3>
+            <div className="panel stack audit-detail-panel">
+              <h3 className="form-section__title">{t('audit.detailTitle')}</h3>
               {selectedLog ? (
                 <div className="stack">
                   <dl className="detail-list">
                     <div>
-                      <dt>เหตุการณ์</dt>
+                      <dt>{t('audit.eventLabel')}</dt>
                       <dd>{eventLabelMap[selectedLog.action] ?? selectedLog.action}</dd>
                     </div>
                     <div>
-                      <dt>ผู้กระทำ</dt>
-                      <dd>{selectedLog.actorDisplayName ?? selectedLog.actorUsername ?? 'System'}</dd>
+                      <dt>{t('audit.actorValue')}</dt>
+                      <dd>{selectedLog.actorDisplayName ?? selectedLog.actorUsername ?? t('audit.system')}</dd>
                     </div>
                     <div>
-                      <dt>วันเวลา</dt>
+                      <dt>{t('audit.timeLabel')}</dt>
                       <dd>{new Date(selectedLog.timestamp).toLocaleString()}</dd>
                     </div>
                     <div>
-                      <dt>Entity</dt>
+                      <dt>{t('audit.entityLabel')}</dt>
                       <dd>{selectedLog.entityType} ({selectedLog.entityId ?? '-'})</dd>
                     </div>
                   </dl>
 
                   <Timeline items={timelineItems} />
                   <div className="audit-meta-viewer">
-                    <div className="muted" style={{ marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase' }}>Structured Metadata</div>
+                    <div className="muted audit-meta-heading">{t('audit.structuredMetadata')}</div>
                     <pre>{formattedMetadata}</pre>
                   </div>
                 </div>
               ) : (
                 <EmptyState 
-                  title="ยังไม่ได้เลือกรายการ" 
-                  description="เลือกรายการจากฝั่งซ้ายเพื่อดูรายละเอียดและ metadata ของเหตุการณ์" 
+                  title={t('audit.noSelectionTitle')} 
+                  description={t('audit.noSelectionDescription')} 
                 />
               )}
             </div>
@@ -345,12 +342,12 @@ export function AuditLogsPage() {
 
         <div className="actions">
           <button className="button button--secondary" disabled={filters.page <= 1} type="button" onClick={() => updateFilters({ page: filters.page - 1 })}>
-            Previous
-          </button>
-          <span className="muted">Page {filters.page} of {totalPages}</span>
-          <button className="button button--secondary" disabled={filters.page >= totalPages} type="button" onClick={() => updateFilters({ page: filters.page + 1 })}>
-            Next
-          </button>
+          {t('audit.previous')}
+        </button>
+        <span className="muted">{t('audit.pageOf', { page: filters.page, total: totalPages })}</span>
+        <button className="button button--secondary" disabled={filters.page >= totalPages} type="button" onClick={() => updateFilters({ page: filters.page + 1 })}>
+          {t('audit.next')}
+        </button>
         </div>
       </section>
     </div>

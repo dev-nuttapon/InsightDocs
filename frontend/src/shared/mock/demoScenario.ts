@@ -1039,15 +1039,15 @@ export function getDemoDocumentDetail(id: string, language: Language = 'th') {
   return detail ? cloneDemo(localizeDocumentDetail(detail, language)) : null;
 }
 
-export function getDemoDocumentVersions(id: string) {
+export function getDemoDocumentVersions(id: string, _language: Language = 'th') {
   return cloneDemo(readSnapshot().versions[id] ?? []);
 }
 
-export function getDemoApprovalHistory(id: string) {
+export function getDemoApprovalHistory(id: string, _language: Language = 'th') {
   return cloneDemo(readSnapshot().approvalHistory[id] ?? []);
 }
 
-export function getDemoDocumentSignatures(id: string) {
+export function getDemoDocumentSignatures(id: string, _language: Language = 'th') {
   return cloneDemo(readSnapshot().signatures[id] ?? []);
 }
 
@@ -1174,7 +1174,7 @@ export function getDemoSearchResults(filters: SearchFilters, language: Language 
   };
 }
 
-export function getDemoAuditLogs(filters: AuditLogFilters): AuditLogListResponse {
+export function getDemoAuditLogs(filters: AuditLogFilters, _language: Language = 'th'): AuditLogListResponse {
   const snapshot = readSnapshot();
   const actor = filters.actor.trim().toLowerCase();
   const action = filters.action.trim().toLowerCase();
@@ -1208,7 +1208,7 @@ export function getDemoAuditLogs(filters: AuditLogFilters): AuditLogListResponse
   };
 }
 
-export function getDemoAuditLog(id: string) {
+export function getDemoAuditLog(id: string, _language: Language = 'th') {
   const auditLog = readSnapshot().auditLogs.find((item) => item.id === id);
   return auditLog ? cloneDemo(auditLog) : null;
 }

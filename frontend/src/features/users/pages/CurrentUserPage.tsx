@@ -7,9 +7,11 @@ import { useAuth } from '../../auth/context/useAuth';
 import { buildAccessProfile, formatRoleLabel } from '../../../shared/auth/authorization';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { ErrorModal } from '../../../shared/components/state/ErrorModal';
+import { useTranslation } from '../../../i18n/useTranslation';
 
 export function CurrentUserPage() {
   const { accessToken, user } = useAuth();
+  const { language, t } = useTranslation();
   const [profile, setProfile] = useState<{ firstName?: string; lastName?: string; username?: string; email?: string } | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -55,17 +57,17 @@ export function CurrentUserPage() {
     event.preventDefault();
 
     if (!accessToken) {
-      setError('ไม่พบ session สำหรับเปลี่ยนรหัสผ่าน');
+      setError(t('profile.noSession'));
       return;
     }
 
     if (newPassword.trim().length < 8) {
-      setError('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร');
+      setError(t('profile.passwordMin'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('รหัสผ่านใหม่และยืนยันรหัสผ่านต้องตรงกัน');
+      setError(t('profile.passwordMismatch'));
       return;
     }
 
@@ -73,11 +75,11 @@ export function CurrentUserPage() {
       setIsSavingPassword(true);
       setError(null);
       await changePassword(newPassword, accessToken);
-      setNotice('เปลี่ยนรหัสผ่านสำเร็จ');
+      setNotice(t('profile.passwordChanged'));
       setNewPassword('');
       setConfirmPassword('');
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'ไม่สามารถเปลี่ยนรหัสผ่านได้');
+      setError(submitError instanceof Error ? submitError.message : t('profile.passwordChangeFailed'));
       setNotice(null);
     } finally {
       setIsSavingPassword(false);
@@ -87,9 +89,9 @@ export function CurrentUserPage() {
   return (
     <div className="stack stack--xl">
       <PageHeader
-        title="ข้อมูลบัญชีของฉัน"
-        eyebrow="My Profile"
-        description="ตรวจสอบข้อมูลบัญชีที่ใช้เข้าสู่ระบบ บทบาทที่ได้รับ และดำเนินการที่เกี่ยวข้องกับบัญชีของคุณ"
+        title={t('profile.title')}
+        eyebrow={t('profile.eyebrow')}
+        description={t('profile.description')}
       />
 
       <div className="profile-grid">
@@ -101,55 +103,55 @@ export function CurrentUserPage() {
             </div>
           </div>
 
-          <div className="actions" style={{ flexDirection: 'column', gap: '8px' }}>
-            <Link className="button button--secondary button--wide" to="/logout">Sign Out</Link>
+          <div className="actions profile-card__actions">
+            <Link className="button button--secondary button--wide" to="/logout">{t('profile.signOut')}</Link>
           </div>
         </aside>
 
         <section className="profile-info stack">
           <div className="panel stack">
-            <h3 className="form-section__title">ข้อมูลผู้ใช้งาน</h3>
+            <h3 className="form-section__title">{t('profile.identityTitle')}</h3>
             <dl className="detail-list">
               <div>
-                <dt>ชื่อ</dt>
+                <dt>{t('profile.firstName')}</dt>
                 <dd>{firstName}</dd>
               </div>
               <div>
-                <dt>นามสกุล</dt>
+                <dt>{t('profile.lastName')}</dt>
                 <dd>{lastName}</dd>
               </div>
               <div>
-                <dt>ชื่อผู้ใช้</dt>
+                <dt>{t('profile.username')}</dt>
                 <dd>{profile?.username ?? user?.username ?? '-'}</dd>
               </div>
             </dl>
           </div>
 
           <div className="panel stack">
-            <h3 className="form-section__title">บทบาทในระบบ</h3>
+            <h3 className="form-section__title">{t('profile.rolesTitle')}</h3>
             {normalizedRoles.length > 0 ? (
               <div className="tag-list">
                 {normalizedRoles.map((role) => (
                   <span key={role} className="tag">
-                    {formatRoleLabel(role)}
+                    {formatProfileRoleLabel(role, language)}
                   </span>
                 ))}
               </div>
             ) : (
-              <p className="muted">ไม่พบบทบาทที่ผูกกับบัญชีนี้</p>
+              <p className="muted">{t('profile.noRoles')}</p>
             )}
           </div>
 
           <div className="panel stack">
-            <h3 className="form-section__title">เปลี่ยนรหัสผ่าน</h3>
+            <h3 className="form-section__title">{t('profile.changePasswordTitle')}</h3>
             {notice ? <div className="callout">{notice}</div> : null}
             <form className="stack" onSubmit={handleChangePassword}>
               <label className="stack">
-                <span className="card__label">รหัสผ่านใหม่</span>
+                <span className="card__label">{t('profile.newPassword')}</span>
                 <input
                   className="input"
                   type="password"
-                  placeholder="อย่างน้อย 8 ตัวอักษร"
+                  placeholder={t('profile.passwordPlaceholder')}
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
                   autoComplete="new-password"
@@ -157,11 +159,11 @@ export function CurrentUserPage() {
                 />
               </label>
               <label className="stack">
-                <span className="card__label">ยืนยันรหัสผ่านใหม่</span>
+                <span className="card__label">{t('profile.confirmPassword')}</span>
                 <input
                   className="input"
                   type="password"
-                  placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง"
+                  placeholder={t('profile.confirmPasswordPlaceholder')}
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   autoComplete="new-password"
@@ -170,7 +172,7 @@ export function CurrentUserPage() {
               </label>
               <div className="actions actions--compact">
                 <button className="button" disabled={isSavingPassword} type="submit">
-                  {isSavingPassword ? 'กำลังบันทึก...' : 'บันทึกรหัสผ่านใหม่'}
+                  {isSavingPassword ? t('profile.savingPassword') : t('profile.savePassword')}
                 </button>
               </div>
             </form>
@@ -181,6 +183,31 @@ export function CurrentUserPage() {
       <ErrorModal message={error} onClose={() => setError(null)} />
     </div>
   );
+}
+
+function formatProfileRoleLabel(role: Parameters<typeof formatRoleLabel>[0], language: 'th' | 'en') {
+  if (language === 'en') {
+    return formatRoleLabel(role);
+  }
+
+  switch (role) {
+    case 'admin':
+      return 'ผู้ดูแลระบบ';
+    case 'audit_reader':
+      return 'ผู้อ่าน Audit Log';
+    case 'document_controller':
+      return 'ผู้ควบคุมเอกสาร';
+    case 'manager':
+      return 'ผู้อนุมัติ';
+    case 'signer':
+      return 'ผู้ลงนาม';
+    case 'user_admin':
+      return 'ผู้ดูแลผู้ใช้';
+    case 'viewer':
+      return 'ผู้ใช้งานทั่วไป';
+    default:
+      return role;
+  }
 }
 
 function splitDisplayName(displayName: string | null | undefined) {

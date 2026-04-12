@@ -6,7 +6,9 @@ import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { StatCard } from '../../../shared/components/ui/StatCard';
 import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
+import { DemoWorkflowContext } from '../../../shared/components/mock/DemoWorkflowContext';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { useTranslation } from '../../../i18n/useTranslation';
 import {
   demoRejectSignature,
   demoSignSignature,
@@ -21,12 +23,13 @@ import type { PendingSignature } from '../../documents/types';
 
 export function SignaturesPage() {
   const { accessToken } = useAuth();
+  const { language, t } = useTranslation();
   const demoMode = isDemoModeEnabled();
   const [items, setItems] = useState<PendingSignature[]>([]);
   const [comments, setComments] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const scenarioState = getDemoScenarioState('demo-contract-001');
+  const scenarioState = getDemoScenarioState('demo-contract-001', language);
 
   useEffect(() => {
     let ignore = false;
@@ -34,7 +37,7 @@ export function SignaturesPage() {
     async function load() {
       if (demoMode) {
         if (!ignore) {
-          setItems(getDemoPendingSignatures());
+          setItems(getDemoPendingSignatures(language));
           setError(null);
         }
         return;
@@ -52,7 +55,7 @@ export function SignaturesPage() {
         }
       } catch (loadError) {
         if (!ignore) {
-          setError(loadError instanceof Error ? loadError.message : 'Unable to load pending signatures.');
+          setError(loadError instanceof Error ? loadError.message : t('signatures.loadError'));
         }
       }
     }
@@ -62,11 +65,11 @@ export function SignaturesPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken, demoMode]);
+  }, [accessToken, demoMode, language, t]);
 
   async function refresh() {
     if (demoMode) {
-      setItems(getDemoPendingSignatures());
+      setItems(getDemoPendingSignatures(language));
       return;
     }
 
@@ -86,8 +89,8 @@ export function SignaturesPage() {
         demoRejectSignature(item.documentId, item.signatureRequestId, comments[item.signatureRequestId] ?? '', null);
       }
 
-      setItems(getDemoPendingSignatures());
-      setNotice(action === 'sign' ? 'ลงนามเอกสารตัวอย่างแล้วในโหมด demo' : 'ปฏิเสธคำขอลงนามตัวอย่างแล้วในโหมด demo');
+      setItems(getDemoPendingSignatures(language));
+      setNotice(action === 'sign' ? t('signatures.signedNotice') : t('signatures.rejectedNotice'));
       setError(null);
       return;
     }
@@ -104,10 +107,10 @@ export function SignaturesPage() {
       }
 
       await refresh();
-      setNotice(action === 'sign' ? 'Document signed successfully.' : 'Signature request rejected.');
+      setNotice(action === 'sign' ? t('signatures.signedLiveNotice') : t('signatures.rejectedLiveNotice'));
       setError(null);
     } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : 'Unable to process signature request.');
+      setError(actionError instanceof Error ? actionError.message : t('signatures.actionFailed'));
       setNotice(null);
     }
   }
@@ -115,80 +118,106 @@ export function SignaturesPage() {
   return (
     <div className="stack stack--xl">
       <PageHeader
-        title="คิวรอลงนาม"
-        eyebrow="Signatures"
-        description="เอกสารที่ถูกมอบหมายให้คุณลงนามจะแสดงในหน้านี้ พร้อมตำแหน่งลายเซ็น รูปแบบลายเซ็นบนเอกสาร และความเห็นประกอบก่อนดำเนินการ"
+        title={t('signatures.title')}
+        eyebrow={t('signatures.eyebrow')}
+        description={t('signatures.description')}
       />
 
       <ModuleMockup
-        eyebrow="Signature Mockup"
-        title="คิวงานลงนามพร้อมตำแหน่งลายเซ็น"
-        description="หน้านี้ใช้สำหรับดูรายการที่ได้รับมอบหมาย ตรวจตำแหน่งลายเซ็นบน PDF และดำเนินการลงนามหรือปฏิเสธตามลำดับที่กำหนด"
-        highlights={['Signing Queue', 'Hybrid Signature', 'Sequential Order', 'Visible Placement']}
-        steps={[
-          'เลือกเอกสารที่ได้รับมอบหมายให้ลงนาม',
-          'ตรวจตำแหน่งลายเซ็นและข้อมูลประกอบก่อนลงนาม',
-          'ลงนามหรือปฏิเสธ พร้อมบันทึกเหตุผลในคิวงาน',
-        ]}
+        eyebrow={t('signatures.mockupEyebrow')}
+        title={t('signatures.mockupTitle')}
+        description={t('signatures.mockupDescription')}
+        highlights={t('signatures.mockupHighlights').split('|||')}
+        steps={t('signatures.mockupSteps').split('|||')}
         metrics={[
-          { label: 'งานรอดำเนินการ', value: `${items.length} รายการ` },
-          { label: 'โหมดสาธิต', value: 'Hybrid Signature Demo' },
+          { label: t('signatures.pendingWork'), value: t('approvals.queueItems', { count: items.length }) },
+          { label: t('signatures.demoMode'), value: t('signatures.hybridDemo') },
         ]}
       />
 
       <DemoScenarioPanel
         compact
         state={scenarioState}
-        secondaryAction={{ label: 'เปิดเอกสารหลักของ demo', to: '/documents/demo-contract-001' }}
+        secondaryAction={{ label: t('signatures.openPrimaryDocument'), to: '/documents/demo-contract-001' }}
       />
 
       {demoMode ? (
         <DemoDocumentSpotlight
           documentId="demo-contract-001"
-          eyebrow="Signing Context"
-          title="เอกสารหลักที่ใช้สาธิตการลงนาม"
-          description="จุดขายของระบบอยู่ที่การเชื่อมเอกสารจริงกับลำดับผู้ลงนาม ตำแหน่งลายเซ็น และหลักฐานย้อนกลับได้ในหน้าเดียว จึงควรพาเข้าหน้านี้ทุกครั้งก่อนลงนาม"
-          primaryActionLabel="เปิดเอกสารก่อนลงนาม"
+          eyebrow={t('signatures.signingContext')}
+          title={t('signatures.signingTitle')}
+          description={t('signatures.signingDescription')}
+          primaryActionLabel={t('signatures.openBeforeSigning')}
+        />
+      ) : null}
+
+      {demoMode ? (
+        <DemoWorkflowContext
+          eyebrow={t('signatures.contextEyebrow')}
+          title={t('signatures.contextTitle')}
+          description={t('signatures.contextDescription')}
+          documentId="demo-contract-001"
+          primaryActionLabel={t('signatures.openBeforeSigning')}
+          primaryActionTo="/documents/demo-contract-001"
+          secondaryActionLabel={t('signatures.openQueue')}
+          secondaryActionTo="/signatures"
+          stats={[
+            {
+              label: t('signatures.contextVersionLabel'),
+              value: items[0]?.versionNumber ? `v${items[0].versionNumber}` : 'v3',
+              detail: t('signatures.contextVersionDetail'),
+            },
+            {
+              label: t('signatures.contextOrderLabel'),
+              value: items[0]?.signingOrder ?? 2,
+              detail: t('signatures.contextOrderDetail'),
+            },
+            {
+              label: t('signatures.contextPlacementLabel'),
+              value: items[0] ? `P${items[0].pageNumber}` : 'P1',
+              detail: t('signatures.contextPlacementDetail'),
+            },
+          ]}
         />
       ) : null}
 
       <div className="dashboard-summary-grid">
-        <StatCard label="รอลงนามทั้งหมด" value={items.length} />
-        <StatCard label="ลำดับแรก" value={items.filter((item) => item.signingOrder === 1).length} />
-        <StatCard label="มีความเห็นแนบ" value={items.filter((item) => Boolean(item.comment)).length} />
+        <StatCard label={t('signatures.totalPending')} value={items.length} />
+        <StatCard label={t('signatures.firstOrder')} value={items.filter((item) => item.signingOrder === 1).length} />
+        <StatCard label={t('signatures.withComment')} value={items.filter((item) => Boolean(item.comment)).length} />
       </div>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
 
       <div className="callout">
-        <strong>รูปแบบลายเซ็นที่ใช้ใน demo</strong>
-        <div className="muted">ระบบสาธิตการลงนามแบบผสม โดยแสดงทั้งข้อมูลการลงนามดิจิทัลและพื้นที่รูปลายเซ็นที่วางบน PDF เพื่อให้ผู้อ่านเห็นร่องรอยการลงนามในเอกสารโดยตรง</div>
+        <strong>{t('signatures.signatureModeTitle')}</strong>
+        <div className="muted">{t('signatures.signatureModeDescription')}</div>
       </div>
 
       <section className="signature-evidence-grid">
         <div className="signature-evidence-card">
-          <span className="sidebar__eyebrow">Evidence</span>
-          <strong>ลงนามเมื่อไรและในเวอร์ชันไหน</strong>
-          <p className="muted">ทุกคำขอลงนามใน demo แสดงเลขเวอร์ชัน ลำดับการลงนาม ตำแหน่งบนหน้า และความเห็นประกอบ เพื่อให้เห็นหลักฐานที่ควรมีในระบบจริง</p>
+          <span className="sidebar__eyebrow">{t('signatures.evidence')}</span>
+          <strong>{t('signatures.evidenceTitle')}</strong>
+          <p className="muted">{t('signatures.evidenceDescription')}</p>
         </div>
         <div className="signature-evidence-card">
-          <span className="sidebar__eyebrow">Sequence</span>
-          <strong>ปลดล็อกตามลำดับการลงนาม</strong>
-          <p className="muted">ผู้ลงนามลำดับถัดไปจะชัดเจนขึ้นหลังจากลำดับก่อนหน้าดำเนินการแล้ว ทำให้กรรมการเห็นการควบคุม workflow ไม่ใช่แค่ฟอร์มเซ็นเอกสาร</p>
+          <span className="sidebar__eyebrow">{t('signatures.sequence')}</span>
+          <strong>{t('signatures.sequenceTitle')}</strong>
+          <p className="muted">{t('signatures.sequenceDescription')}</p>
         </div>
       </section>
 
       <section className="panel panel--full stack">
         <div className="section-heading">
-          <span className="sidebar__eyebrow">Queue</span>
-          <h3>รายการที่ต้องลงนาม</h3>
+          <span className="sidebar__eyebrow">{t('signatures.queueEyebrow')}</span>
+          <h3>{t('signatures.queueTitle')}</h3>
         </div>
 
         {items.length === 0 ? (
           <EmptyState 
-            title="ไม่มีรายการรอลงนาม" 
-            description="เอกสารที่ถูกมอบหมายให้คุณลงนามจะปรากฏในส่วนนี้เมื่อมีรายการใหม่" 
+            title={t('signatures.emptyTitle')} 
+            description={t('signatures.emptyDescription')} 
           />
         ) : (
           <div className="registry-list">
@@ -201,47 +230,47 @@ export function SignaturesPage() {
                         {item.documentTitle}
                       </Link>
                       <p className="muted">
-                        เวอร์ชัน {item.versionNumber} • ลำดับการลงนาม {item.signingOrder}
+                        {t('signatures.versionOrder', { version: item.versionNumber, order: item.signingOrder })}
                       </p>
                     </div>
-                    <span className="status-pill status-pill--subtle">ลำดับ {item.signingOrder}</span>
+                    <span className="status-pill status-pill--subtle">{t('signatures.orderLabel', { order: item.signingOrder })}</span>
                   </div>
 
                   <div className="registry-meta">
-                    <span>หน้า {item.pageNumber}</span>
-                    <span>ตำแหน่ง X:{item.positionX} Y:{item.positionY}</span>
-                    <span>ขนาด {item.width} × {item.height}</span>
-                    <span>รูปแบบ Hybrid Signature</span>
+                    <span>{t('signatures.page', { value: item.pageNumber })}</span>
+                    <span>{t('signatures.position', { x: item.positionX, y: item.positionY })}</span>
+                    <span>{t('signatures.size', { width: item.width, height: item.height })}</span>
+                    <span>{t('signatures.hybridLabel')}</span>
                   </div>
 
                   <div className="signature-preview-panel signature-preview-panel--inline">
                     <div className="signature-preview signature-preview--hybrid">
-                      <div className="signature-preview__stamp">ลงนามอิเล็กทรอนิกส์</div>
+                      <div className="signature-preview__stamp">{t('signatures.digitalStamp')}</div>
                       <div className="signature-preview__identity">
                         <div className="signature-preview__avatar">SG</div>
                         <div className="stack stack--compact">
-                          <strong>กรอบลายเซ็นบนเอกสาร</strong>
-                          <span className="muted">แสดงชื่อผู้ลงนาม เวลา และรูปลายเซ็นประกอบบน PDF</span>
+                          <strong>{t('signatures.visibleBox')}</strong>
+                          <span className="muted">{t('signatures.visibleBoxDescription')}</span>
                         </div>
                       </div>
                       <div className="signature-preview__image">
-                        <span className="signature-preview__scribble">Signature</span>
+                        <span className="signature-preview__scribble">{t('signatures.signatureWord')}</span>
                       </div>
                     </div>
                   </div>
 
                   {item.comment ? (
                     <div className="callout">
-                      <strong>ความเห็นก่อนลงนาม</strong>
+                      <strong>{t('signatures.preSignComment')}</strong>
                       <div className="muted">{item.comment}</div>
                     </div>
                   ) : null}
 
                   <label className="stack">
-                    <span className="card__label">ความเห็นประกอบการดำเนินการ</span>
+                    <span className="card__label">{t('signatures.commentLabel')}</span>
                     <textarea
                       className="input textarea textarea--compact"
-                      placeholder="ระบุความเห็นเพิ่มเติมก่อนลงนามหรือปฏิเสธ"
+                      placeholder={t('signatures.commentPlaceholder')}
                       value={comments[item.signatureRequestId] ?? ''}
                       onChange={(event) => setComments((current) => ({ ...current, [item.signatureRequestId]: event.target.value }))}
                     />
@@ -250,13 +279,13 @@ export function SignaturesPage() {
 
                 <div className="registry-item__actions registry-item__actions--stack">
                   <Link className="button button--secondary" to={`/documents/${item.documentId}`}>
-                    เปิดเอกสาร
+                    {t('documents.openDocument')}
                   </Link>
                   <button className="button" type="button" onClick={() => void runAction(item, 'sign')}>
-                    ลงนาม
+                    {t('signatures.sign')}
                   </button>
                   <button className="button button--secondary" type="button" onClick={() => void runAction(item, 'reject')}>
-                    ปฏิเสธ
+                    {t('signatures.reject')}
                   </button>
                 </div>
               </article>

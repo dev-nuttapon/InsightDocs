@@ -6,6 +6,7 @@ import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 import { getUser, updateUser } from '../api/usersApi';
 import { AVAILABLE_PROJECT_ROLES, formatBusinessRole, formatBusinessRoleDescription, type AppUser, type UpdateUserInput } from '../types';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
+import { useTranslation } from '../../../i18n/useTranslation';
 
 type EditUserFormState = UpdateUserInput & {
   confirmPassword: string;
@@ -14,6 +15,7 @@ type EditUserFormState = UpdateUserInput & {
 export function EditUserPage() {
   const { id } = useParams<{ id: string }>();
   const { accessToken } = useAuth();
+  const { language, t } = useTranslation();
   const navigate = useNavigate();
   const [user, setUser] = useState<AppUser | null>(null);
   const [form, setForm] = useState<EditUserFormState>({
@@ -53,7 +55,7 @@ export function EditUserPage() {
         }
       } catch (loadError) {
         if (!ignore) {
-          setError(loadError instanceof Error ? loadError.message : 'Unable to load user.');
+          setError(loadError instanceof Error ? loadError.message : t('users.loadOneError'));
         }
       }
     }
@@ -63,9 +65,9 @@ export function EditUserPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken, id]);
+  }, [accessToken, id, t]);
 
-  const resolvedName = useMemo(() => (user ? formatUserName(user) : 'User'), [user]);
+  const resolvedName = useMemo(() => (user ? formatUserName(user) : t('users.title')), [user, t]);
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -74,12 +76,12 @@ export function EditUserPage() {
     }
 
     if (form.password && form.password !== form.confirmPassword) {
-      setError('รหัสผ่านและยืนยันรหัสผ่านต้องตรงกัน');
+      setError(t('users.passwordMismatch'));
       return;
     }
 
     if (form.roles.length === 0) {
-      setError('กรุณาเลือกอย่างน้อย 1 role');
+      setError(t('users.roleRequired'));
       return;
     }
 
@@ -98,11 +100,11 @@ export function EditUserPage() {
       navigate('/users', {
         replace: true,
         state: {
-          notice: 'อัปเดตข้อมูลผู้ใช้งานสำเร็จ',
+          notice: t('users.editSuccess'),
         },
       });
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to update user.');
+      setError(saveError instanceof Error ? saveError.message : t('users.updateError'));
     } finally {
       setIsSaving(false);
     }
@@ -111,7 +113,7 @@ export function EditUserPage() {
   if (!user || !accessToken || !id) {
     return (
       <section className="panel">
-        <p className="muted">{error ?? 'Loading user...'}</p>
+        <p className="muted">{error ?? t('users.loadingOne')}</p>
         <ErrorModal message={error} onClose={() => setError(null)} />
       </section>
     );
@@ -120,10 +122,10 @@ export function EditUserPage() {
   return (
     <div className="stack stack--xl">
       <PageHeader
-        title={`Edit User: ${resolvedName}`}
-        eyebrow="Users & Access"
-        description={`Manage identity details, password overrides, and system access roles for ${user.username}.`}
-        actions={<Link className="button button--secondary" to="/users">Back to users</Link>}
+        title={t('users.editTitle', { name: resolvedName })}
+        eyebrow={t('users.eyebrow')}
+        description={t('users.editDescription')}
+        actions={<Link className="button button--secondary" to="/users">{t('users.backToUsers')}</Link>}
       />
 
       <section className="panel stack">
@@ -131,11 +133,11 @@ export function EditUserPage() {
           <form className="stack stack--xl" onSubmit={handleSubmit}>
             <div className="form-grid">
               <label className="stack" htmlFor="edit-user-email">
-                <span className="card__label">Sign-in Email</span>
+                <span className="card__label">{t('users.signInEmail')}</span>
                 <input
                   id="edit-user-email"
                   className="input"
-                  placeholder="name@organization.com"
+                  placeholder={t('users.emailPlaceholder')}
                   type="email"
                   value={form.email}
                   onChange={(event) => {
@@ -147,21 +149,21 @@ export function EditUserPage() {
 
               <div className="grid-2">
                 <label className="stack" htmlFor="edit-user-first-name">
-                  <span className="card__label">First Name</span>
+                  <span className="card__label">{t('users.firstName')}</span>
                   <input
                     id="edit-user-first-name"
                     className="input"
-                    placeholder="First name"
+                    placeholder={t('users.firstNamePlaceholder')}
                     value={form.firstName}
                     onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))}
                   />
                 </label>
                 <label className="stack" htmlFor="edit-user-last-name">
-                  <span className="card__label">Last Name</span>
+                  <span className="card__label">{t('users.lastName')}</span>
                   <input
                     id="edit-user-last-name"
                     className="input"
-                    placeholder="Last name"
+                    placeholder={t('users.lastNamePlaceholder')}
                     value={form.lastName}
                     onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))}
                   />
@@ -170,22 +172,22 @@ export function EditUserPage() {
 
               <div className="grid-2">
                 <label className="stack" htmlFor="edit-user-password">
-                  <span className="card__label">New Password</span>
+                  <span className="card__label">{t('users.newPassword')}</span>
                   <input
                     id="edit-user-password"
                     className="input"
-                    placeholder="Leave blank to keep current"
+                    placeholder={t('users.leaveBlank')}
                     type="password"
                     value={form.password ?? ''}
                     onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
                   />
                 </label>
                 <label className="stack" htmlFor="edit-user-confirm-password">
-                  <span className="card__label">Confirm New Password</span>
+                  <span className="card__label">{t('users.confirmNewPassword')}</span>
                   <input
                     id="edit-user-confirm-password"
                     className="input"
-                    placeholder="Confirm new password"
+                    placeholder={t('users.confirmNewPassword')}
                     type="password"
                     value={form.confirmPassword}
                     onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
@@ -195,14 +197,14 @@ export function EditUserPage() {
             </div>
 
             <fieldset className="stack role-group">
-              <span className="card__label" style={{ marginBottom: '12px' }}>System Roles & Permissions</span>
+              <span className="card__label users-form__section-label">{t('users.rolePermissions')}</span>
               <div className="table-wrap role-table-wrap">
                 <table className="table role-table table--premium">
                   <thead>
                     <tr>
-                      <th style={{ width: '60px' }}>Select</th>
-                      <th>Role</th>
-                      <th>Capability Description</th>
+                      <th className="users-form__checkbox-col">{t('users.selectColumn')}</th>
+                      <th>{t('users.roleColumn')}</th>
+                      <th>{t('users.capabilityColumn')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -230,8 +232,8 @@ export function EditUserPage() {
                             }
                           />
                         </td>
-                        <td style={{ fontWeight: 700 }}>{formatBusinessRole(role)}</td>
-                        <td className="muted" style={{ fontSize: '13px' }}>{formatBusinessRoleDescription(role)}</td>
+                        <td className="users-form__role-name">{formatBusinessRole(role, language)}</td>
+                        <td className="muted users-form__role-description">{formatBusinessRoleDescription(role, language)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -239,11 +241,11 @@ export function EditUserPage() {
               </div>
             </fieldset>
 
-            <div className="actions" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '24px' }}>
-              <button className="button" disabled={isSaving} type="submit" style={{ minWidth: '160px' }}>
-                {isSaving ? 'Saving...' : 'บันทึกการแก้ไข'}
+            <div className="actions users-form__actions">
+              <button className="button users-form__submit" disabled={isSaving} type="submit">
+                {isSaving ? t('users.savingEdit') : t('users.saveEdit')}
               </button>
-              <Link className="button button--secondary" to="/users">ยกเลิก</Link>
+              <Link className="button button--secondary" to="/users">{t('users.cancel')}</Link>
             </div>
           </form>
         </div>

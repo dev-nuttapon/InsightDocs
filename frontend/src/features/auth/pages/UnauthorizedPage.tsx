@@ -1,16 +1,18 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from '../../../i18n/useTranslation';
 
 export function UnauthorizedPage() {
+  const { t } = useTranslation();
   return (
     <section className="panel">
-      <span className="sidebar__eyebrow">Authorization</span>
-      <h2>Access denied</h2>
+      <span className="sidebar__eyebrow">{t('auth.authorizationEyebrow')}</span>
+      <h2>{t('auth.accessDeniedTitle')}</h2>
       <p className="muted">
-        Your account is authenticated, but it does not currently have the required role or policy for this action.
+        {t('auth.accessDeniedDescription')}
       </p>
       <div className="actions">
-        <Link className="button" to="/">Return to dashboard</Link>
-        <Link className="button button--secondary" to="/login">Switch account</Link>
+        <Link className="button" to="/">{t('auth.returnToDashboard')}</Link>
+        <Link className="button button--secondary" to="/login">{t('auth.switchAccount')}</Link>
       </div>
     </section>
   );

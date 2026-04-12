@@ -9,6 +9,7 @@ import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { SampleDocumentsShowcase } from '../../../shared/components/mock/SampleDocumentsShowcase';
 import { getDemoScenarioState, getDemoSearchResults } from '../../../shared/mock/demoScenario';
 import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
+import { useTranslation } from '../../../i18n/useTranslation';
 
 import { useAuth } from '../../auth/context/useAuth';
 import { searchDocuments } from '../api/searchApi';
@@ -28,6 +29,7 @@ const defaultFilters: SearchFilters = {
 
 export function SearchPage() {
   const { accessToken } = useAuth();
+  const { language, t } = useTranslation();
   const demoMode = isDemoModeEnabled();
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<SearchFilters>({
@@ -44,7 +46,7 @@ export function SearchPage() {
   });
   const [results, setResults] = useState<SearchDocumentsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const scenarioState = getDemoScenarioState('demo-contract-001');
+  const scenarioState = getDemoScenarioState('demo-contract-001', language);
 
   useEffect(() => {
     let ignore = false;
@@ -52,7 +54,7 @@ export function SearchPage() {
     async function load() {
       if (demoMode) {
         if (!ignore) {
-          setResults(getDemoSearchResults(filters));
+          setResults(getDemoSearchResults(filters, language));
           setError(null);
         }
         return;
@@ -70,7 +72,7 @@ export function SearchPage() {
         }
       } catch (searchError) {
         if (!ignore) {
-          setError(searchError instanceof Error ? searchError.message : 'Unable to search documents.');
+          setError(searchError instanceof Error ? searchError.message : t('search.loadError'));
         }
       }
     }
@@ -80,7 +82,7 @@ export function SearchPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken, demoMode, filters]);
+  }, [accessToken, demoMode, filters, language, t]);
 
   function updateFilters(patch: Partial<SearchFilters>) {
     const next = { ...filters, ...patch };
@@ -100,24 +102,20 @@ export function SearchPage() {
   return (
     <div className="stack stack--xl">
       <PageHeader
-        title="Document search"
-        eyebrow="Search"
-        description="Search document metadata and current signature state using PostgreSQL filters and full-text search."
+        title={t('search.title')}
+        eyebrow={t('search.eyebrow')}
+        description={t('search.description')}
       />
 
       <ModuleMockup
-        eyebrow="Search Mockup"
-        title="พื้นที่ค้นหาเอกสารแบบหลายเงื่อนไข"
-        description="หน้านี้ใช้ค้นหาเอกสารจากคำค้น หมวดหมู่ สถานะ และผู้เกี่ยวข้อง พร้อมเปิดดูรายละเอียดเอกสารที่ต้องใช้ได้ทันที"
-        highlights={['Keyword Search', 'Advanced Filters', 'Signature Summary', 'Quick Open']}
-        steps={[
-          'ใส่คำค้นหรือเงื่อนไขที่ต้องการ',
-          'ไล่ดูผลลัพธ์พร้อมสถานะและ summary การลงนาม',
-          'เปิดเอกสารที่ต้องการเพื่อตรวจสอบรายละเอียดต่อ',
-        ]}
+        eyebrow={t('search.mockupEyebrow')}
+        title={t('search.mockupTitle')}
+        description={t('search.mockupDescription')}
+        highlights={t('search.mockupHighlights').split('|||')}
+        steps={t('search.mockupSteps').split('|||')}
         metrics={[
-          { label: 'รูปแบบการค้นหา', value: 'Metadata + Full-text' },
-          { label: 'ผลลัพธ์ที่คาดหวัง', value: results ? `${results.totalCount} รายการ` : 'พร้อมค้นหา' },
+          { label: t('search.searchMode'), value: t('search.metadataMode') },
+          { label: t('search.expectedResults'), value: results ? t('approvals.queueItems', { count: results.totalCount }) : t('search.readyToSearch') },
         ]}
       />
 
@@ -125,12 +123,12 @@ export function SearchPage() {
         compact
         state={{
           ...scenarioState,
-          badge: 'Searchable Workflow',
-          headline: 'ค้นหาเอกสารตัวอย่างจาก keyword, status, category และข้อมูลผู้เกี่ยวข้องได้ในมุมมองเดียว',
-          nextStep: 'เปิดผลลัพธ์ที่ต้องการเพื่อกระโดดกลับไปยัง document detail, approval หรือ signature flow ต่อได้ทันที',
-          primaryAction: { label: 'เปิดเอกสารหลักของ demo', to: '/documents/demo-contract-001' },
+          badge: t('search.searchableBadge'),
+          headline: t('search.searchableHeadline'),
+          nextStep: t('search.searchableNextStep'),
+          primaryAction: { label: t('search.openPrimaryDemo'), to: '/documents/demo-contract-001' },
         }}
-        secondaryAction={{ label: 'ดูทะเบียนเอกสาร', to: '/documents' }}
+        secondaryAction={{ label: t('common.backToRegistry'), to: '/documents' }}
       />
 
       <SampleDocumentsShowcase />
@@ -141,57 +139,56 @@ export function SearchPage() {
       <div className="stack stack--compact">
         <div className="filter-bar">
           <div className="filter-group">
-            <span className="filter-bar__label">Knowledge Search</span>
-            <input className="input" placeholder="Keywords..." value={filters.query} onChange={(event) => updateFilters({ query: event.target.value, page: 1 })} />
+            <span className="filter-bar__label">{t('search.queryLabel')}</span>
+            <input className="input" placeholder={t('search.queryPlaceholder')} value={filters.query} onChange={(event) => updateFilters({ query: event.target.value, page: 1 })} />
           </div>
           <div className="filter-group">
-            <span className="filter-bar__label">Department / Tag</span>
-            <input className="input" placeholder="Category" value={filters.category} onChange={(event) => updateFilters({ category: event.target.value, page: 1 })} />
+            <span className="filter-bar__label">{t('search.categoryLabel')}</span>
+            <input className="input" placeholder={t('search.categoryPlaceholder')} value={filters.category} onChange={(event) => updateFilters({ category: event.target.value, page: 1 })} />
           </div>
-          <div className="filter-group" style={{ maxWidth: '240px' }}>
-            <span className="filter-bar__label">Lifecycle State</span>
+          <div className="filter-group search-filter-group--compact">
+            <span className="filter-bar__label">{t('search.lifecycleLabel')}</span>
             <select className="input input--select" value={filters.status} onChange={(event) => updateFilters({ status: event.target.value, page: 1 })}>
-              <option value="">Any Status</option>
-              <option value="Draft">Draft</option>
-              <option value="InReview">InReview</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Archived">Archived</option>
+              <option value="">{t('search.anyStatus')}</option>
+              <option value="Draft">{t('documents.statusDraft')}</option>
+              <option value="InReview">{t('documents.statusInReview')}</option>
+              <option value="Approved">{t('documents.statusApproved')}</option>
+              <option value="Rejected">{t('documents.statusRejected')}</option>
+              <option value="Archived">{t('documents.statusArchived')}</option>
             </select>
           </div>
-          <button 
-            className="button button--secondary" 
-            type="button" 
-            style={{ height: '42px' }}
+          <button
+            className="button button--secondary filter-action-button"
+            type="button"
             onClick={() => updateFilters({ ...defaultFilters, page: 1 })}
             disabled={Object.entries(filters).every(([k, v]) => k === 'page' || k === 'pageSize' || v === '')}
           >
-            Clear All
+            {t('search.clearAll')}
           </button>
         </div>
 
         <div className="filter-chip-list">
           {filters.query && (
             <span className="filter-chip">
-              <span className="filter-chip__label">Query:</span> {filters.query}
+              <span className="filter-chip__label">{t('search.queryChip')}</span> {filters.query}
               <button className="filter-chip__remove" onClick={() => updateFilters({ query: '' })}>×</button>
             </span>
           )}
           {filters.category && (
             <span className="filter-chip">
-              <span className="filter-chip__label">Category:</span> {filters.category}
+              <span className="filter-chip__label">{t('search.categoryChip')}</span> {filters.category}
               <button className="filter-chip__remove" onClick={() => updateFilters({ category: '' })}>×</button>
             </span>
           )}
           {filters.status && (
             <span className="filter-chip">
-              <span className="filter-chip__label">Status:</span> {filters.status}
+              <span className="filter-chip__label">{t('search.statusChip')}</span> {filters.status}
               <button className="filter-chip__remove" onClick={() => updateFilters({ status: '' })}>×</button>
             </span>
           )}
           {filters.owner && (
             <span className="filter-chip">
-              <span className="filter-chip__label">Owner:</span> {filters.owner}
+              <span className="filter-chip__label">{t('search.ownerChip')}</span> {filters.owner}
               <button className="filter-chip__remove" onClick={() => updateFilters({ owner: '' })}>×</button>
             </span>
           )}
@@ -202,8 +199,8 @@ export function SearchPage() {
 
       {(results?.items.length ?? 0) === 0 ? (
         <EmptyState 
-          title="No results" 
-          description="No documents matched your search criteria. Try adjusting your filters." 
+          title={t('search.noResultsTitle')} 
+          description={t('search.noResultsDescription')} 
         />
       ) : (
         <div className="registry-list">
@@ -213,41 +210,41 @@ export function SearchPage() {
                 <div className="registry-item__header">
                   <div className="stack stack--compact">
                     <Link className="registry-item__title" to={`/documents/${item.id}`}>{item.title}</Link>
-                    <p className="muted">{item.description ?? 'ไม่มีคำอธิบายเพิ่มเติมสำหรับผลลัพธ์นี้'}</p>
+                    <p className="muted">{item.description ?? t('search.noDescription')}</p>
                   </div>
                   <StatusBadge status={item.status} />
                 </div>
 
                 <div className="registry-meta">
-                  <span className="status-pill status-pill--subtle">{item.category ?? 'Uncategorized'}</span>
-                  <span>เวอร์ชันปัจจุบัน {item.currentVersionNumber ? `v${item.currentVersionNumber}` : 'None'}</span>
-                  <span>Owner: {item.ownerDisplayName ?? item.ownerUsername ?? 'None'}</span>
-                  <span>Controller: {item.controllerDisplayName ?? item.controllerUsername ?? 'None'}</span>
+                  <span className="status-pill status-pill--subtle">{item.category ?? t('documents.uncategorized')}</span>
+                  <span>{t('search.currentVersionLabel', { value: item.currentVersionNumber ? `v${item.currentVersionNumber}` : t('documents.none') })}</span>
+                  <span>{t('documents.ownerMeta', { value: item.ownerDisplayName ?? item.ownerUsername ?? t('documents.none') })}</span>
+                  <span>{t('documents.controllerMeta', { value: item.controllerDisplayName ?? item.controllerUsername ?? t('documents.none') })}</span>
                 </div>
 
                 <div className="search-result-summary">
                   <div className="search-result-summary__item">
                     <strong>{item.signatureSummary.totalRequests}</strong>
-                    <span>คำขอลงนาม</span>
+                    <span>{t('search.signatureRequests')}</span>
                   </div>
                   <div className="search-result-summary__item">
                     <strong>{item.signatureSummary.signedCount}</strong>
-                    <span>ลงนามแล้ว</span>
+                    <span>{t('search.signed')}</span>
                   </div>
                   <div className="search-result-summary__item">
                     <strong>{item.signatureSummary.pendingCount}</strong>
-                    <span>รอดำเนินการ</span>
+                    <span>{t('search.pending')}</span>
                   </div>
                   <div className="search-result-summary__item">
-                    <strong>{item.signatureSummary.fullySigned ? 'Yes' : 'No'}</strong>
-                    <span>Fully signed</span>
+                    <strong>{item.signatureSummary.fullySigned ? t('search.yes') : t('search.no')}</strong>
+                    <span>{t('search.fullySigned')}</span>
                   </div>
                 </div>
               </div>
 
               <div className="registry-item__actions registry-item__actions--stack">
-                <Link className="button" to={`/documents/${item.id}`}>เปิดรายละเอียด</Link>
-                <Link className="button button--secondary" to="/audit-logs">ดูร่องรอยย้อนหลัง</Link>
+                <Link className="button" to={`/documents/${item.id}`}>{t('search.openDetail')}</Link>
+                <Link className="button button--secondary" to="/audit-logs">{t('search.openAudit')}</Link>
               </div>
             </article>
           ))}
@@ -256,11 +253,11 @@ export function SearchPage() {
 
       <div className="actions">
         <button className="button button--secondary" disabled={filters.page <= 1} type="button" onClick={() => updateFilters({ page: filters.page - 1 })}>
-          Previous
+          {t('search.previous')}
         </button>
-        <span className="muted">Page {filters.page} of {totalPages}</span>
+        <span className="muted">{t('search.pageOf', { page: filters.page, total: totalPages })}</span>
         <button className="button button--secondary" disabled={filters.page >= totalPages} type="button" onClick={() => updateFilters({ page: filters.page + 1 })}>
-          Next
+          {t('search.next')}
         </button>
       </div>
     </section>

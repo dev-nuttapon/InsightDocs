@@ -3,6 +3,7 @@ import { AssignDocumentSignatureInput, DocumentSignatureRequest } from '../types
 import { AppUser } from '../../users/types';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { StatCard } from '../../../shared/components/ui/StatCard';
+import { useTranslation } from '../../../i18n/useTranslation';
 
 interface DocumentSignaturesTabProps {
   signatures: DocumentSignatureRequest[];
@@ -21,11 +22,12 @@ export function DocumentSignaturesTab({
   onFormChange,
   onAssign,
 }: DocumentSignaturesTabProps) {
+  const { t } = useTranslation();
   const DEMO_PAGE_WIDTH = 720;
   const DEMO_PAGE_HEIGHT = 980;
   const [isDemoMode, setIsDemoMode] = useState(true);
   const [signatureMode, setSignatureMode] = useState<'hybrid' | 'digital' | 'image'>('hybrid');
-  const [appearanceLabel, setAppearanceLabel] = useState('ลงนามอิเล็กทรอนิกส์');
+  const [appearanceLabel, setAppearanceLabel] = useState(t('signatures.digitalStamp'));
   const [demoRequests, setDemoRequests] = useState<DocumentSignatureRequest[]>(signatures);
   const [dragState, setDragState] = useState<{ offsetX: number; offsetY: number } | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
@@ -33,7 +35,7 @@ export function DocumentSignaturesTab({
     () => signers.find((signer) => signer.id === signatureForm.signerUserId) ?? null,
     [signatureForm.signerUserId, signers],
   );
-  const previewSignerName = selectedSigner?.displayName || selectedSigner?.username || 'ผู้ลงนาม';
+  const previewSignerName = selectedSigner?.displayName || selectedSigner?.username || t('signatures.signerLabel');
   const previewInitials = previewSignerName
     .split(' ')
     .filter(Boolean)
@@ -60,6 +62,10 @@ export function DocumentSignaturesTab({
   useEffect(() => {
     setDemoRequests(signatures);
   }, [signatures]);
+
+  useEffect(() => {
+    setAppearanceLabel((current) => current.trim().length > 0 ? current : t('signatures.digitalStamp'));
+  }, [t]);
 
   useEffect(() => {
     if (!dragState) {
@@ -117,6 +123,17 @@ export function DocumentSignaturesTab({
     } as DocumentSignatureRequest['actions'][number];
   }
 
+  function getModeLabel(mode: 'hybrid' | 'digital' | 'image') {
+    switch (mode) {
+      case 'digital':
+        return t('signatures.modeDigitalTitle');
+      case 'image':
+        return t('signatures.modeImageTitle');
+      default:
+        return t('signatures.modeHybridTitle');
+    }
+  }
+
   function addDemoSignature() {
     if (!selectedSigner) {
       return;
@@ -137,10 +154,10 @@ export function DocumentSignaturesTab({
       width: signatureForm.width,
       height: signatureForm.height,
       signedAt: null,
-      comment: signatureForm.comment?.trim() || `กำหนดรูปแบบ ${signatureMode} พร้อมข้อความ "${appearanceLabel}"`,
+      comment: signatureForm.comment?.trim() || `${t('signatures.modeLabel')}: ${getModeLabel(signatureMode)} • ${appearanceLabel}`,
       isForCurrentVersion: true,
       actions: [
-        buildAction('demo.admin', 'Assigned', `กำหนดผู้ลงนามแบบ ${signatureMode}`),
+        buildAction('demo.admin', 'Assigned', `${t('signatures.modeLabel')}: ${getModeLabel(signatureMode)}`),
       ],
     };
 
@@ -161,8 +178,8 @@ export function DocumentSignaturesTab({
 
         const performedBy = signature.signerDisplayName || signature.signerUsername;
         const comment = action === 'sign'
-          ? 'ลงนามสำเร็จในโหมดสาธิต'
-          : 'ปฏิเสธการลงนามในโหมดสาธิต';
+          ? t('signatures.signedNotice')
+          : t('signatures.rejectedNotice');
 
         return {
           ...signature,
@@ -220,17 +237,17 @@ export function DocumentSignaturesTab({
   return (
     <div className="stack stack--xl">
       <div className="dashboard-summary-grid">
-        <StatCard label="จำนวนผู้ลงนามทั้งหมด" value={isDemoMode ? activeSignatures.length : totalSignatures} />
-        <StatCard label="รอลงนาม" value={pendingSignatures} />
-        <StatCard label="ลงนามแล้ว" value={signedSignatures} />
-        <StatCard label="จำนวนหน้าที่มีลายเซ็น" value={pageCount} />
+        <StatCard label={t('signatures.totalAssigned')} value={isDemoMode ? activeSignatures.length : totalSignatures} />
+        <StatCard label={t('signatures.totalPending')} value={pendingSignatures} />
+        <StatCard label={t('signatures.signedCount')} value={signedSignatures} />
+        <StatCard label={t('signatures.signedPages')} value={pageCount} />
       </div>
 
       <section className="callout signature-demo-callout">
         <div className="signature-demo-callout__header">
           <div className="stack stack--compact">
-            <strong>โหมดสาธิตการลงนาม</strong>
-            <div className="muted">ใช้จำลอง flow ฝั่ง frontend โดยไม่เรียก backend เพื่อให้เห็นการจัดผู้ลงนาม ลำดับการลงนาม และสถานะหลังดำเนินการ</div>
+            <strong>{t('signatures.demoCalloutTitle')}</strong>
+            <div className="muted">{t('signatures.demoCalloutDescription')}</div>
           </div>
           <div className="actions">
             <button
@@ -238,11 +255,11 @@ export function DocumentSignaturesTab({
               type="button"
               onClick={() => setIsDemoMode((current) => !current)}
             >
-              {isDemoMode ? 'ใช้ข้อมูลจริง' : 'ใช้โหมดสาธิต'}
+              {isDemoMode ? t('signatures.useLiveData') : t('signatures.useDemoMode')}
             </button>
             {isDemoMode ? (
               <button className="button button--secondary" type="button" onClick={resetDemoFlow}>
-                รีเซ็ตตัวอย่าง
+                {t('signatures.resetDemo')}
               </button>
             ) : null}
           </div>
@@ -250,29 +267,29 @@ export function DocumentSignaturesTab({
 
         {currentDemoSigner ? (
           <div className="signature-demo-flow">
-            <span className="tag">ขั้นตอนปัจจุบัน</span>
+            <span className="tag">{t('signatures.currentStepTag')}</span>
             <strong>{currentDemoSigner.signerDisplayName}</strong>
-            <span className="muted">ลำดับ {currentDemoSigner.signingOrder} • หน้า {currentDemoSigner.pageNumber}</span>
+            <span className="muted">{t('signatures.currentOrderPage', { order: currentDemoSigner.signingOrder, page: currentDemoSigner.pageNumber })}</span>
           </div>
         ) : (
-          <div className="muted">ไม่มีรายการรอลงนามในตัวอย่างตอนนี้</div>
+          <div className="muted">{t('signatures.noPendingDemo')}</div>
         )}
       </section>
 
       {canManage && (
         <section className="form-section stack--compact">
-          <h3 className="form-section__title">กำหนดผู้ลงนามและรูปแบบลายเซ็น</h3>
-          <p className="muted">กำหนดผู้ลงนาม ตำแหน่งบนเอกสาร และรูปแบบการแสดงผลสำหรับลายเซ็นดิจิทัลแบบผสมกับรูปลายเซ็นบน PDF</p>
+          <h3 className="form-section__title">{t('signatures.designerTitle')}</h3>
+          <p className="muted">{t('signatures.designerDescription')}</p>
           <form className="form-grid" onSubmit={onAssign}>
             <div className="grid-3">
               <div>
-                <label className="sidebar__status-label">ผู้ลงนาม</label>
+                <label className="sidebar__status-label">{t('signatures.signerLabel')}</label>
                 <select
                   className="input input--select"
                   value={signatureForm.signerUserId}
                   onChange={(e) => onFormChange({ signerUserId: e.target.value })}
                 >
-                  <option value="">เลือกผู้ใช้งาน...</option>
+                  <option value="">{t('signatures.chooseUser')}</option>
                   {signers.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.displayName} ({s.username})
@@ -281,7 +298,7 @@ export function DocumentSignaturesTab({
                 </select>
               </div>
               <div>
-                <label className="sidebar__status-label">ลำดับการลงนาม</label>
+                <label className="sidebar__status-label">{t('signatures.orderInput')}</label>
                 <input
                   className="input"
                   min={1}
@@ -291,7 +308,7 @@ export function DocumentSignaturesTab({
                 />
               </div>
               <div>
-                <label className="sidebar__status-label">หน้าที่วางลายเซ็น</label>
+                <label className="sidebar__status-label">{t('signatures.pageInput')}</label>
                 <input
                   className="input"
                   min={1}
@@ -304,7 +321,7 @@ export function DocumentSignaturesTab({
 
             <div className="grid-3">
               <div className="stack">
-                <label className="sidebar__status-label">รูปแบบลายเซ็นสำหรับ demo</label>
+                <label className="sidebar__status-label">{t('signatures.modeLabel')}</label>
                 <div className="selection-grid">
                   <button
                     className={`selection-card${signatureMode === 'hybrid' ? ' selection-card--selected' : ''}`}
@@ -312,8 +329,8 @@ export function DocumentSignaturesTab({
                     onClick={() => setSignatureMode('hybrid')}
                   >
                     <span className="selection-card__check" aria-hidden="true">{signatureMode === 'hybrid' ? '✓' : ''}</span>
-                    <span className="selection-card__title">แบบผสม</span>
-                    <span className="selection-card__description">มีทั้งข้อมูลการลงนามดิจิทัล และพื้นที่แสดงรูปลายเซ็นบนเอกสาร</span>
+                    <span className="selection-card__title">{t('signatures.modeHybridTitle')}</span>
+                    <span className="selection-card__description">{t('signatures.modeHybridDescription')}</span>
                   </button>
                   <button
                     className={`selection-card${signatureMode === 'digital' ? ' selection-card--selected' : ''}`}
@@ -321,8 +338,8 @@ export function DocumentSignaturesTab({
                     onClick={() => setSignatureMode('digital')}
                   >
                     <span className="selection-card__check" aria-hidden="true">{signatureMode === 'digital' ? '✓' : ''}</span>
-                    <span className="selection-card__title">ดิจิทัลล้วน</span>
-                    <span className="selection-card__description">เน้นข้อมูลการลงนามเชิงดิจิทัลและ timestamp โดยไม่โชว์รูปลายเซ็นเด่น</span>
+                    <span className="selection-card__title">{t('signatures.modeDigitalTitle')}</span>
+                    <span className="selection-card__description">{t('signatures.modeDigitalDescription')}</span>
                   </button>
                   <button
                     className={`selection-card${signatureMode === 'image' ? ' selection-card--selected' : ''}`}
@@ -330,27 +347,27 @@ export function DocumentSignaturesTab({
                     onClick={() => setSignatureMode('image')}
                   >
                     <span className="selection-card__check" aria-hidden="true">{signatureMode === 'image' ? '✓' : ''}</span>
-                    <span className="selection-card__title">รูปลายเซ็นเด่น</span>
-                    <span className="selection-card__description">เน้นภาพลายเซ็นที่มองเห็นบน PDF และแสดงข้อมูลผู้ลงนามกำกับ</span>
+                    <span className="selection-card__title">{t('signatures.modeImageTitle')}</span>
+                    <span className="selection-card__description">{t('signatures.modeImageDescription')}</span>
                   </button>
                 </div>
               </div>
               <div className="stack">
-                <label className="sidebar__status-label" htmlFor="signature-appearance-label">ข้อความกำกับบนกรอบลายเซ็น</label>
+                <label className="sidebar__status-label" htmlFor="signature-appearance-label">{t('signatures.appearanceLabelTitle')}</label>
                 <input
                   id="signature-appearance-label"
                   className="input"
                   value={appearanceLabel}
                   onChange={(event) => setAppearanceLabel(event.target.value)}
-                  placeholder="เช่น ลงนามอิเล็กทรอนิกส์"
+                  placeholder={t('signatures.appearancePlaceholder')}
                 />
-                <p className="muted">ใช้เป็นข้อความที่แสดงบน stamp หรือกรอบลายเซ็นในเอกสารตัวอย่าง</p>
+                <p className="muted">{t('signatures.appearanceDescription')}</p>
               </div>
               <div className="signature-preview-panel">
                 <div className="signature-preview-panel__header">
-                  <strong>ตัวอย่างกรอบลายเซ็น</strong>
+                  <strong>{t('signatures.previewFrameTitle')}</strong>
                   <span className="status-pill status-pill--subtle">
-                    {signatureMode === 'hybrid' ? 'Digital + Image' : signatureMode === 'digital' ? 'Digital' : 'Image'}
+                    {signatureMode === 'hybrid' ? t('signatures.previewModeHybrid') : signatureMode === 'digital' ? t('signatures.previewModeDigital') : t('signatures.previewModeImage')}
                   </span>
                 </div>
                 <div className={`signature-preview signature-preview--${signatureMode}`}>
@@ -359,12 +376,12 @@ export function DocumentSignaturesTab({
                     <div className="signature-preview__avatar">{previewInitials}</div>
                     <div className="stack stack--compact">
                       <strong>{previewSignerName}</strong>
-                      <span className="muted">Page {signatureForm.pageNumber} • Order {signatureForm.signingOrder}</span>
+                      <span className="muted">{t('signatures.previewPageOrder', { page: signatureForm.pageNumber, order: signatureForm.signingOrder })}</span>
                     </div>
                   </div>
                   {signatureMode !== 'digital' ? (
                     <div className="signature-preview__image">
-                      <span className="signature-preview__scribble">Signature</span>
+                      <span className="signature-preview__scribble">{t('signatures.signatureWord')}</span>
                     </div>
                   ) : null}
                   <div className="signature-preview__meta">
@@ -379,11 +396,11 @@ export function DocumentSignaturesTab({
             <div className="signature-canvas-section">
               <div className="signature-canvas-section__header">
                 <div className="stack stack--compact">
-                  <strong>กำหนดตำแหน่งลายเซ็นบนหน้าเอกสาร</strong>
-                  <span className="muted">ลากกรอบลายเซ็นบนหน้าจำลองได้โดยตรง หรือคลิกบนหน้ากระดาษเพื่อย้ายกรอบไปยังจุดที่ต้องการ</span>
+                  <strong>{t('signatures.canvasTitle')}</strong>
+                  <span className="muted">{t('signatures.canvasDescription')}</span>
                 </div>
                 <div className="tag-list">
-                  <span className="tag">Page {signatureForm.pageNumber}</span>
+                  <span className="tag">{t('signatures.page', { value: signatureForm.pageNumber })}</span>
                   <span className="tag">X {signatureForm.positionX}</span>
                   <span className="tag">Y {signatureForm.positionY}</span>
                 </div>
@@ -397,8 +414,8 @@ export function DocumentSignaturesTab({
               >
                 <div className="signature-canvas__sheet">
                   <div className="signature-canvas__header">
-                    <strong>Document Page Preview</strong>
-                    <span>หน้า {signatureForm.pageNumber}</span>
+                    <strong>{t('documents.pdfPreviewMetric')}</strong>
+                    <span>{t('signatures.page', { value: signatureForm.pageNumber })}</span>
                   </div>
                   <div className="signature-canvas__body">
                     <div className="signature-canvas__line signature-canvas__line--short" />
@@ -433,7 +450,7 @@ export function DocumentSignaturesTab({
 
             <div className="grid-4">
               <div>
-                <label className="sidebar__status-label">ตำแหน่ง X</label>
+                <label className="sidebar__status-label">{t('signatures.positionXLabel')}</label>
                 <input
                   className="input"
                   type="number"
@@ -442,7 +459,7 @@ export function DocumentSignaturesTab({
                 />
               </div>
               <div>
-                <label className="sidebar__status-label">ตำแหน่ง Y</label>
+                <label className="sidebar__status-label">{t('signatures.positionYLabel')}</label>
                 <input
                   className="input"
                   type="number"
@@ -451,7 +468,7 @@ export function DocumentSignaturesTab({
                 />
               </div>
               <div>
-                <label className="sidebar__status-label">ความกว้าง</label>
+                <label className="sidebar__status-label">{t('signatures.widthLabel')}</label>
                 <input
                   className="input"
                   type="number"
@@ -460,7 +477,7 @@ export function DocumentSignaturesTab({
                 />
               </div>
               <div>
-                <label className="sidebar__status-label">ความสูง</label>
+                <label className="sidebar__status-label">{t('signatures.heightLabel')}</label>
                 <input
                   className="input"
                   type="number"
@@ -471,8 +488,8 @@ export function DocumentSignaturesTab({
             </div>
 
             <div className="callout">
-              <strong>หมายเหตุสำหรับ demo</strong>
-              <div className="muted">หน้าจอนี้ใช้สาธิตแนวทางลายเซ็นแบบผสม โดย backend ปัจจุบันยังรับเฉพาะข้อมูลผู้ลงนาม ลำดับ และตำแหน่งลายเซ็นบนเอกสาร</div>
+              <strong>{t('signatures.demoNoteTitle')}</strong>
+              <div className="muted">{t('signatures.demoNoteDescription')}</div>
             </div>
 
             <div className="actions">
@@ -482,7 +499,7 @@ export function DocumentSignaturesTab({
                 type={isDemoMode ? 'button' : 'submit'}
                 onClick={isDemoMode ? addDemoSignature : undefined}
               >
-                เพิ่มผู้ลงนาม
+                {t('signatures.addSigner')}
               </button>
             </div>
           </form>
@@ -499,23 +516,23 @@ export function DocumentSignaturesTab({
                   <p className="muted">{sig.signerUsername}</p>
                 </div>
                 <div className="tag-list">
-                  <span className="tag">ลำดับ {sig.signingOrder}</span>
-                  {isDemoMode && currentDemoOrder === sig.signingOrder && sig.status === 'Pending' ? <span className="tag">พร้อมลงนาม</span> : null}
+                  <span className="tag">{t('signatures.orderLabel', { order: sig.signingOrder })}</span>
+                  {isDemoMode && currentDemoOrder === sig.signingOrder && sig.status === 'Pending' ? <span className="tag">{t('signatures.readyToSign')}</span> : null}
                   <StatusBadge status={sig.status} />
                 </div>
               </div>
 
               <div className="registry-meta">
-                <span>หน้า {sig.pageNumber}</span>
+                <span>{t('signatures.page', { value: sig.pageNumber })}</span>
                 <span>X:{sig.positionX} Y:{sig.positionY}</span>
                 <span>{sig.width} × {sig.height}</span>
-                <span>{sig.isForCurrentVersion ? 'Current version' : 'Old version'}</span>
+                <span>{sig.isForCurrentVersion ? t('signatures.currentVersionLabel') : t('signatures.oldVersionLabel')}</span>
               </div>
 
               <div className="signature-placement-card">
                 <div className="signature-placement-card__header">
-                  <strong>ตำแหน่งลายเซ็น</strong>
-                  <span className="muted">หน้า {sig.pageNumber}</span>
+                  <strong>{t('signatures.placementTitle')}</strong>
+                  <span className="muted">{t('signatures.page', { value: sig.pageNumber })}</span>
                 </div>
                 <div className="signature-placement-preview">
                   <div
@@ -527,11 +544,11 @@ export function DocumentSignaturesTab({
                       height: `${Math.max(12, Math.min(24, sig.height / 5))}%`,
                     }}
                   >
-                    <span>ลายเซ็น</span>
+                    <span>{t('signatures.placementLabel')}</span>
                   </div>
                 </div>
                 <div className="signature-placement-card__meta">
-                  <span>ลำดับ {sig.signingOrder}</span>
+                  <span>{t('signatures.orderLabel', { order: sig.signingOrder })}</span>
                   <span>X {sig.positionX}</span>
                   <span>Y {sig.positionY}</span>
                   <span>W {sig.width}</span>
@@ -540,14 +557,14 @@ export function DocumentSignaturesTab({
               </div>
 
               <div className="callout signature-callout">
-                <strong>รูปแบบลายเซ็นที่แนะนำ</strong>
-                <div className="muted">ลายเซ็นดิจิทัลพร้อมกรอบแสดงรูปลายเซ็นและข้อมูลผู้ลงนามบนเอกสาร เพื่อให้ตรวจสอบย้อนหลังได้ง่ายทั้งในระบบและบน PDF</div>
+                <strong>{t('signatures.recommendedTitle')}</strong>
+                <div className="muted">{t('signatures.recommendedDescription')}</div>
               </div>
 
               {sig.signedAt ? (
-                <div className="muted">ลงนามเมื่อ {new Date(sig.signedAt).toLocaleString()}</div>
+                <div className="muted">{t('signatures.signedAt', { value: new Date(sig.signedAt).toLocaleString() })}</div>
               ) : (
-                <span className="muted">รอดำเนินการลงนาม</span>
+                <span className="muted">{t('signatures.pendingAction')}</span>
               )}
 
               {isDemoMode ? (
@@ -558,7 +575,7 @@ export function DocumentSignaturesTab({
                     disabled={sig.status !== 'Pending' || currentDemoOrder !== sig.signingOrder}
                     onClick={() => updateDemoSignature(sig.id, 'sign')}
                   >
-                    จำลองลงนาม
+                    {t('signatures.simulateSign')}
                   </button>
                   <button
                     className="button button--secondary"
@@ -566,7 +583,7 @@ export function DocumentSignaturesTab({
                     disabled={sig.status !== 'Pending' || currentDemoOrder !== sig.signingOrder}
                     onClick={() => updateDemoSignature(sig.id, 'reject')}
                   >
-                    จำลองปฏิเสธ
+                    {t('signatures.simulateReject')}
                   </button>
                 </div>
               ) : null}
@@ -574,7 +591,7 @@ export function DocumentSignaturesTab({
               {sig.actions.map((act) => (
                 <div key={act.id} className="comment-block">
                   <div className="muted">
-                    {act.actionType} โดย {act.performedBy}
+                    {t('signatures.actionBy', { action: act.actionType, name: act.performedBy })}
                   </div>
                   {act.comment ? <div className="timeline-comment">{act.comment}</div> : null}
                 </div>
@@ -585,8 +602,8 @@ export function DocumentSignaturesTab({
 
         {activeSignatures.length === 0 ? (
           <div className="callout">
-            <strong>ยังไม่มีผู้ลงนาม</strong>
-            <div className="muted">เมื่อกำหนดผู้ลงนามแล้ว รายการลายเซ็นและประวัติการลงนามจะปรากฏที่ส่วนนี้</div>
+            <strong>{t('signatures.noSignersTitle')}</strong>
+            <div className="muted">{t('signatures.noSignersDescription')}</div>
           </div>
         ) : null}
       </div>

@@ -492,6 +492,29 @@ textarea {
   gap: 14px;
 }
 
+.topbar__demo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid rgba(45, 212, 191, 0.22);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(14, 116, 144, 0.14), rgba(20, 184, 166, 0.16));
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.topbar__demo-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(45, 212, 191, 0.95));
+  box-shadow: 0 0 0 4px rgba(45, 212, 191, 0.08);
+}
+
 .topbar__profile,
 .sidebar__profile {
   display: grid;
@@ -2268,6 +2291,119 @@ button {
   gap: 12px;
 }
 
+.demo-control {
+  display: grid;
+  gap: 22px;
+  padding: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.12), transparent 30%),
+    var(--color-surface-strong);
+  box-shadow: 0 18px 48px var(--color-shadow);
+}
+
+.demo-control--compact {
+  padding: 24px;
+}
+
+.demo-control__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 20px;
+}
+
+.demo-control__copy,
+.demo-control__status,
+.demo-control__grid,
+.demo-control__links,
+.demo-control__lenses {
+  display: grid;
+  gap: 14px;
+}
+
+.demo-control__copy h3,
+.demo-control__copy p,
+.demo-control__panel h4 {
+  margin: 0;
+}
+
+.demo-control__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.demo-control__status {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.demo-control__status-card,
+.demo-control__panel,
+.demo-control__lens,
+.demo-control__link {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--color-card) 92%, transparent);
+}
+
+.demo-control__status-card,
+.demo-control__lens,
+.demo-control__link-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.demo-control__grid {
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  align-items: start;
+}
+
+.demo-control__panel {
+  display: grid;
+  gap: 16px;
+}
+
+.demo-control__link {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  transition: var(--transition-theme), transform 180ms ease;
+}
+
+.demo-control__link:hover,
+.demo-control__lens:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-card-hover);
+  transform: translateY(-2px);
+}
+
+.demo-control__link-copy span,
+.demo-control__lens span {
+  color: var(--color-text-soft);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.demo-control__link-arrow {
+  color: var(--color-primary);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.demo-control__lenses {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.demo-control__lens {
+  display: grid;
+  gap: 10px;
+}
+
 .demo-scenario__stage {
   display: grid;
   gap: 10px;
@@ -2534,6 +2670,59 @@ button {
   margin: 0;
 }
 
+.document-evidence {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-card-hover) 82%, transparent), var(--color-surface-strong));
+}
+
+.document-evidence__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.document-evidence__summary {
+  display: grid;
+  gap: 6px;
+  min-width: 220px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-card) 90%, transparent);
+}
+
+.document-evidence__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.document-evidence__card {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--color-card) 92%, transparent);
+}
+
+.document-evidence__card strong,
+.document-evidence__card p {
+  margin: 0;
+}
+
+.document-evidence__card p {
+  color: var(--color-text-soft);
+  line-height: 1.55;
+}
+
 .dashboard-launch-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2639,6 +2828,66 @@ button {
   border-radius: 999px;
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(20, 184, 166, 0.95));
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
+}
+
+.workflow-context {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), transparent 30%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-card-hover) 78%, transparent), var(--color-surface-strong));
+}
+
+.workflow-context__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+  gap: 18px;
+}
+
+.workflow-context__copy,
+.workflow-context__summary,
+.workflow-context__stats,
+.workflow-context__stat {
+  display: grid;
+  gap: 10px;
+}
+
+.workflow-context__copy h3,
+.workflow-context__copy p,
+.workflow-context__stat p {
+  margin: 0;
+}
+
+.workflow-context__meta,
+.workflow-context__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+}
+
+.workflow-context__meta {
+  color: var(--color-text-soft);
+  font-size: 13px;
+}
+
+.workflow-context__summary,
+.workflow-context__stat {
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--color-card) 92%, transparent);
+}
+
+.workflow-context__stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.workflow-context__stat p {
+  color: var(--color-text-soft);
+  line-height: 1.55;
 }
 
 .tag--button {
@@ -3031,6 +3280,119 @@ button {
   min-width: 160px;
 }
 
+.users-table__name-link {
+  font-weight: 700;
+}
+
+.users-table__id {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.users-table__status-note {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+.users-form__section-label {
+  margin-bottom: 12px;
+}
+
+.users-form__checkbox-col {
+  width: 60px;
+}
+
+.users-form__role-name {
+  font-weight: 700;
+}
+
+.users-form__role-description {
+  font-size: 13px;
+}
+
+.users-form__actions {
+  padding-top: 24px;
+  border-top: 1px solid var(--color-border);
+}
+
+.users-form__submit {
+  min-width: 160px;
+}
+
+.filter-action-button {
+  height: 42px;
+}
+
+.search-filter-group--compact {
+  max-width: 240px;
+}
+
+.audit-linked-button {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.audit-detail-panel {
+  position: sticky;
+  top: 24px;
+  padding: 24px;
+}
+
+.audit-meta-heading {
+  margin-bottom: 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.auth-submit-button {
+  margin-top: 12px;
+}
+
+.auth-footer-actions {
+  justify-content: center;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-border);
+}
+
+.profile-card__actions {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dashboard-document-link {
+  font-weight: 700;
+}
+
+.dashboard-document-meta {
+  font-size: 11px;
+}
+
+.dashboard-activity-version {
+  font-size: 12px;
+}
+
+.dashboard-activity-date {
+  font-size: 11px;
+}
+
+.dashboard-activity-timeline {
+  padding: 8px;
+}
+
+.dashboard-activity-meta {
+  font-size: 12px;
+}
+
+.dashboard-activity-link {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.document-history__title {
+  margin-bottom: 24px;
+}
+
 .tag {
   display: inline-flex;
   align-items: center;
@@ -3301,10 +3663,13 @@ button {
   }
 
   .demo-scenario__hero,
+  .demo-control__hero,
+  .demo-control__grid,
   .dashboard-flagship__hero,
   .document-flagship__hero,
   .dashboard-launch-grid,
   .demo-spotlight,
+  .workflow-context__hero,
   .signature-evidence-grid,
   .search-result-summary,
   .version-compare-grid {
@@ -3312,9 +3677,17 @@ button {
   }
 
   .demo-scenario__stages,
+  .demo-control__status,
+  .demo-control__lenses,
+  .document-evidence__grid,
   .dashboard-flagship__signal-grid,
-  .workflow-ribbon {
+  .workflow-ribbon,
+  .workflow-context__stats {
     grid-template-columns: 1fr;
+  }
+
+  .document-evidence__header {
+    flex-direction: column;
   }
 
   .signature-canvas-section__header {

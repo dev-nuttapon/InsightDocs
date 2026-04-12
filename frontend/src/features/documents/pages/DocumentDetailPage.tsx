@@ -46,6 +46,7 @@ import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { StatePanel } from '../../../shared/components/state/StatePanel';
 import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { DemoControlPanel } from '../../../shared/components/mock/DemoControlPanel';
 import {
   getDemoScenarioState,
   getDemoShowcaseDocument,
@@ -55,12 +56,15 @@ import { DocumentDetailsTab } from '../components/DocumentDetailsTab';
 import { DocumentVersionsTab } from '../components/DocumentVersionsTab';
 import { DocumentSignaturesTab } from '../components/DocumentSignaturesTab';
 import { DocumentHistoryTab } from '../components/DocumentHistoryTab';
+import { DocumentEvidenceRail } from '../components/DocumentEvidenceRail';
+import { useTranslation } from '../../../i18n/useTranslation';
 
 type TabType = 'details' | 'versions' | 'signatures' | 'history';
 
 export function DocumentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { accessToken, user } = useAuth();
+  const { language, t } = useTranslation();
   const demoMode = isDemoModeEnabled();
   const [activeTab, setActiveTab] = useState<TabType>('details');
   const [document, setDocument] = useState<DocumentDetail | null>(null);
@@ -96,17 +100,17 @@ export function DocumentDetailPage() {
       }
 
       if (demoMode) {
-        const detail = getDemoDocumentDetail(id);
+        const detail = getDemoDocumentDetail(id, language);
 
         if (!ignore) {
           if (!detail) {
-            setError('ไม่พบเอกสารตัวอย่างที่ร้องขอ');
+            setError(t('documents.demoDocumentNotFound'));
             return;
           }
 
-          const versionHistory = getDemoDocumentVersions(id);
-          const history = getDemoApprovalHistory(id);
-          const signatureHistory = getDemoDocumentSignatures(id);
+          const versionHistory = getDemoDocumentVersions(id, language);
+          const history = getDemoApprovalHistory(id, language);
+          const signatureHistory = getDemoDocumentSignatures(id, language);
           const availableSigners = getDemoAssignableSigners();
 
           setDocument(detail);
@@ -164,7 +168,7 @@ export function DocumentDetailPage() {
         }
       } catch (loadError) {
         if (!ignore) {
-          setError(loadError instanceof Error ? loadError.message : 'Unable to load document.');
+          setError(loadError instanceof Error ? loadError.message : t('common.loadingDocumentDescription'));
         }
       }
     }
@@ -174,26 +178,26 @@ export function DocumentDetailPage() {
     return () => {
       ignore = true;
     };
-  }, [access.canManageSignatures, accessToken, demoMode, id]);
+  }, [access.canManageSignatures, accessToken, demoMode, id, language, t]);
 
   const currentVersion = useMemo(
     () => versions.find((version) => version.isCurrent) ?? null,
     [versions],
   );
-  const showcaseDocument = id ? getDemoShowcaseDocument(id) : null;
-  const scenarioState = getDemoScenarioState(id);
+  const showcaseDocument = id ? getDemoShowcaseDocument(id, language) : null;
+  const scenarioState = getDemoScenarioState(id, language);
   const workflowStats = useMemo(() => {
     const totalSigned = signatures.filter((signature) => signature.status === 'Signed').length;
     const totalPending = signatures.filter((signature) => signature.status === 'Pending').length;
 
     return [
-      { label: 'Current Status', value: document?.status ?? '-' },
-      { label: 'Current Version', value: document?.currentVersionNumber ? `v${document.currentVersionNumber}` : 'None' },
-      { label: 'Assigned Signers', value: signatures.length },
-      { label: 'Signed', value: totalSigned },
-      { label: 'Pending', value: totalPending },
+      { label: t('documents.currentStatus'), value: document?.status ?? '-' },
+      { label: t('documents.currentVersion'), value: document?.currentVersionNumber ? `v${document.currentVersionNumber}` : t('documents.none') },
+      { label: t('documents.assignedSigners'), value: signatures.length },
+      { label: t('documents.signedCount'), value: totalSigned },
+      { label: t('documents.pendingCount'), value: totalPending },
     ];
-  }, [document, signatures]);
+  }, [document, signatures, t]);
   const previewPages = useMemo(() => {
     const pages = new Set<number>([1]);
 
@@ -214,10 +218,10 @@ export function DocumentDetailPage() {
     }
 
     if (demoMode) {
-      const detail = getDemoDocumentDetail(id);
+      const detail = getDemoDocumentDetail(id, language);
 
       if (!detail) {
-        setError('ไม่พบเอกสารตัวอย่างที่ร้องขอ');
+        setError(t('documents.demoDocumentNotFound'));
         return;
       }
 
@@ -229,9 +233,9 @@ export function DocumentDetailPage() {
         ownerUserId: detail.ownerUserId,
         controllerUserId: detail.controllerUserId,
       });
-      setVersions(getDemoDocumentVersions(id));
-      setApprovalHistory(getDemoApprovalHistory(id));
-      setSignatures(getDemoDocumentSignatures(id));
+      setVersions(getDemoDocumentVersions(id, language));
+      setApprovalHistory(getDemoApprovalHistory(id, language));
+      setSignatures(getDemoDocumentSignatures(id, language));
       setSigners(getDemoAssignableSigners());
       setPreviewPage(1);
       return;
@@ -271,7 +275,7 @@ export function DocumentDetailPage() {
     if (demoMode && document) {
       demoUpdateDocumentMetadata(id, form, user ?? null);
       await refresh();
-      setNotice('อัปเดตข้อมูลเอกสารตัวอย่างแล้วในโหมด demo');
+      setNotice(t('documents.updatedDemo'));
       setError(null);
       return;
     }
@@ -280,10 +284,10 @@ export function DocumentDetailPage() {
     try {
       const updated = await updateDocument(id, form, accessToken);
       setDocument(updated);
-      setNotice('Document details updated and returned to Draft.');
+      setNotice(t('documents.updatedLive'));
       setError(null);
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to update document.');
+      setError(saveError instanceof Error ? saveError.message : t('documents.updateError'));
       setNotice(null);
     }
   }
@@ -296,7 +300,7 @@ export function DocumentDetailPage() {
       demoCreateDocumentVersion(id, versionInput, user ?? null);
       await refresh();
       setVersionInput(null);
-      setNotice('อัปโหลดเวอร์ชันตัวอย่างใหม่แล้วในโหมด demo');
+      setNotice(t('documents.versionUploadedDemo'));
       setError(null);
       return;
     }
@@ -306,10 +310,10 @@ export function DocumentDetailPage() {
       await createDocumentVersion(id, versionInput, accessToken);
       await refresh();
       setVersionInput(null);
-      setNotice('New version uploaded successfully.');
+      setNotice(t('documents.versionUploadedLive'));
       setError(null);
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : 'Unable to create version.');
+      setError(uploadError instanceof Error ? uploadError.message : t('documents.versionCreateError'));
     }
   }
 
@@ -318,12 +322,12 @@ export function DocumentDetailPage() {
 
     if (demoMode && document) {
       if (!versions.find((version) => version.id === versionId)) {
-        setError('ไม่พบเวอร์ชันตัวอย่างที่ต้องการกู้คืน');
+        setError(t('documents.demoVersionNotFound'));
         return;
       }
       demoRestoreDocumentVersion(id, versionId, versionNumber, user ?? null);
       await refresh();
-      setNotice(`กู้คืนเวอร์ชันตัวอย่างจาก v${versionNumber} แล้วในโหมด demo`);
+      setNotice(t('documents.versionRestoredDemo', { version: versionNumber }));
       setError(null);
       return;
     }
@@ -332,10 +336,10 @@ export function DocumentDetailPage() {
     try {
       await restoreDocumentVersion(id, versionId, accessToken);
       await refresh();
-      setNotice(`Version ${versionNumber} restored.`);
+      setNotice(t('documents.versionRestoredLive', { version: versionNumber }));
       setError(null);
     } catch (restoreError) {
-      setError(restoreError instanceof Error ? restoreError.message : 'Unable to restore version.');
+      setError(restoreError instanceof Error ? restoreError.message : t('documents.versionRestoreError'));
     }
   }
 
@@ -346,7 +350,7 @@ export function DocumentDetailPage() {
       demoSubmitReview(id, reviewComment, user ?? null);
       await refresh();
       setReviewComment('');
-      setNotice('ส่งเอกสารตัวอย่างเข้าสู่ review แล้วในโหมด demo');
+      setNotice(t('documents.submittedReviewDemo'));
       setError(null);
       return;
     }
@@ -356,10 +360,10 @@ export function DocumentDetailPage() {
       await submitDocumentForReview(id, { comment: reviewComment }, accessToken);
       await refresh();
       setReviewComment('');
-      setNotice('Document submitted for review.');
+      setNotice(t('documents.submittedReviewLive'));
       setError(null);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Unable to submit review.');
+      setError(submitError instanceof Error ? submitError.message : t('documents.submitReviewError'));
     }
   }
 
@@ -369,12 +373,12 @@ export function DocumentDetailPage() {
 
     if (demoMode) {
       if (!signers.find((signer) => signer.id === signatureForm.signerUserId)) {
-        setError('กรุณาเลือกผู้ลงนามสำหรับ demo');
+        setError(t('documents.selectDemoSigner'));
         return;
       }
       demoAssignSignature(id, signatureForm, user ?? null);
       await refresh();
-      setNotice('กำหนดผู้ลงนามตัวอย่างแล้วในโหมด demo');
+      setNotice(t('documents.assignedSignerDemo'));
       setError(null);
       return;
     }
@@ -383,16 +387,16 @@ export function DocumentDetailPage() {
     try {
       await assignDocumentSignature(id, signatureForm, accessToken);
       await refresh();
-      setNotice('Signature request assigned.');
+      setNotice(t('documents.assignedSignerLive'));
       setError(null);
     } catch (assignError) {
-      setError(assignError instanceof Error ? assignError.message : 'Unable to assign signer.');
+      setError(assignError instanceof Error ? assignError.message : t('documents.assignSignerError'));
     }
   }
 
   if (!document || !id || (!demoMode && !accessToken)) {
     return (
-      <StatePanel eyebrow="Document Detail" title="Loading document" description="Fetching detailed metadata and compliance history." busy />
+      <StatePanel eyebrow={t('documents.detailEyebrow')} title={t('common.loadingDocumentTitle')} description={t('common.loadingDocumentDescription')} busy />
     );
   }
 
@@ -400,11 +404,11 @@ export function DocumentDetailPage() {
     <section className="stack stack--xl">
       <PageHeader
         title={document.title}
-        eyebrow="Flagship Document Detail"
-        description={document.description || 'Governed enterprise document.'}
+        eyebrow={t('documents.detailEyebrow')}
+        description={document.description || t('documents.governedDescription')}
         actions={
           <div className="actions">
-            <Link className="button button--secondary" to="/documents">กลับไปทะเบียนเอกสาร</Link>
+            <Link className="button button--secondary" to="/documents">{t('common.backToRegistry')}</Link>
           </div>
         }
       />
@@ -421,19 +425,29 @@ export function DocumentDetailPage() {
             </div>
             <h2 className="document-flagship__title">{document.title}</h2>
             <p className="document-flagship__description">
-              {document.description || 'เอกสารภายในที่ควบคุมครบทั้ง metadata, versioning, approval, signature และ audit trace'}
+              {document.description || t('documents.governedDescription')}
             </p>
             <div className="document-flagship__meta">
-              <span>หมวดหมู่: {document.category || 'ไม่ระบุ'}</span>
-              <span>Owner: {document.ownerDisplayName || 'Unassigned'}</span>
-              <span>Controller: {document.controllerDisplayName || 'Unassigned'}</span>
-              <span>Version: {document.currentVersionNumber ? `v${document.currentVersionNumber}` : 'None'}</span>
+              <span>{t('documents.categoryMeta', { value: document.category || t('documents.unspecified') })}</span>
+              <span>{t('documents.ownerMeta', { value: document.ownerDisplayName || t('documents.unassigned') })}</span>
+              <span>{t('documents.controllerMeta', { value: document.controllerDisplayName || t('documents.unassigned') })}</span>
+              <span>{t('documents.versionMeta', { value: document.currentVersionNumber ? `v${document.currentVersionNumber}` : t('documents.none') })}</span>
             </div>
             <div className="document-flagship__cta">
               {scenarioState.primaryAction.to !== `/documents/${id}` ? (
                 <Link className="button" to={scenarioState.primaryAction.to}>{scenarioState.primaryAction.label}</Link>
               ) : null}
-              <Link className="button button--secondary" to="/audit-logs">เปิด Audit Log</Link>
+              {showcaseDocument ? (
+                <a
+                  className="button button--secondary"
+                  href={showcaseDocument.pdfPath}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t('demo.openSamplePdf')}
+                </a>
+              ) : null}
+              <Link className="button button--secondary" to="/audit-logs">{t('documents.openAudit')}</Link>
             </div>
           </div>
 
@@ -447,16 +461,16 @@ export function DocumentDetailPage() {
                     type="button"
                     onClick={() => setPreviewPage(page)}
                   >
-                    หน้า {page}
+                    {t('documents.pageLabel', { page })}
                   </button>
                 ))}
               </div>
-              <span className="muted">Visible signature preview</span>
+              <span className="muted">{t('documents.previewLabel')}</span>
             </div>
             <div className="document-preview__sheet">
               <div className="document-preview__header">
                 <strong>{document.title}</strong>
-                <span>{document.category || 'Document'} • หน้า {previewPage}</span>
+                <span>{document.category || t('documents.documentLabel')} • {t('documents.pageLabel', { page: previewPage })}</span>
               </div>
               <div className="document-preview__body">
                 <div className="document-preview__line document-preview__line--short" />
@@ -465,8 +479,8 @@ export function DocumentDetailPage() {
                 <div className="document-preview__line document-preview__line--short" />
                 {previewSignatures.length === 0 ? (
                   <div className="document-preview__empty">
-                    <strong>ยังไม่มีลายเซ็นในหน้าที่เลือก</strong>
-                    <span>เลือกหน้าที่มีผู้ลงนาม หรือกำหนดผู้ลงนามเพิ่มในแท็บ Signatures</span>
+                    <strong>{t('documents.noSignaturesOnPage')}</strong>
+                    <span>{t('documents.noSignaturesOnPageDescription')}</span>
                   </div>
                 ) : null}
                 {previewSignatures.map((signature, index) => (
@@ -482,13 +496,13 @@ export function DocumentDetailPage() {
                     }}
                   >
                     <span>{signature.signerDisplayName}</span>
-                    <small>Order {signature.signingOrder}</small>
+                    <small>{t('signatures.orderLabel', { order: signature.signingOrder })}</small>
                   </div>
                 ))}
               </div>
               <div className="document-preview__footer">
-                <span>Visible signature blocks</span>
-                <span>{previewSignatures.length} บนหน้านี้ / {signatures.length} ทั้งหมด</span>
+                <span>{t('documents.visibleBlocks')}</span>
+                <span>{t('documents.blocksOnPage', { count: previewSignatures.length, total: signatures.length })}</span>
               </div>
             </div>
           </div>
@@ -503,49 +517,54 @@ export function DocumentDetailPage() {
         <DemoScenarioPanel
           compact
           state={scenarioState}
-          secondaryAction={{ label: 'กลับไปทะเบียนเอกสาร', to: '/documents' }}
+          secondaryAction={{ label: t('common.backToRegistry'), to: '/documents' }}
         />
       </section>
 
       <section className="workflow-ribbon">
         <div className="workflow-ribbon__card">
-          <span className="sidebar__eyebrow">Current Step</span>
+          <span className="sidebar__eyebrow">{t('documents.currentStep')}</span>
           <strong>{scenarioState.badge}</strong>
           <p className="muted">{scenarioState.headline}</p>
         </div>
         <div className="workflow-ribbon__card">
-          <span className="sidebar__eyebrow">Version Context</span>
-          <strong>{currentVersion ? `v${currentVersion.versionNumber}` : 'No version'}</strong>
-          <p className="muted">{currentVersion?.changeSummary ?? 'ยังไม่มีข้อมูลเวอร์ชันปัจจุบัน'}</p>
+          <span className="sidebar__eyebrow">{t('documents.versionContext')}</span>
+          <strong>{currentVersion ? `v${currentVersion.versionNumber}` : t('documents.noVersion')}</strong>
+          <p className="muted">{currentVersion?.changeSummary ?? t('documents.noVersionContext')}</p>
         </div>
         <div className="workflow-ribbon__card">
-          <span className="sidebar__eyebrow">Next Step</span>
+          <span className="sidebar__eyebrow">{t('documents.nextStep')}</span>
           <strong>{scenarioState.focus}</strong>
           <p className="muted">{scenarioState.nextStep}</p>
         </div>
       </section>
 
+      <DocumentEvidenceRail
+        document={document}
+        versions={versions}
+        approvalHistory={approvalHistory}
+        signatures={signatures}
+      />
+
+      {demoMode ? <DemoControlPanel compact currentDocumentId={id} /> : null}
+
       <ModuleMockup
-        eyebrow="Document Story"
-        title="หน้าหลักของระบบที่รวม version, approval, signature และ audit ไว้ในที่เดียว"
-        description="ใช้หน้านี้เป็น centerpiece ของ demo เพื่อสลับดูแท็บต่าง ๆ และอธิบายความเชื่อมโยงของ workflow ทั้งระบบโดยไม่ต้องเปลี่ยนบริบทไปมาหลายหน้า"
-        highlights={['Document Hero', 'PDF Preview', 'Workflow Timeline', 'Scenario CTA']}
-        steps={[
-          'เริ่มจาก document hero เพื่อดูสถานะและ next step ปัจจุบัน',
-          'เปิดแท็บ versions, signatures และ history เพื่อเล่า workflow ต่อเนื่อง',
-          'ใช้ CTA ด้านบนเพื่อกระโดดไปยัง approvals, signatures หรือ audit ตาม phase ของเอกสาร',
-        ]}
+        eyebrow={t('documents.storyEyebrow')}
+        title={t('documents.storyTitle')}
+        description={t('documents.storyDescription')}
+        highlights={t('documents.storyHighlights').split('|||')}
+        steps={t('documents.storySteps').split('|||')}
         metrics={[
-          { label: 'Demo Mode', value: demoMode ? 'Enabled' : 'Live Data' },
-          { label: 'PDF Preview', value: showcaseDocument ? 'Visible Signature Mock' : 'Metadata View' },
+          { label: t('documents.demoModeMetric'), value: demoMode ? t('documents.demoModeEnabled') : t('documents.demoModeLive') },
+          { label: t('documents.pdfPreviewMetric'), value: showcaseDocument ? t('documents.pdfPreviewVisible') : t('documents.pdfPreviewMetadata') },
         ]}
       />
 
       <nav className="tab-list">
-        <button className={`tab-item ${activeTab === 'details' ? 'tab-item--active' : ''}`} onClick={() => setActiveTab('details')}>Details</button>
-        <button className={`tab-item ${activeTab === 'versions' ? 'tab-item--active' : ''}`} onClick={() => setActiveTab('versions')}>Versions ({versions.length})</button>
-        <button className={`tab-item ${activeTab === 'signatures' ? 'tab-item--active' : ''}`} onClick={() => setActiveTab('signatures')}>Signatures ({signatures.length})</button>
-        <button className={`tab-item ${activeTab === 'history' ? 'tab-item--active' : ''}`} onClick={() => setActiveTab('history')}>Approval & Audit</button>
+        <button className={`tab-item ${activeTab === 'details' ? 'tab-item--active' : ''}`} onClick={() => setActiveTab('details')}>{t('documents.detailsTab')}</button>
+        <button className={`tab-item ${activeTab === 'versions' ? 'tab-item--active' : ''}`} onClick={() => setActiveTab('versions')}>{t('documents.versionsTab')} ({versions.length})</button>
+        <button className={`tab-item ${activeTab === 'signatures' ? 'tab-item--active' : ''}`} onClick={() => setActiveTab('signatures')}>{t('documents.signaturesTab')} ({signatures.length})</button>
+        <button className={`tab-item ${activeTab === 'history' ? 'tab-item--active' : ''}`} onClick={() => setActiveTab('history')}>{t('documents.historyTab')}</button>
       </nav>
 
       <div className="panel panel--full stack">

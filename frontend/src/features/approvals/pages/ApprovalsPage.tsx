@@ -7,7 +7,9 @@ import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { StatCard } from '../../../shared/components/ui/StatCard';
 import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
+import { DemoWorkflowContext } from '../../../shared/components/mock/DemoWorkflowContext';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
+import { useTranslation } from '../../../i18n/useTranslation';
 import {
   demoApproveDocument,
   demoRejectDocument,
@@ -22,12 +24,13 @@ import type { PendingApproval } from '../../documents/types';
 
 export function ApprovalsPage() {
   const { accessToken } = useAuth();
+  const { language, t } = useTranslation();
   const demoMode = isDemoModeEnabled();
   const [items, setItems] = useState<PendingApproval[]>([]);
   const [comments, setComments] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const scenarioState = getDemoScenarioState('demo-policy-014');
+  const scenarioState = getDemoScenarioState('demo-policy-014', language);
 
   useEffect(() => {
     let ignore = false;
@@ -35,7 +38,7 @@ export function ApprovalsPage() {
     async function load() {
       if (demoMode) {
         if (!ignore) {
-          setItems(getDemoPendingApprovals());
+          setItems(getDemoPendingApprovals(language));
           setError(null);
         }
         return;
@@ -53,7 +56,7 @@ export function ApprovalsPage() {
         }
       } catch (loadError) {
         if (!ignore) {
-          setError(loadError instanceof Error ? loadError.message : 'Unable to load pending approvals.');
+          setError(loadError instanceof Error ? loadError.message : t('approvals.loadError'));
         }
       }
     }
@@ -63,7 +66,7 @@ export function ApprovalsPage() {
     return () => {
       ignore = true;
     };
-  }, [accessToken, demoMode]);
+  }, [accessToken, demoMode, language, t]);
 
   async function runDecision(documentId: string, action: 'approve' | 'reject') {
     if (demoMode) {
@@ -73,8 +76,8 @@ export function ApprovalsPage() {
         demoRejectDocument(documentId, comments[documentId] ?? '', null);
       }
 
-      setItems(getDemoPendingApprovals());
-      setNotice(action === 'approve' ? 'อนุมัติเอกสารตัวอย่างแล้วในโหมด demo' : 'ปฏิเสธเอกสารตัวอย่างแล้วในโหมด demo');
+      setItems(getDemoPendingApprovals(language));
+      setNotice(action === 'approve' ? t('approvals.approvedNotice') : t('approvals.rejectedNotice'));
       setError(null);
       return;
     }
@@ -92,10 +95,10 @@ export function ApprovalsPage() {
 
       const payload = await getPendingApprovals(accessToken);
       setItems(payload);
-      setNotice(action === 'approve' ? 'Document approved.' : 'Document rejected.');
+      setNotice(action === 'approve' ? t('approvals.approvedLiveNotice') : t('approvals.rejectedLiveNotice'));
       setError(null);
     } catch (decisionError) {
-      setError(decisionError instanceof Error ? decisionError.message : 'Approval action failed.');
+      setError(decisionError instanceof Error ? decisionError.message : t('approvals.actionFailed'));
       setNotice(null);
     }
   }
@@ -103,47 +106,73 @@ export function ApprovalsPage() {
   return (
     <div className="stack stack--xl">
       <PageHeader
-        title="คิวรออนุมัติ"
-        eyebrow="Approvals"
-        description="ตรวจสอบเอกสารที่ถูกส่งเข้ามาเพื่ออนุมัติ พร้อมบันทึกความเห็นและดำเนินการอนุมัติหรือปฏิเสธได้จากหน้านี้"
+        title={t('approvals.title')}
+        eyebrow={t('approvals.eyebrow')}
+        description={t('approvals.description')}
       />
 
       <ModuleMockup
-        eyebrow="Approval Mockup"
-        title="คิวพิจารณาเอกสารสำหรับผู้อนุมัติ"
-        description="ใช้หน้านี้ในการเปิดเอกสาร ตรวจเวอร์ชันปัจจุบัน บันทึกความเห็น และตัดสินใจอนุมัติหรือปฏิเสธจาก workflow เดียว"
-        highlights={['Pending Queue', 'Review Comment', 'Approve / Reject', 'Open Document']}
-        steps={[
-          'เลือกเอกสารที่ถูกส่งเข้ามาในคิวอนุมัติ',
-          'อ่านข้อมูลสำคัญและเปิดเอกสารเพื่อตรวจสอบก่อนตัดสินใจ',
-          'บันทึกความเห็นแล้วอนุมัติหรือปฏิเสธทันทีจากคิวงาน',
-        ]}
+        eyebrow={t('approvals.mockupEyebrow')}
+        title={t('approvals.mockupTitle')}
+        description={t('approvals.mockupDescription')}
+        highlights={t('approvals.mockupHighlights').split('|||')}
+        steps={t('approvals.mockupSteps').split('|||')}
         metrics={[
-          { label: 'สถานะคิว', value: `${items.length} รายการ` },
-          { label: 'รูปแบบงาน', value: 'Manager Review Flow' },
+          { label: t('approvals.queueStatus'), value: t('approvals.queueItems', { count: items.length }) },
+          { label: t('approvals.flowType'), value: t('approvals.managerFlow') },
         ]}
       />
 
       <DemoScenarioPanel
         compact
         state={scenarioState}
-        secondaryAction={{ label: 'เปิดเอกสารที่รออนุมัติ', to: '/documents/demo-policy-014' }}
+        secondaryAction={{ label: t('approvals.openPendingDocument'), to: '/documents/demo-policy-014' }}
       />
 
       {demoMode ? (
         <DemoDocumentSpotlight
           documentId="demo-policy-014"
-          eyebrow="Decision Context"
-          title="เอกสารหลักที่ใช้สาธิตการอนุมัติ"
-          description="กรรมการควรเห็นว่า manager ไม่ได้กดปุ่มอนุมัติอย่างเดียว แต่มีบริบทครบทั้งเวอร์ชันปัจจุบัน การเปลี่ยนแปลงล่าสุด และสถานะถัดไปของเอกสาร"
-          primaryActionLabel="เปิดเอกสารเพื่อพิจารณา"
+          eyebrow={t('approvals.decisionContext')}
+          title={t('approvals.decisionTitle')}
+          description={t('approvals.decisionDescription')}
+          primaryActionLabel={t('approvals.openForDecision')}
+        />
+      ) : null}
+
+      {demoMode ? (
+        <DemoWorkflowContext
+          eyebrow={t('approvals.contextEyebrow')}
+          title={t('approvals.contextTitle')}
+          description={t('approvals.contextDescription')}
+          documentId="demo-policy-014"
+          primaryActionLabel={t('approvals.openForDecision')}
+          primaryActionTo="/documents/demo-policy-014"
+          secondaryActionLabel={t('approvals.openQueue')}
+          secondaryActionTo="/approvals"
+          stats={[
+            {
+              label: t('approvals.contextVersionLabel'),
+              value: items[0]?.currentVersionNumber ? `v${items[0].currentVersionNumber}` : 'v2',
+              detail: t('approvals.contextVersionDetail'),
+            },
+            {
+              label: t('approvals.contextDecisionLabel'),
+              value: t('approvals.contextDecisionValue'),
+              detail: t('approvals.contextDecisionDetail'),
+            },
+            {
+              label: t('approvals.contextNextStepLabel'),
+              value: t('approvals.contextNextStepValue'),
+              detail: t('approvals.contextNextStepDetail'),
+            },
+          ]}
         />
       ) : null}
 
       <div className="dashboard-summary-grid">
-        <StatCard label="รออนุมัติทั้งหมด" value={items.length} />
-        <StatCard label="ต้องพิจารณาวันนี้" value={items.filter((item) => isToday(item.submittedAt)).length} />
-        <StatCard label="มีความเห็นล่าสุด" value={items.filter((item) => Boolean(item.latestComment)).length} />
+        <StatCard label={t('approvals.totalPending')} value={items.length} />
+        <StatCard label={t('approvals.dueToday')} value={items.filter((item) => isToday(item.submittedAt)).length} />
+        <StatCard label={t('approvals.withComment')} value={items.filter((item) => Boolean(item.latestComment)).length} />
       </div>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
@@ -151,14 +180,14 @@ export function ApprovalsPage() {
 
       <section className="panel panel--full stack">
         <div className="section-heading">
-          <span className="sidebar__eyebrow">Queue</span>
-          <h3>รายการที่ต้องตัดสินใจ</h3>
+          <span className="sidebar__eyebrow">{t('approvals.queueEyebrow')}</span>
+          <h3>{t('approvals.queueTitle')}</h3>
         </div>
 
         {items.length === 0 ? (
           <EmptyState 
-            title="ไม่มีรายการรออนุมัติ" 
-            description="เอกสารที่ส่งเข้ามาเพื่อพิจารณาจะแสดงในส่วนนี้เมื่อมีรายการใหม่" 
+            title={t('approvals.emptyTitle')} 
+            description={t('approvals.emptyDescription')} 
           />
         ) : (
           <div className="registry-list">
@@ -171,29 +200,29 @@ export function ApprovalsPage() {
                         {item.documentTitle}
                       </Link>
                       <p className="muted">
-                        ส่งโดย {item.submittedBy} เมื่อ {new Date(item.submittedAt).toLocaleString()}
+                        {t('approvals.submittedBy', { name: item.submittedBy, value: new Date(item.submittedAt).toLocaleString() })}
                       </p>
                     </div>
                     <StatusBadge status={item.status} />
                   </div>
 
                   <div className="registry-meta">
-                    <span>เวอร์ชัน {item.currentVersionNumber ?? 1}</span>
-                    <span>{isToday(item.submittedAt) ? 'ส่งเข้ามาวันนี้' : `วันที่ ${new Date(item.submittedAt).toLocaleDateString()}`}</span>
+                    <span>{t('approvals.version', { value: item.currentVersionNumber ?? 1 })}</span>
+                    <span>{isToday(item.submittedAt) ? t('approvals.submittedToday') : t('approvals.submittedOn', { value: new Date(item.submittedAt).toLocaleDateString() })}</span>
                   </div>
 
                   {item.latestComment ? (
                     <div className="callout">
-                      <strong>ความเห็นล่าสุด</strong>
+                      <strong>{t('approvals.latestComment')}</strong>
                       <div className="muted">{item.latestComment}</div>
                     </div>
                   ) : null}
 
                   <label className="stack">
-                    <span className="card__label">ความเห็นประกอบการพิจารณา</span>
+                    <span className="card__label">{t('approvals.commentLabel')}</span>
                     <textarea
                       className="input textarea textarea--compact"
-                      placeholder="ระบุเหตุผลประกอบการอนุมัติหรือปฏิเสธ"
+                      placeholder={t('approvals.commentPlaceholder')}
                       value={comments[item.documentId] ?? ''}
                       onChange={(event) => setComments((current) => ({ ...current, [item.documentId]: event.target.value }))}
                     />
@@ -202,13 +231,13 @@ export function ApprovalsPage() {
 
                 <div className="registry-item__actions registry-item__actions--stack">
                   <Link className="button button--secondary" to={`/documents/${item.documentId}`}>
-                    เปิดเอกสาร
+                    {t('documents.openDocument')}
                   </Link>
                   <button className="button" type="button" onClick={() => void runDecision(item.documentId, 'approve')}>
-                    อนุมัติ
+                    {t('approvals.approve')}
                   </button>
                   <button className="button button--secondary" type="button" onClick={() => void runDecision(item.documentId, 'reject')}>
-                    ปฏิเสธ
+                    {t('approvals.reject')}
                   </button>
                 </div>
               </article>

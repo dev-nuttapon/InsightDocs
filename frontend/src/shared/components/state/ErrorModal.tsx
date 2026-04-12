@@ -1,10 +1,13 @@
+import { useTranslation } from '../../../i18n/useTranslation';
+
 type ErrorModalProps = {
   message: string | null;
   title?: string;
   onClose: () => void;
 };
 
-export function ErrorModal({ message, title = 'เกิดข้อผิดพลาด', onClose }: ErrorModalProps) {
+export function ErrorModal({ message, title, onClose }: ErrorModalProps) {
+  const { t } = useTranslation();
   if (!message) {
     return null;
   }
@@ -19,13 +22,13 @@ export function ErrorModal({ message, title = 'เกิดข้อผิดพ
         onClick={(event) => event.stopPropagation()}
       >
         <div className="stack stack--compact">
-          <span className="sidebar__eyebrow">Error</span>
-          <h3 id="error-modal-title">{title}</h3>
+          <span className="sidebar__eyebrow">{t('common.error')}</span>
+          <h3 id="error-modal-title">{title ?? t('common.unexpectedError')}</h3>
           <p className="muted">{message}</p>
         </div>
         <div className="actions actions--compact">
           <button className="button button--danger" type="button" onClick={onClose}>
-            ปิด
+            {t('common.close')}
           </button>
         </div>
       </div>

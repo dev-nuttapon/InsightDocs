@@ -9,6 +9,7 @@ import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
+import { DemoControlPanel } from '../../../shared/components/mock/DemoControlPanel';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { buildAccessProfile } from '../../../shared/auth/authorization';
 import {
@@ -264,6 +265,8 @@ export function DashboardPage() {
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
 
+      {demoMode ? <DemoControlPanel /> : null}
+
       <ModuleMockup
         eyebrow={t('dashboard.narrativeEyebrow')}
         title={t('dashboard.narrativeTitle')}
@@ -370,22 +373,22 @@ export function DashboardPage() {
                 <tr>
                   <th>{t('shell.documents')}</th>
                   <th>{t('documents.statusLabel')}</th>
-                  <th>Activity</th>
+                  <th>{t('dashboard.activityColumn')}</th>
                 </tr>
               </thead>
               <tbody>
                 {displayedRecentDocuments.map((document) => (
                   <tr key={document.id}>
                     <td>
-                      <Link to={`/documents/${document.id}`} style={{ fontWeight: 700 }}>{document.title}</Link>
-                      <div className="muted" style={{ fontSize: '11px' }}>{document.category ?? '-'}</div>
+                      <Link className="dashboard-document-link" to={`/documents/${document.id}`}>{document.title}</Link>
+                      <div className="muted dashboard-document-meta">{document.category ?? '-'}</div>
                     </td>
                     <td>
                       <StatusBadge status={document.status} />
                     </td>
                     <td>
-                      <div style={{ fontSize: '12px' }}>v{document.currentVersionNumber || '1'}</div>
-                      <div className="muted" style={{ fontSize: '11px' }}>{new Date(document.lastActivityAt).toLocaleDateString()}</div>
+                      <div className="dashboard-activity-version">v{document.currentVersionNumber || '1'}</div>
+                      <div className="muted dashboard-activity-date">{new Date(document.lastActivityAt).toLocaleDateString()}</div>
                     </td>
                   </tr>
                 ))}
@@ -415,16 +418,16 @@ export function DashboardPage() {
               description={t('dashboard.noActivityDescription')} 
             />
           ) : (
-            <div className="timeline" style={{ padding: '8px' }}>
+            <div className="timeline dashboard-activity-timeline">
               {displayedRecentActivities.map((activity) => (
                 <div key={activity.id} className="timeline-item">
                   <div className="timeline-item__dot" />
                   <div className="timeline-item__content">
                     <div className="timeline-item__time">{new Date(activity.timestamp).toLocaleTimeString()}</div>
                     <div className="timeline-item__label">{activity.action}</div>
-                    <div className="muted" style={{ fontSize: '12px' }}>
+                    <div className="muted dashboard-activity-meta">
                       {activity.relatedDocumentId ? (
-                        <Link to={`/documents/${activity.relatedDocumentId}`} style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                        <Link className="dashboard-activity-link" to={`/documents/${activity.relatedDocumentId}`}>
                           {activity.relatedDocumentTitle ?? t('demo.openDocument')}
                         </Link>
                       ) : (

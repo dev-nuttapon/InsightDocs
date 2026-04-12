@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { CreateVersionInput, DocumentVersion } from '../types';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
+import { useTranslation } from '../../../i18n/useTranslation';
 
 interface DocumentVersionsTabProps {
   versions: DocumentVersion[];
@@ -19,6 +20,7 @@ export function DocumentVersionsTab({
   onUpload,
   onRestore,
 }: DocumentVersionsTabProps) {
+  const { t } = useTranslation();
   const [compareBaseId, setCompareBaseId] = useState<string>('');
   const [compareTargetId, setCompareTargetId] = useState<string>('');
 
@@ -41,21 +43,21 @@ export function DocumentVersionsTab({
     <div className="stack stack--xl">
       {canManage && (
         <section className="form-section stack--compact">
-          <h3 className="form-section__title">อัปโหลดเวอร์ชันใหม่</h3>
-          <p className="muted">ทุกการอัปโหลดจะสร้างเวอร์ชันใหม่แยกจากฉบับเดิม และถ้าเอกสารเคยผ่าน review มาแล้ว สถานะจะกลับไปเป็น Draft เพื่อควบคุมการเปลี่ยนแปลงอย่างปลอดภัย</p>
+          <h3 className="form-section__title">{t('documents.uploadVersionTitle')}</h3>
+          <p className="muted">{t('documents.uploadVersionDescription')}</p>
           <form className="form-grid" onSubmit={onUpload}>
             <div className="grid-2">
               <div>
-                <label className="sidebar__status-label">สรุปการเปลี่ยนแปลง</label>
+                <label className="sidebar__status-label">{t('documents.changeSummaryLabel')}</label>
                 <input
                   className="input"
-                  placeholder="ระบุว่าเวอร์ชันนี้เปลี่ยนอะไรจากฉบับก่อน"
+                  placeholder={t('documents.changeSummaryPlaceholder')}
                   value={versionInput?.changeSummary ?? ''}
                   onChange={(e) => onVersionInputChange({ changeSummary: e.target.value })}
                 />
               </div>
               <div>
-                <label className="sidebar__status-label">ไฟล์ PDF ต้นฉบับ</label>
+                <label className="sidebar__status-label">{t('documents.originalPdfLabel')}</label>
                 <input
                   accept=".pdf"
                   className="input"
@@ -73,7 +75,7 @@ export function DocumentVersionsTab({
                 disabled={!versionInput?.originalPdf || !versionInput.changeSummary}
                 type="submit"
               >
-                สร้างเวอร์ชันใหม่
+                {t('documents.createVersion')}
               </button>
             </div>
           </form>
@@ -82,12 +84,12 @@ export function DocumentVersionsTab({
 
       {sortedVersions.length > 1 ? (
         <section className="form-section stack--compact">
-          <h3 className="form-section__title">เปรียบเทียบเวอร์ชัน</h3>
-          <p className="muted">ใช้มุมมองนี้เพื่ออธิบายให้กรรมการเห็นว่าแต่ละเวอร์ชันต่างกันอย่างไร และทำไมการเปลี่ยนแปลงจึงต้องย้อนกลับสู่ Draft ก่อนเข้าสู่ workflow อีกครั้ง</p>
+          <h3 className="form-section__title">{t('documents.compareVersionsTitle')}</h3>
+          <p className="muted">{t('documents.compareVersionsDescription')}</p>
 
           <div className="grid-2">
             <label className="stack">
-              <span className="sidebar__status-label">เวอร์ชันอ้างอิง</span>
+              <span className="sidebar__status-label">{t('documents.baseVersion')}</span>
               <select
                 className="input input--select"
                 value={compareBase?.id ?? ''}
@@ -95,14 +97,14 @@ export function DocumentVersionsTab({
               >
                 {sortedVersions.map((version) => (
                   <option key={version.id} value={version.id}>
-                    v{version.versionNumber} {version.isCurrent ? '(current)' : ''}
+                    v{version.versionNumber} {version.isCurrent ? t('documents.currentSuffix') : ''}
                   </option>
                 ))}
               </select>
             </label>
 
             <label className="stack">
-              <span className="sidebar__status-label">เวอร์ชันที่ต้องการอธิบาย</span>
+              <span className="sidebar__status-label">{t('documents.targetVersion')}</span>
               <select
                 className="input input--select"
                 value={compareTarget?.id ?? ''}
@@ -110,7 +112,7 @@ export function DocumentVersionsTab({
               >
                 {sortedVersions.map((version) => (
                   <option key={version.id} value={version.id}>
-                    v{version.versionNumber} {version.isCurrent ? '(current)' : ''}
+                    v{version.versionNumber} {version.isCurrent ? t('documents.currentSuffix') : ''}
                   </option>
                 ))}
               </select>
@@ -120,7 +122,7 @@ export function DocumentVersionsTab({
           {compareBase && compareTarget ? (
             <div className="version-compare-grid">
               <article className="version-compare-card">
-                <span className="card__label">เวอร์ชันอ้างอิง</span>
+                <span className="card__label">{t('documents.referenceVersion')}</span>
                 <strong>v{compareBase.versionNumber}</strong>
                 <div className="muted">{compareBase.changeSummary}</div>
                 <div className="version-compare-card__meta">
@@ -128,13 +130,13 @@ export function DocumentVersionsTab({
                   <span>{new Date(compareBase.createdAt).toLocaleString()}</span>
                 </div>
                 <div className="tag-list">
-                  {compareBase.hasOriginalPdf ? <span className="tag">Original PDF</span> : null}
-                  {compareBase.hasSignedPdf ? <span className="tag">Signed PDF</span> : null}
+                  {compareBase.hasOriginalPdf ? <span className="tag">{t('documents.originalPdfTag')}</span> : null}
+                  {compareBase.hasSignedPdf ? <span className="tag">{t('documents.signedPdfTag')}</span> : null}
                 </div>
               </article>
 
               <article className="version-compare-card version-compare-card--accent">
-                <span className="card__label">เวอร์ชันที่เลือก</span>
+                <span className="card__label">{t('documents.selectedVersion')}</span>
                 <strong>v{compareTarget.versionNumber}</strong>
                 <div className="muted">{compareTarget.changeSummary}</div>
                 <div className="version-compare-card__meta">
@@ -142,8 +144,8 @@ export function DocumentVersionsTab({
                   <span>{new Date(compareTarget.createdAt).toLocaleString()}</span>
                 </div>
                 <div className="tag-list">
-                  {compareTarget.hasOriginalPdf ? <span className="tag">Original PDF</span> : null}
-                  {compareTarget.hasSignedPdf ? <span className="tag">Signed PDF</span> : null}
+                  {compareTarget.hasOriginalPdf ? <span className="tag">{t('documents.originalPdfTag')}</span> : null}
+                  {compareTarget.hasSignedPdf ? <span className="tag">{t('documents.signedPdfTag')}</span> : null}
                 </div>
               </article>
             </div>
@@ -152,23 +154,23 @@ export function DocumentVersionsTab({
           {compareBase && compareTarget ? (
             <div className="version-diff-list">
               <div className="version-diff-item">
-                <strong>เลขเวอร์ชัน</strong>
+                <strong>{t('documents.versionNumberDiff')}</strong>
                 <span className="muted">v{compareBase.versionNumber} to v{compareTarget.versionNumber}</span>
               </div>
               <div className="version-diff-item">
-                <strong>สรุปการเปลี่ยนแปลง</strong>
+                <strong>{t('documents.changeSummaryDiff')}</strong>
                 <span className="muted">{compareTarget.changeSummary}</span>
               </div>
               <div className="version-diff-item">
-                <strong>Signed PDF</strong>
+                <strong>{t('documents.signedPdfDiff')}</strong>
                 <span className="muted">
-                  {compareBase.hasSignedPdf ? 'เวอร์ชันอ้างอิงมี' : 'เวอร์ชันอ้างอิงยังไม่มี'}
+                  {compareBase.hasSignedPdf ? t('documents.referenceHasSigned') : t('documents.referenceMissingSigned')}
                   {' / '}
-                  {compareTarget.hasSignedPdf ? 'เวอร์ชันที่เลือกมี' : 'เวอร์ชันที่เลือกยังไม่มี'}
+                  {compareTarget.hasSignedPdf ? t('documents.selectedHasSigned') : t('documents.selectedMissingSigned')}
                 </span>
               </div>
               <div className="version-diff-item">
-                <strong>Checksum</strong>
+                <strong>{t('documents.checksumDiff')}</strong>
                 <span className="muted">{compareBase.checksum} to {compareTarget.checksum}</span>
               </div>
             </div>
@@ -180,11 +182,11 @@ export function DocumentVersionsTab({
         <table className="table">
           <thead>
             <tr>
-              <th>Version</th>
-              <th>Status</th>
-              <th>Files</th>
-              <th>Summary & Checksum</th>
-              <th>Author</th>
+              <th>{t('documents.versionsTab')}</th>
+              <th>{t('documents.currentStatus')}</th>
+              <th>{t('documents.filesColumn')}</th>
+              <th>{t('documents.changeSummaryDiff')} &amp; {t('documents.checksumDiff')}</th>
+              <th>{t('documents.authorColumn')}</th>
               <th />
             </tr>
           </thead>
@@ -199,8 +201,8 @@ export function DocumentVersionsTab({
                 </td>
                 <td>
                   <div className="stack stack--compact">
-                    {v.hasOriginalPdf && <span className="tag">Original PDF</span>}
-                    {v.hasSignedPdf && <span className="tag">Signed PDF</span>}
+                    {v.hasOriginalPdf && <span className="tag">{t('documents.originalPdfTag')}</span>}
+                    {v.hasSignedPdf && <span className="tag">{t('documents.signedPdfTag')}</span>}
                   </div>
                 </td>
                 <td>
@@ -218,7 +220,7 @@ export function DocumentVersionsTab({
                       type="button"
                       onClick={() => onRestore(v.id, v.versionNumber)}
                     >
-                      กู้คืน
+                      {t('documents.restore')}
                     </button>
                   )}
                 </td>

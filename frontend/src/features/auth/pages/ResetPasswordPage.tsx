@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { resetPassword } from '../api/authApi';
+import { useTranslation } from '../../../i18n/useTranslation';
 
 export function ResetPasswordPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const token = useMemo(() => searchParams.get('token') ?? '', [searchParams]);
   const [password, setPassword] = useState('');
@@ -16,11 +18,11 @@ export function ResetPasswordPage() {
       <div className="auth-card stack">
         <div className="auth-header">
           <div className="auth-brand">ID</div>
-          <h2 className="auth-title">New Password</h2>
-          <p className="muted">Enter a strong password to secure your account. This link is single-use only.</p>
+          <h2 className="auth-title">{t('auth.resetPasswordTitle')}</h2>
+          <p className="muted">{t('auth.resetPasswordDescription')}</p>
         </div>
 
-        {!token ? <div className="callout callout--danger">Missing secure reset token.</div> : null}
+        {!token ? <div className="callout callout--danger">{t('auth.missingResetToken')}</div> : null}
         {error ? <div className="callout callout--danger">{error}</div> : null}
         {notice ? <div className="callout">{notice}</div> : null}
 
@@ -33,11 +35,11 @@ export function ResetPasswordPage() {
             setIsSubmitting(true);
             try {
               await resetPassword(token, password);
-              setNotice('Password updated successfully. You may now sign in.');
+              setNotice(t('auth.resetPasswordNotice'));
               setError(null);
               setPassword('');
             } catch (submitError) {
-              setError(submitError instanceof Error ? submitError.message : 'Password reset failed.');
+              setError(submitError instanceof Error ? submitError.message : t('auth.resetPasswordError'));
               setNotice(null);
             } finally {
               setIsSubmitting(false);
@@ -45,24 +47,24 @@ export function ResetPasswordPage() {
           }}
         >
           <div className="stack">
-            <span className="card__label">New Password</span>
+            <span className="card__label">{t('profile.newPassword')}</span>
             <input 
               className="input input--large" 
               type="password" 
-              placeholder="••••••••" 
+              placeholder={t('auth.passwordDots')} 
               value={password} 
               onChange={(event) => setPassword(event.target.value)} 
               required
               disabled={!token}
             />
           </div>
-          <button className="button button--large" disabled={isSubmitting || !token} type="submit" style={{ marginTop: '12px' }}>
-            {isSubmitting ? 'Updating Password...' : 'Reset Password'}
+          <button className="button button--large auth-submit-button" disabled={isSubmitting || !token} type="submit">
+            {isSubmitting ? t('auth.updatingPassword') : t('auth.resetPasswordAction')}
           </button>
         </form>
 
-        <div className="actions" style={{ justifyContent: 'center', marginTop: '24px', borderTop: '1px solid var(--color-border)', paddingTop: '24px' }}>
-          <Link className="button button--secondary" to="/login">Back to Sign In</Link>
+        <div className="actions auth-footer-actions">
+          <Link className="button button--secondary" to="/login">{t('auth.backToSignIn')}</Link>
         </div>
       </div>
     </div>
