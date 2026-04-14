@@ -7,6 +7,7 @@ import { StatCard } from '../../../shared/components/ui/StatCard';
 import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
 import { DemoWorkflowContext } from '../../../shared/components/mock/DemoWorkflowContext';
+import { FeatureHeroPanel } from '../../../shared/components/mock/FeatureHeroPanel';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { useTranslation } from '../../../i18n/useTranslation';
 import {
@@ -30,6 +31,8 @@ export function SignaturesPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const scenarioState = getDemoScenarioState('demo-contract-001', language);
+  const primaryPendingCount = items.filter((item) => item.documentId === 'demo-contract-001').length;
+  const primarySignedCount = Math.max(0, 2 - primaryPendingCount);
 
   useEffect(() => {
     let ignore = false;
@@ -189,6 +192,45 @@ export function SignaturesPage() {
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
+
+      {demoMode ? (
+        <FeatureHeroPanel
+          eyebrow={t('signatures.resultEyebrow')}
+          title={primaryPendingCount > 0 ? t('signatures.resultTitlePending') : t('signatures.resultTitleComplete')}
+          description={primaryPendingCount > 0 ? t('signatures.resultDescriptionPending') : t('signatures.resultDescriptionComplete')}
+          actions={primaryPendingCount > 0
+            ? [
+                { label: t('signatures.openBeforeSigning'), to: '/documents/demo-contract-001' },
+                { label: t('shell.auditLogs'), to: '/audit-logs', tone: 'secondary' as const },
+              ]
+            : [
+                { label: t('shell.auditLogs'), to: '/audit-logs' },
+                { label: t('common.backToRegistry'), to: '/documents', tone: 'secondary' as const },
+              ]}
+          stats={[
+            {
+              label: t('signatures.totalPending'),
+              value: items.length,
+              detail: primaryPendingCount > 0 ? t('signatures.resultQueueActive') : t('signatures.resultQueueClear'),
+            },
+            {
+              label: t('signatures.signed'),
+              value: primarySignedCount,
+              detail: t('signatures.resultSignedDetail', {
+                signed: primarySignedCount,
+                total: primarySignedCount + primaryPendingCount,
+              }),
+            },
+            {
+              label: t('signatures.contextNextStepLabel'),
+              value: primaryPendingCount > 0 ? t('signatures.resultNextSigner') : t('signatures.resultAuditReady'),
+              detail: primaryPendingCount > 0
+                ? t('signatures.resultNextSignerDetail')
+                : t('signatures.resultAuditReadyDetail'),
+            },
+          ]}
+        />
+      ) : null}
 
       <div className="callout">
         <strong>{t('signatures.signatureModeTitle')}</strong>

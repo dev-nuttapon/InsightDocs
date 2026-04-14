@@ -413,9 +413,27 @@ export function DocumentSignaturesTab({
                 role="presentation"
               >
                 <div className="signature-canvas__sheet">
+                  <div className="signature-canvas__ribbon">
+                    <span>{t('signatures.currentVersionLabel')}</span>
+                    <span>{t('signatures.orderLabel', { order: signatureForm.signingOrder })}</span>
+                  </div>
                   <div className="signature-canvas__header">
                     <strong>{t('documents.pdfPreviewMetric')}</strong>
                     <span>{t('signatures.page', { value: signatureForm.pageNumber })}</span>
+                  </div>
+                  <div className="signature-canvas__legend">
+                    <div className="signature-canvas__legend-card">
+                      <span className="card__label">{t('signatures.modeLabel')}</span>
+                      <strong>{getModeLabel(signatureMode)}</strong>
+                    </div>
+                    <div className="signature-canvas__legend-card">
+                      <span className="card__label">{t('signatures.appearanceLabelTitle')}</span>
+                      <strong>{appearanceLabel}</strong>
+                    </div>
+                    <div className="signature-canvas__legend-card">
+                      <span className="card__label">{t('signatures.signerLabel')}</span>
+                      <strong>{previewSignerName}</strong>
+                    </div>
                   </div>
                   <div className="signature-canvas__body">
                     <div className="signature-canvas__line signature-canvas__line--short" />
@@ -423,6 +441,10 @@ export function DocumentSignaturesTab({
                     <div className="signature-canvas__line" />
                     <div className="signature-canvas__line signature-canvas__line--mid" />
                     <div className="signature-canvas__line" />
+                    <div className="signature-canvas__approval-note">
+                      <span>{t('approvals.contextDecisionLabel')}</span>
+                      <strong>{t('signatures.signatureModeTitle')}</strong>
+                    </div>
 
                     {activeSignatures.map((signature) => (
                       <div

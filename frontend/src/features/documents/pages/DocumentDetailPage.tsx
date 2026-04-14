@@ -47,6 +47,7 @@ import { StatePanel } from '../../../shared/components/state/StatePanel';
 import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { DemoControlPanel } from '../../../shared/components/mock/DemoControlPanel';
+import { FeatureHeroPanel } from '../../../shared/components/mock/FeatureHeroPanel';
 import {
   getDemoScenarioState,
   getDemoShowcaseDocument,
@@ -211,6 +212,36 @@ export function DocumentDetailPage() {
     () => signatures.filter((signature) => signature.pageNumber === previewPage),
     [previewPage, signatures],
   );
+  const latestApproval = useMemo(
+    () => approvalHistory[approvalHistory.length - 1] ?? null,
+    [approvalHistory],
+  );
+  const signatureStats = useMemo(() => {
+    const signed = signatures.filter((signature) => signature.status === 'Signed').length;
+    const pending = signatures.filter((signature) => signature.status === 'Pending').length;
+
+    return { signed, pending };
+  }, [signatures]);
+  const presenterActions = useMemo(() => {
+    if (document?.status === 'Approved') {
+      return [
+        { label: t('shell.signatures'), to: '/signatures' },
+        { label: t('documents.openAudit'), to: '/audit-logs', tone: 'secondary' as const },
+      ];
+    }
+
+    if (document?.status === 'InReview') {
+      return [
+        { label: t('shell.approvals'), to: '/approvals' },
+        { label: t('documents.openAudit'), to: '/audit-logs', tone: 'secondary' as const },
+      ];
+    }
+
+    return [
+      { label: t('documents.historyTab'), to: `/documents/${id}` },
+      { label: t('documents.openAudit'), to: '/audit-logs', tone: 'secondary' as const },
+    ];
+  }, [document?.status, id, t]);
 
   async function refresh() {
     if (!id) {
@@ -468,15 +499,37 @@ export function DocumentDetailPage() {
               <span className="muted">{t('documents.previewLabel')}</span>
             </div>
             <div className="document-preview__sheet">
+              <div className="document-preview__ribbon">
+                <span>{t('documents.currentStatus')}: {document.status}</span>
+                <span>{t('documents.currentVersion')}: {document.currentVersionNumber ? `v${document.currentVersionNumber}` : t('documents.none')}</span>
+              </div>
               <div className="document-preview__header">
                 <strong>{document.title}</strong>
                 <span>{document.category || t('documents.documentLabel')} • {t('documents.pageLabel', { page: previewPage })}</span>
+              </div>
+              <div className="document-preview__summary">
+                <div className="document-preview__summary-card">
+                  <span className="card__label">{t('documents.versionContext')}</span>
+                  <strong>{currentVersion ? `v${currentVersion.versionNumber}` : t('documents.none')}</strong>
+                  <small>{currentVersion?.changeSummary ?? t('documents.noVersionContext')}</small>
+                </div>
+                <div className="document-preview__summary-card">
+                  <span className="card__label">{t('documents.nextStep')}</span>
+                  <strong>{scenarioState.focus}</strong>
+                  <small>{scenarioState.nextStep}</small>
+                </div>
               </div>
               <div className="document-preview__body">
                 <div className="document-preview__line document-preview__line--short" />
                 <div className="document-preview__line" />
                 <div className="document-preview__line" />
                 <div className="document-preview__line document-preview__line--short" />
+                <div className="document-preview__line document-preview__line--mid" />
+                <div className="document-preview__line" />
+                <div className="document-preview__approval-stamp">
+                  <span>{t('documents.historyTab')}</span>
+                  <strong>{latestApproval?.action ?? t('documents.none')}</strong>
+                </div>
                 {previewSignatures.length === 0 ? (
                   <div className="document-preview__empty">
                     <strong>{t('documents.noSignaturesOnPage')}</strong>
@@ -538,6 +591,42 @@ export function DocumentDetailPage() {
           <p className="muted">{scenarioState.nextStep}</p>
         </div>
       </section>
+
+      {demoMode ? (
+        <FeatureHeroPanel
+          eyebrow={t('documents.presenterEyebrow')}
+          title={t('documents.presenterTitle')}
+          description={t('documents.presenterDescription')}
+          actions={presenterActions}
+          stats={[
+            {
+              label: t('documents.currentStatus'),
+              value: document.status,
+              detail: scenarioState.nextStep,
+            },
+            {
+              label: t('documents.lastDecision'),
+              value: latestApproval?.action ?? t('documents.none'),
+              detail: latestApproval
+                ? t('documents.lastDecisionDetail', {
+                    actor: latestApproval.performedBy,
+                    value: new Date(latestApproval.performedAt).toLocaleString(),
+                  })
+                : t('documents.noDecisionYet'),
+            },
+            {
+              label: t('documents.signatureReadiness'),
+              value: t('documents.signatureReadinessValue', {
+                signed: signatureStats.signed,
+                total: signatures.length,
+              }),
+              detail: signatureStats.pending > 0
+                ? t('documents.signaturePendingDetail', { count: signatureStats.pending })
+                : t('documents.signatureCompleteDetail'),
+            },
+          ]}
+        />
+      ) : null}
 
       <DocumentEvidenceRail
         document={document}

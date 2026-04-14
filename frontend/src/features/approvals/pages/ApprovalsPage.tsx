@@ -8,6 +8,7 @@ import { StatCard } from '../../../shared/components/ui/StatCard';
 import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
 import { DemoWorkflowContext } from '../../../shared/components/mock/DemoWorkflowContext';
+import { FeatureHeroPanel } from '../../../shared/components/mock/FeatureHeroPanel';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { useTranslation } from '../../../i18n/useTranslation';
 import {
@@ -31,6 +32,7 @@ export function ApprovalsPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const scenarioState = getDemoScenarioState('demo-policy-014', language);
+  const primaryPending = items.find((item) => item.documentId === 'demo-policy-014') ?? null;
 
   useEffect(() => {
     let ignore = false;
@@ -177,6 +179,44 @@ export function ApprovalsPage() {
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
       {notice ? <div className="callout">{notice}</div> : null}
+
+      {demoMode ? (
+        <FeatureHeroPanel
+          eyebrow={t('approvals.resultEyebrow')}
+          title={primaryPending ? t('approvals.resultTitlePending') : t('approvals.resultTitleCleared')}
+          description={primaryPending ? t('approvals.resultDescriptionPending') : t('approvals.resultDescriptionCleared')}
+          actions={primaryPending
+            ? [
+                { label: t('approvals.openForDecision'), to: `/documents/${primaryPending.documentId}` },
+                { label: t('shell.auditLogs'), to: '/audit-logs', tone: 'secondary' as const },
+              ]
+            : [
+                { label: t('shell.signatures'), to: '/signatures' },
+                { label: t('shell.auditLogs'), to: '/audit-logs', tone: 'secondary' as const },
+              ]}
+          stats={[
+            {
+              label: t('approvals.totalPending'),
+              value: items.length,
+              detail: primaryPending ? t('approvals.resultQueueActive') : t('approvals.resultQueueClear'),
+            },
+            {
+              label: t('approvals.contextDecisionLabel'),
+              value: primaryPending ? t('approvals.contextDecisionValue') : t('approvals.resultDecisionCompleted'),
+              detail: primaryPending
+                ? t('approvals.resultDecisionPendingDetail')
+                : t('approvals.resultDecisionClearedDetail'),
+            },
+            {
+              label: t('approvals.contextNextStepLabel'),
+              value: primaryPending ? t('approvals.resultNextReview') : t('approvals.resultNextSignature'),
+              detail: primaryPending
+                ? t('approvals.resultNextReviewDetail')
+                : t('approvals.resultNextSignatureDetail'),
+            },
+          ]}
+        />
+      ) : null}
 
       <section className="panel panel--full stack">
         <div className="section-heading">

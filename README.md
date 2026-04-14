@@ -28,6 +28,17 @@ InsightDocs/
   docs/
 ```
 
+## Documentation
+
+เริ่มอ่านเอกสารจาก:
+
+- [docs/README.md](/Users/nuttapon/Github-dev/InsightDocs/docs/README.md)
+
+เอกสารถูกจัดใหม่ตามมุมมอง:
+
+- `Backend`
+- `Frontend`
+
 ## Implemented Foundation
 
 - clean architecture backend project split with correct project references

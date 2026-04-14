@@ -27,7 +27,7 @@ export function DocumentEvidenceRail({
     () => versions.find((version) => version.isCurrent) ?? versions[0] ?? null,
     [versions],
   );
-  const latestApproval = approvalHistory[0] ?? null;
+  const latestApproval = approvalHistory[approvalHistory.length - 1] ?? null;
   const signedCount = signatures.filter((signature) => signature.status === 'Signed').length;
   const pendingSignature = signatures
     .filter((signature) => signature.status === 'Pending')

@@ -14,6 +14,7 @@ import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioP
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
 import { DemoWorkflowContext } from '../../../shared/components/mock/DemoWorkflowContext';
+import { FeatureHeroPanel } from '../../../shared/components/mock/FeatureHeroPanel';
 import { getDemoAuditLog, getDemoAuditLogs, getDemoScenarioState } from '../../../shared/mock/demoScenario';
 import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 import { useTranslation } from '../../../i18n/useTranslation';
@@ -250,6 +251,35 @@ export function AuditLogsPage() {
         <StatCard label={t('audit.recentEvents')} value={results?.items.length ?? 0} />
         <StatCard label={t('audit.activeFilters')} value={Object.values(filters).filter(v => typeof v === 'string' && v.trim() !== '' && v !== '1' && v !== '20').length} />
       </div>
+
+      {demoMode ? (
+        <FeatureHeroPanel
+          eyebrow={t('audit.resultEyebrow')}
+          title={t('audit.resultTitle')}
+          description={t('audit.resultDescription')}
+          actions={[
+            { label: t('audit.openDemoDocument'), to: '/documents/demo-contract-001' },
+            { label: t('search.backToDashboard'), to: '/dashboard', tone: 'secondary' as const },
+          ]}
+          stats={[
+            {
+              label: t('audit.contextEventLabel'),
+              value: results?.totalCount ?? 0,
+              detail: t('audit.resultEventDetail'),
+            },
+            {
+              label: t('audit.contextActorLabel'),
+              value: selectedLog?.actorDisplayName ?? selectedLog?.actorUsername ?? t('audit.system'),
+              detail: t('audit.resultActorDetail'),
+            },
+            {
+              label: t('audit.contextTraceLabel'),
+              value: selectedLog?.relatedDocumentId ? t('audit.linked') : t('audit.none'),
+              detail: t('audit.resultTraceDetail'),
+            },
+          ]}
+        />
+      ) : null}
 
       <section className="panel panel--full stack">
         <div className="filter-bar">
