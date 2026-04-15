@@ -208,6 +208,11 @@ export function DashboardPage() {
   }, [recentActivities]);
 
   const scenarioState = getDemoScenarioState(undefined, language);
+  const flagshipSecondaryAction = access.canReviewDocuments
+    ? { to: '/approvals', label: t('shell.approvals') }
+    : access.canSignDocuments
+      ? { to: '/signatures', label: t('shell.signatures') }
+      : { to: '/audit-logs', label: t('shell.auditLogs') };
 
   function handleResetDemo() {
     resetDemoScenario();
@@ -236,6 +241,7 @@ export function DashboardPage() {
             </p>
             <div className="dashboard-flagship__cta">
               <Link className="button" to="/documents/demo-contract-001">{t('dashboard.openPrimaryDemo')}</Link>
+              <Link className="button button--secondary" to={flagshipSecondaryAction.to}>{flagshipSecondaryAction.label}</Link>
               <Link className="button button--secondary" to="/documents">{t('dashboard.openRegistry')}</Link>
               {demoMode ? (
                 <button className="button button--secondary" type="button" onClick={handleResetDemo}>{t('dashboard.resetDemo')}</button>
@@ -303,6 +309,7 @@ export function DashboardPage() {
           <div className="section-heading">
             <span className="sidebar__eyebrow">{t('dashboard.quickActions')}</span>
             <h3>{t('dashboard.quickActions')}</h3>
+            <p className="section-heading__description muted">{t('dashboard.quickActionsDescription')}</p>
           </div>
           <div className="action-list">
             {quickActions.map((action) => (
@@ -321,6 +328,7 @@ export function DashboardPage() {
           <div className="section-heading">
             <span className="sidebar__eyebrow">{t('dashboard.focusNow')}</span>
             <h3>{t('dashboard.focusNow')}</h3>
+            <p className="section-heading__description muted">{t('dashboard.focusNowDescription')}</p>
           </div>
           <div className="action-list">
             {access.canReviewDocuments ? (
@@ -366,51 +374,45 @@ export function DashboardPage() {
           <div className="section-heading">
             <span className="sidebar__eyebrow">{t('dashboard.recentDocuments')}</span>
             <h3>{t('dashboard.recentDocuments')}</h3>
+            <p className="section-heading__description muted">{t('dashboard.recentDocumentsDescription')}</p>
           </div>
-          <div className="table-wrap">
-            <table className="table table--premium">
-              <thead>
-                <tr>
-                  <th>{t('shell.documents')}</th>
-                  <th>{t('documents.statusLabel')}</th>
-                  <th>{t('dashboard.activityColumn')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayedRecentDocuments.map((document) => (
-                  <tr key={document.id}>
-                    <td>
-                      <Link className="dashboard-document-link" to={`/documents/${document.id}`}>{document.title}</Link>
-                      <div className="muted dashboard-document-meta">{document.category ?? '-'}</div>
-                    </td>
-                    <td>
+          {displayedRecentDocuments.length === 0 ? (
+            <EmptyState 
+              title={t('dashboard.noDocuments')} 
+              description={t('dashboard.noDocumentsDescription')} 
+            />
+          ) : (
+            <div className="dashboard-document-list">
+              {displayedRecentDocuments.map((document) => (
+                <article key={document.id} className="dashboard-document-card">
+                  <div className="dashboard-document-card__main">
+                    <div className="dashboard-document-card__header">
+                      <div className="stack stack--compact">
+                        <Link className="dashboard-document-link" to={`/documents/${document.id}`}>{document.title}</Link>
+                        <div className="muted dashboard-document-meta">{document.category ?? '-'}</div>
+                      </div>
                       <StatusBadge status={document.status} />
-                    </td>
-                    <td>
-                      <div className="dashboard-activity-version">v{document.currentVersionNumber || '1'}</div>
-                      <div className="muted dashboard-activity-date">{new Date(document.lastActivityAt).toLocaleDateString()}</div>
-                    </td>
-                  </tr>
-                ))}
-                {displayedRecentDocuments.length === 0 ? (
-                  <tr>
-                    <td colSpan={3}>
-                      <EmptyState 
-                        title={t('dashboard.noDocuments')} 
-                        description={t('dashboard.noDocumentsDescription')} 
-                      />
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                    <div className="registry-meta">
+                      <span>v{document.currentVersionNumber || '1'}</span>
+                      <span>{new Date(document.lastActivityAt).toLocaleDateString()}</span>
+                      <span>{document.ownerDisplayName || document.controllerDisplayName || '-'}</span>
+                    </div>
+                  </div>
+                  <div className="dashboard-document-card__actions">
+                    <Link className="button button--secondary" to={`/documents/${document.id}`}>{t('common.open')}</Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="panel stack">
           <div className="section-heading">
             <span className="sidebar__eyebrow">{t('dashboard.recentActivities')}</span>
             <h3>{t('dashboard.recentActivities')}</h3>
+            <p className="section-heading__description muted">{t('dashboard.recentActivitiesDescription')}</p>
           </div>
           {displayedRecentActivities.length === 0 ? (
             <EmptyState 

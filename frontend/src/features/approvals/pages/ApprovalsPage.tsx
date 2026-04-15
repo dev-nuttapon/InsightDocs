@@ -222,6 +222,7 @@ export function ApprovalsPage() {
         <div className="section-heading">
           <span className="sidebar__eyebrow">{t('approvals.queueEyebrow')}</span>
           <h3>{t('approvals.queueTitle')}</h3>
+          <p className="section-heading__description muted">{t('approvals.queueDescription')}</p>
         </div>
 
         {items.length === 0 ? (

@@ -795,6 +795,17 @@ textarea {
   gap: 8px;
 }
 
+.section-heading__description {
+  max-width: 70ch;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.section-heading--workspace {
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
 .section-heading h3 {
   font-size: 22px;
   letter-spacing: -0.02em;
@@ -1376,6 +1387,10 @@ button {
     min-width: min(100%, 220px);
   }
 
+  .filter-action-button {
+    width: 100%;
+  }
+
   .panel {
     padding: 24px;
     border-radius: 22px;
@@ -1434,7 +1449,21 @@ button {
   .page-header__actions .button,
   .page-header__actions a.button,
   .actions .button,
-  .actions a.button {
+  .actions a.button,
+  .dashboard-flagship__cta .button,
+  .dashboard-flagship__cta a.button,
+  .document-flagship__cta .button,
+  .document-flagship__cta a.button,
+  .feature-hero__actions .button,
+  .feature-hero__actions a.button,
+  .workflow-context__actions .button,
+  .workflow-context__actions a.button,
+  .demo-spotlight__actions .button,
+  .demo-spotlight__actions a.button,
+  .demo-control__actions .button,
+  .demo-control__actions a.button,
+  .audit-closeout__actions .button,
+  .audit-closeout__actions a.button {
     width: 100%;
   }
 
@@ -2493,6 +2522,23 @@ button {
   gap: 12px;
 }
 
+.dashboard-flagship__cta .button:first-child,
+.dashboard-flagship__cta a.button:first-child,
+.document-flagship__cta .button:first-child,
+.document-flagship__cta a.button:first-child,
+.feature-hero__actions .button:first-child,
+.feature-hero__actions a.button:first-child,
+.workflow-context__actions .button:first-child,
+.workflow-context__actions a.button:first-child,
+.demo-spotlight__actions .button:first-child,
+.demo-spotlight__actions a.button:first-child,
+.demo-control__actions .button:first-child,
+.demo-control__actions a.button:first-child,
+.audit-closeout__actions .button:first-child,
+.audit-closeout__actions a.button:first-child {
+  box-shadow: 0 12px 24px var(--color-shadow);
+}
+
 .dashboard-flagship__signal {
   display: grid;
   gap: 16px;
@@ -3526,6 +3572,26 @@ button {
   padding: 24px;
 }
 
+.audit-closeout {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--color-card-hover), var(--color-card));
+}
+
+.audit-closeout p,
+.audit-closeout strong {
+  margin: 0;
+}
+
+.audit-closeout__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .audit-meta-heading {
   margin-bottom: 8px;
   font-size: 11px;
@@ -3575,6 +3641,60 @@ button {
 .dashboard-activity-link {
   color: var(--color-primary);
   font-weight: 600;
+}
+
+.dashboard-document-list {
+  display: grid;
+  gap: 14px;
+}
+
+.dashboard-document-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--color-card-hover), var(--color-card));
+}
+
+.dashboard-document-card__main,
+.dashboard-document-card__actions {
+  min-width: 0;
+}
+
+.dashboard-document-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dashboard-document-card__actions {
+  display: flex;
+  align-items: center;
+}
+
+.search-closeout {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--color-card-hover), var(--color-card));
+}
+
+.search-closeout__copy,
+.search-closeout__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-closeout__copy {
+  align-items: flex-start;
+  flex-direction: column;
 }
 
 .document-history__title {
@@ -3933,6 +4053,23 @@ button {
   .search-result-summary,
   .version-compare-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .document-preview__summary,
+  .signature-canvas__legend,
+  .dashboard-flagship__signal-grid,
+  .demo-spotlight__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-bar {
+    align-items: stretch;
+  }
+
+  .filter-group,
+  .search-filter-group--compact {
+    min-width: 100%;
+    max-width: none;
   }
 
   .tab-list {

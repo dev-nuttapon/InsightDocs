@@ -293,15 +293,22 @@ export function SearchPage() {
         </div>
       )}
 
-      <div className="actions">
-        <button className="button button--secondary" disabled={filters.page <= 1} type="button" onClick={() => updateFilters({ page: filters.page - 1 })}>
-          {t('search.previous')}
-        </button>
-        <span className="muted">{t('search.pageOf', { page: filters.page, total: totalPages })}</span>
-        <button className="button button--secondary" disabled={filters.page >= totalPages} type="button" onClick={() => updateFilters({ page: filters.page + 1 })}>
-          {t('search.next')}
-        </button>
-      </div>
+      <section className="search-closeout">
+        <div className="search-closeout__copy">
+          <span className="sidebar__eyebrow">{t('search.contextEyebrow')}</span>
+          <strong>{t('search.contextTitle')}</strong>
+          <span className="muted">{t('search.contextOutcomeDetail')}</span>
+        </div>
+        <div className="search-closeout__actions">
+          <button className="button button--secondary" disabled={filters.page <= 1} type="button" onClick={() => updateFilters({ page: filters.page - 1 })}>
+            {t('search.previous')}
+          </button>
+          <span className="muted">{t('search.pageOf', { page: filters.page, total: totalPages })}</span>
+          <button className="button button--secondary" disabled={filters.page >= totalPages} type="button" onClick={() => updateFilters({ page: filters.page + 1 })}>
+            {t('search.next')}
+          </button>
+        </div>
+      </section>
     </section>
   </div>
 );

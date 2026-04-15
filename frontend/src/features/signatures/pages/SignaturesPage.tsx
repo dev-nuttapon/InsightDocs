@@ -254,6 +254,7 @@ export function SignaturesPage() {
         <div className="section-heading">
           <span className="sidebar__eyebrow">{t('signatures.queueEyebrow')}</span>
           <h3>{t('signatures.queueTitle')}</h3>
+          <p className="section-heading__description muted">{t('signatures.queueDescription')}</p>
         </div>
 
         {items.length === 0 ? (

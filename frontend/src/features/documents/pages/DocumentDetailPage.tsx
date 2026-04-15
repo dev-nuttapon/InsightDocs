@@ -242,6 +242,20 @@ export function DocumentDetailPage() {
       { label: t('documents.openAudit'), to: '/audit-logs', tone: 'secondary' as const },
     ];
   }, [document?.status, id, t]);
+  const activeTabDescription = useMemo(() => {
+    switch (activeTab) {
+      case 'details':
+        return t('documents.workspaceDescriptionDetails');
+      case 'versions':
+        return t('documents.workspaceDescriptionVersions');
+      case 'signatures':
+        return t('documents.workspaceDescriptionSignatures');
+      case 'history':
+        return t('documents.workspaceDescriptionHistory');
+      default:
+        return t('documents.workspaceDescriptionDetails');
+    }
+  }, [activeTab, t]);
 
   async function refresh() {
     if (!id) {
@@ -648,6 +662,12 @@ export function DocumentDetailPage() {
           { label: t('documents.pdfPreviewMetric'), value: showcaseDocument ? t('documents.pdfPreviewVisible') : t('documents.pdfPreviewMetadata') },
         ]}
       />
+
+      <section className="section-heading section-heading--workspace">
+        <span className="sidebar__eyebrow">{t('documents.workspaceEyebrow')}</span>
+        <h3>{t('documents.workspaceTitle')}</h3>
+        <p className="section-heading__description muted">{activeTabDescription}</p>
+      </section>
 
       <nav className="tab-list">
         <button className={`tab-item ${activeTab === 'details' ? 'tab-item--active' : ''}`} onClick={() => setActiveTab('details')}>{t('documents.detailsTab')}</button>

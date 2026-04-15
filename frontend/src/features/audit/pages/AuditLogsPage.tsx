@@ -173,6 +173,32 @@ export function AuditLogsPage() {
     'document.approval.approved': t('audit.eventApprovalApproved'),
     'document.signature.signed': t('audit.eventSignatureSigned'),
   };
+  const followUpLinks = useMemo(() => {
+    if (!selectedLog?.relatedDocumentId) {
+      return [{ to: '/dashboard', label: t('search.backToDashboard') }];
+    }
+
+    const action = selectedLog.action.toLowerCase();
+
+    if (action.includes('signature')) {
+      return [
+        { to: `/documents/${selectedLog.relatedDocumentId}`, label: t('audit.openDemoDocument') },
+        { to: '/signatures', label: t('shell.signatures') },
+      ];
+    }
+
+    if (action.includes('approval')) {
+      return [
+        { to: `/documents/${selectedLog.relatedDocumentId}`, label: t('audit.openDemoDocument') },
+        { to: '/approvals', label: t('shell.approvals') },
+      ];
+    }
+
+    return [
+      { to: `/documents/${selectedLog.relatedDocumentId}`, label: t('audit.openDemoDocument') },
+      { to: '/dashboard', label: t('search.backToDashboard') },
+    ];
+  }, [selectedLog, t]);
 
   return (
     <div className="stack stack--xl">
@@ -314,6 +340,11 @@ export function AuditLogsPage() {
 
         <div className="split-layout split-layout--wide">
           <section className="stack">
+            <div className="section-heading">
+              <span className="sidebar__eyebrow">{t('audit.listEyebrow')}</span>
+              <h3>{t('audit.listTitle')}</h3>
+              <p className="section-heading__description muted">{t('audit.listDescription')}</p>
+            </div>
             <div className="registry-toolbar">
               <span className="muted">
                 {t('audit.showingCount', { count: results?.items.length ?? 0, total: results?.totalCount ?? 0 })}
@@ -374,7 +405,11 @@ export function AuditLogsPage() {
 
           <aside className="stack">
             <div className="panel stack audit-detail-panel">
-              <h3 className="form-section__title">{t('audit.detailTitle')}</h3>
+              <div className="section-heading">
+                <span className="sidebar__eyebrow">{t('audit.detailEyebrow')}</span>
+                <h3 className="form-section__title">{t('audit.detailTitle')}</h3>
+                <p className="section-heading__description muted">{t('audit.detailDescription')}</p>
+              </div>
               {selectedLog ? (
                 <div className="stack">
                   <dl className="detail-list">
@@ -395,6 +430,25 @@ export function AuditLogsPage() {
                       <dd>{selectedLog.entityType} ({selectedLog.entityId ?? '-'})</dd>
                     </div>
                   </dl>
+
+                  {demoMode ? (
+                    <section className="audit-closeout">
+                      <span className="sidebar__eyebrow">{t('audit.resultEyebrow')}</span>
+                      <strong>{eventLabelMap[selectedLog.action] ?? selectedLog.action}</strong>
+                      <p className="muted">
+                        {selectedLog.relatedDocumentId
+                          ? t('audit.resultTraceDetail')
+                          : t('audit.resultDescription')}
+                      </p>
+                      <div className="audit-closeout__actions">
+                        {followUpLinks.map((link) => (
+                          <Link key={`${link.to}-${link.label}`} className="button button--secondary" to={link.to}>
+                            {link.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
 
                   <Timeline items={timelineItems} />
                   <div className="audit-meta-viewer">
