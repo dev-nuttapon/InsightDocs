@@ -23,5 +23,5 @@ export function isDemoModeEnabled() {
     return explicitFlag;
   }
 
-  return import.meta.env.DEV;
+  return true;
 }

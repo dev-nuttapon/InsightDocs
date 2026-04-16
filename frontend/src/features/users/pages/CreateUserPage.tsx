@@ -9,6 +9,8 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { FeatureHeroPanel } from '../../../shared/components/mock/FeatureHeroPanel';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
+import { demoCreateUser } from '../../../shared/mock/demoScenario';
 
 type CreateUserFormState = CreateUserInput & {
   confirmPassword: string;
@@ -27,6 +29,7 @@ const initialForm: CreateUserFormState = {
 export function CreateUserPage() {
   const { accessToken } = useAuth();
   const { language, t } = useTranslation();
+  const demoMode = isDemoModeEnabled();
   const navigate = useNavigate();
   const [form, setForm] = useState<CreateUserFormState>(initialForm);
   const [error, setError] = useState<string | null>(null);
@@ -49,10 +52,6 @@ export function CreateUserPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!accessToken) {
-      return;
-    }
-
     if (form.password !== form.confirmPassword) {
       setError(t('users.passwordMismatch'));
       return;
@@ -74,6 +73,23 @@ export function CreateUserPage() {
         password: form.password,
         roles: form.roles,
       };
+
+      if (demoMode) {
+        const created = demoCreateUser(payload);
+        navigate('/users', {
+          replace: true,
+          state: {
+            notice: t('users.createdNotice', { name: created.displayName || created.username }),
+          },
+        });
+        return;
+      }
+
+      if (!accessToken) {
+        setError(t('users.noSession'));
+        return;
+      }
+
       const created = await createUser(payload, accessToken);
       navigate('/users', {
         replace: true,

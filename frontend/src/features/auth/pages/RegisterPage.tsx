@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { registerUser, type RegisterUserInput } from '../api/authApi';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 
 const initialState: RegisterUserInput = {
   username: '',
@@ -13,6 +14,7 @@ const initialState: RegisterUserInput = {
 
 export function RegisterPage() {
   const { t } = useTranslation();
+  const demoMode = isDemoModeEnabled();
   const [form, setForm] = useState(initialState);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -36,7 +38,9 @@ export function RegisterPage() {
             event.preventDefault();
             setIsSubmitting(true);
             try {
-              await registerUser(form);
+              if (!demoMode) {
+                await registerUser(form);
+              }
               setNotice(t('auth.registerNotice'));
               setError(null);
               setForm(initialState);

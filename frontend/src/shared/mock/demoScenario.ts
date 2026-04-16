@@ -3,6 +3,7 @@ import type {
   AuditLogFilters,
   AuditLogListResponse,
 } from '../../features/audit/types';
+import type { PasswordResetRequest } from '../../features/auth/api/authApi';
 import type {
   DashboardSummary,
   RecentDashboardActivity,
@@ -125,6 +126,25 @@ const demoUsers: AppUser[] = [
     approvedAt: '2026-04-02T12:30:00Z',
     approvedBy: 'demo-user-admin',
     roles: ['insightdocs:signer'],
+  },
+];
+
+const demoPasswordResetRequests: PasswordResetRequest[] = [
+  {
+    id: 'demo-pr-001',
+    userId: 'demo-user-signer-2',
+    username: 'preecha.signer',
+    email: 'preecha.signer@insightdocs.local',
+    displayName: 'Preecha T.',
+    status: 'Pending',
+    requestedByIdentifier: 'preecha.signer',
+    requestedAt: '2026-04-10T09:00:00Z',
+    reviewedAt: null,
+    reviewedBy: null,
+    reviewComment: null,
+    resetTokenExpiresAt: null,
+    resetUrl: null,
+    completedAt: null,
   },
 ];
 
@@ -601,6 +621,7 @@ type DemoSnapshot = {
   approvalHistory: Record<string, DocumentApprovalHistoryItem[]>;
   signatures: Record<string, DocumentSignatureRequest[]>;
   auditLogs: AuditLogDetail[];
+  passwordResetRequests: PasswordResetRequest[];
 };
 
 const DEMO_STORAGE_KEY = 'insightdocs.demo.snapshot.v1';
@@ -614,6 +635,7 @@ function buildInitialDemoSnapshot(): DemoSnapshot {
     approvalHistory: demoApprovalHistory,
     signatures: demoSignatures,
     auditLogs: demoAuditLogs,
+    passwordResetRequests: demoPasswordResetRequests,
   });
 }
 
@@ -1615,4 +1637,166 @@ export function demoRejectSignature(documentId: string, signatureRequestId: stri
       metadata: { signingOrder: requests[index].signingOrder, comment: comment || null },
     });
   });
+}
+
+export function getDemoUsers() {
+  return cloneDemo(readSnapshot().users);
+}
+
+export function getDemoUser(id: string) {
+  return cloneDemo(readSnapshot().users.find((user) => user.id === id) ?? null);
+}
+
+export function demoCreateUser(input: any) {
+  let created: AppUser | null = null;
+  updateSnapshot((snapshot) => {
+    const id = createId('demo-user');
+    created = {
+      id,
+      username: input.username,
+      email: input.email,
+      displayName: `${input.firstName} ${input.lastName}`.trim() || input.username,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      status: 'Active',
+      createdAt: nowIso(),
+      approvedAt: nowIso(),
+      approvedBy: 'demo.admin',
+      roles: input.roles,
+    };
+    snapshot.users.push(created);
+    appendAuditLog(snapshot, {
+      action: 'user.created',
+      entityType: 'User',
+      entityId: id,
+      metadata: { username: input.username, roles: input.roles },
+    });
+  });
+  return created as unknown as AppUser;
+}
+
+export function demoUpdateUser(id: string, input: any) {
+  updateSnapshot((snapshot) => {
+    const index = snapshot.users.findIndex((user) => user.id === id);
+    if (index < 0) return;
+
+    snapshot.users[index] = {
+      ...snapshot.users[index],
+      username: input.username,
+      email: input.email,
+      displayName: `${input.firstName} ${input.lastName}`.trim() || input.username,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      roles: input.roles,
+    };
+
+    appendAuditLog(snapshot, {
+      action: 'user.updated',
+      entityType: 'User',
+      entityId: id,
+      metadata: { roles: input.roles },
+    });
+  });
+}
+
+export function demoDeleteUser(id: string) {
+  updateSnapshot((snapshot) => {
+    const index = snapshot.users.findIndex((user) => user.id === id);
+    if (index < 0) return;
+    snapshot.users.splice(index, 1);
+    appendAuditLog(snapshot, {
+      action: 'user.deleted',
+      entityType: 'User',
+      entityId: id,
+    });
+  });
+}
+
+export function demoEnableUser(id: string) {
+  let updated: AppUser | null = null;
+  updateSnapshot((snapshot) => {
+    const index = snapshot.users.findIndex((user) => user.id === id);
+    if (index < 0) return;
+    snapshot.users[index].status = 'Active';
+    updated = snapshot.users[index];
+    appendAuditLog(snapshot, {
+      action: 'user.enabled',
+      entityType: 'User',
+      entityId: id,
+    });
+  });
+  return updated as unknown as AppUser;
+}
+
+export function demoDisableUser(id: string) {
+  let updated: AppUser | null = null;
+  updateSnapshot((snapshot) => {
+    const index = snapshot.users.findIndex((user) => user.id === id);
+    if (index < 0) return;
+    snapshot.users[index].status = 'Disabled';
+    updated = snapshot.users[index];
+    appendAuditLog(snapshot, {
+      action: 'user.disabled',
+      entityType: 'User',
+      entityId: id,
+    });
+  });
+  return updated as unknown as AppUser;
+}
+
+export function getDemoPasswordResetRequests() {
+  return cloneDemo(readSnapshot().passwordResetRequests);
+}
+
+export function demoApprovePasswordResetRequest(id: string, comment: string) {
+  let updated: PasswordResetRequest | null = null;
+  updateSnapshot((snapshot) => {
+    const index = snapshot.passwordResetRequests.findIndex((r) => r.id === id);
+    if (index < 0) return;
+
+    const request = snapshot.passwordResetRequests[index];
+    const resetToken = `demo-token-${Date.now()}`;
+    const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`;
+
+    request.status = 'Approved';
+    request.reviewComment = comment;
+    request.reviewedAt = nowIso();
+    request.reviewedBy = 'demo.admin';
+    request.resetUrl = resetUrl;
+    request.resetTokenExpiresAt = new Date(Date.now() + 3600000).toISOString();
+
+    updated = cloneDemo(request);
+
+    appendAuditLog(snapshot, {
+      action: 'user.password-reset.approved',
+      entityType: 'PasswordResetRequest',
+      entityId: id,
+      metadata: { comment, resetUrl },
+    });
+  });
+  return updated as unknown as PasswordResetRequest;
+}
+
+export function demoRejectPasswordResetRequest(id: string, comment: string) {
+  let updated: PasswordResetRequest | null = null;
+  updateSnapshot((snapshot) => {
+    const index = snapshot.passwordResetRequests.findIndex((r) => r.id === id);
+    if (index < 0) return;
+
+    const request = snapshot.passwordResetRequests[index];
+    request.status = 'Rejected';
+    request.reviewComment = comment;
+    request.reviewedAt = nowIso();
+    request.reviewedBy = 'demo.admin';
+
+    updated = cloneDemo(request);
+
+    appendAuditLog(snapshot, {
+      action: 'user.password-reset.rejected',
+      entityType: 'PasswordResetRequest',
+      entityId: id,
+      metadata: { comment },
+    });
+  });
+  return updated as unknown as PasswordResetRequest;
 }

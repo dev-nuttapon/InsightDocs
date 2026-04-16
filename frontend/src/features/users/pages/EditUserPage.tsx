@@ -8,6 +8,8 @@ import { AVAILABLE_PROJECT_ROLES, formatBusinessRole, formatBusinessRoleDescript
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { FeatureHeroPanel } from '../../../shared/components/mock/FeatureHeroPanel';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
+import { demoUpdateUser, getDemoUser } from '../../../shared/mock/demoScenario';
 
 type EditUserFormState = UpdateUserInput & {
   confirmPassword: string;
@@ -17,6 +19,7 @@ export function EditUserPage() {
   const { id } = useParams<{ id: string }>();
   const { accessToken } = useAuth();
   const { language, t } = useTranslation();
+  const demoMode = isDemoModeEnabled();
   const navigate = useNavigate();
   const [user, setUser] = useState<AppUser | null>(null);
   const [form, setForm] = useState<EditUserFormState>({
@@ -35,7 +38,29 @@ export function EditUserPage() {
     let ignore = false;
 
     async function load() {
-      if (!id || !accessToken) {
+      if (!id) {
+        return;
+      }
+
+      if (demoMode) {
+        const payload = getDemoUser(id);
+        if (payload && !ignore) {
+          setUser(payload);
+          setForm({
+            username: payload.email,
+            email: payload.email,
+            firstName: payload.firstName ?? '',
+            lastName: payload.lastName ?? '',
+            password: '',
+            confirmPassword: '',
+            roles: payload.roles,
+          });
+          setError(null);
+        }
+        return;
+      }
+
+      if (!accessToken) {
         return;
       }
 
@@ -72,7 +97,7 @@ export function EditUserPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!id || !accessToken) {
+    if (!id) {
       return;
     }
 
@@ -97,6 +122,23 @@ export function EditUserPage() {
         password: form.password?.trim() ? form.password : undefined,
         roles: form.roles,
       };
+
+      if (demoMode) {
+        demoUpdateUser(id, payload);
+        navigate('/users', {
+          replace: true,
+          state: {
+            notice: t('users.editSuccess'),
+          },
+        });
+        return;
+      }
+
+      if (!accessToken) {
+        setError(t('profile.noSession'));
+        return;
+      }
+
       await updateUser(id, payload, accessToken);
       navigate('/users', {
         replace: true,
@@ -111,7 +153,7 @@ export function EditUserPage() {
     }
   }
 
-  if (!user || !accessToken || !id) {
+  if (!user || (!accessToken && !demoMode) || !id) {
     return (
       <section className="panel">
         <p className="muted">{error ?? t('users.loadingOne')}</p>

@@ -5,6 +5,8 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { StatCard } from '../../../shared/components/ui/StatCard';
+import { SectionCard } from '../../../shared/components/ui/SectionCard';
+import { Icons } from '../../../shared/components/ui/Icons';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { SampleDocumentsShowcase } from '../../../shared/components/mock/SampleDocumentsShowcase';
 import { useTranslation } from '../../../i18n/useTranslation';
@@ -127,10 +129,10 @@ export function DocumentsPage() {
   }
 
   const summaryCards = useMemo(() => [
-    { label: t('documents.totalDocuments'), value: documents.length },
-    { label: t('documents.draftDocuments'), value: documents.filter((document) => document.status === 'Draft').length },
-    { label: t('documents.reviewDocuments'), value: documents.filter((document) => document.status === 'InReview').length },
-    { label: t('documents.approvedDocuments'), value: documents.filter((document) => document.status === 'Approved').length },
+    { label: t('documents.totalDocuments'), value: documents.length, icon: Icons.Documents },
+    { label: t('documents.draftDocuments'), value: documents.filter((document) => document.status === 'Draft').length, icon: Icons.Plus, trendType: 'neutral' },
+    { label: t('documents.reviewDocuments'), value: documents.filter((document) => document.status === 'InReview').length, icon: Icons.Approval, trend: 'active', trendType: 'warning' },
+    { label: t('documents.approvedDocuments'), value: documents.filter((document) => document.status === 'Approved').length, icon: Icons.Signature, trendType: 'success' },
   ], [documents, t]);
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -183,7 +185,14 @@ export function DocumentsPage() {
 
       <div className="dashboard-summary-grid">
         {summaryCards.map((card) => (
-          <StatCard key={card.label} label={card.label} value={card.value} />
+          <StatCard 
+            key={card.label} 
+            label={card.label} 
+            value={card.value} 
+            icon={card.icon && <card.icon size={20} />}
+            trend={card.trend}
+            trendType={card.trendType as any}
+          />
         ))}
       </div>
 
@@ -191,11 +200,12 @@ export function DocumentsPage() {
       {notice ? <div className="callout">{notice}</div> : null}
 
       {access.canManageDocuments ? (
-        <section className="panel panel--full stack">
-          <div className="section-heading">
-            <span className="sidebar__eyebrow">{t('documents.registerEyebrow')}</span>
-            <h3>{t('documents.registerTitle')}</h3>
-          </div>
+        <SectionCard
+          title={t('documents.registerTitle')}
+          subtitle={t('documents.registerEyebrow')}
+          className="stack"
+          variant="hero"
+        >
           <div className="user-form-panel">
             <form className="stack" onSubmit={handleCreate}>
               <div className="grid-2">
@@ -233,15 +243,14 @@ export function DocumentsPage() {
               </div>
             </form>
           </div>
-        </section>
+        </SectionCard>
       ) : null}
 
-      <section className="panel panel--full stack">
-        <div className="section-heading">
-          <span className="sidebar__eyebrow">{t('documents.registrySectionEyebrow')}</span>
-          <h3>{t('documents.registrySectionTitle')}</h3>
-        </div>
-
+      <SectionCard
+        title={t('documents.registrySectionTitle')}
+        subtitle={t('documents.registrySectionEyebrow')}
+        className="stack"
+      >
         <div className="filter-bar">
           <div className="filter-group">
             <span className="filter-bar__label">{t('documents.searchLabel')}</span>
@@ -319,7 +328,7 @@ export function DocumentsPage() {
             ))}
           </div>
         )}
-      </section>
+      </SectionCard>
     </div>
   );
 }

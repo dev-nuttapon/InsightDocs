@@ -338,7 +338,7 @@ export function AuditLogsPage() {
 
         {error ? <div className="callout callout--danger">{error}</div> : null}
 
-        <div className="split-layout split-layout--wide">
+        <div className="split-layout split-layout--wide split-layout--audit">
           <section className="stack">
             <div className="section-heading">
               <span className="sidebar__eyebrow">{t('audit.listEyebrow')}</span>

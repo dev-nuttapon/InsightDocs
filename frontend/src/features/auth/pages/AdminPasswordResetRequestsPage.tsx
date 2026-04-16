@@ -9,10 +9,17 @@ import { StatCard } from '../../../shared/components/ui/StatCard';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { FeatureHeroPanel } from '../../../shared/components/mock/FeatureHeroPanel';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
+import {
+  demoApprovePasswordResetRequest,
+  demoRejectPasswordResetRequest,
+  getDemoPasswordResetRequests,
+} from '../../../shared/mock/demoScenario';
 
 export function AdminPasswordResetRequestsPage() {
   const { accessToken } = useAuth();
   const { t } = useTranslation();
+  const demoMode = isDemoModeEnabled();
   const [requests, setRequests] = useState<PasswordResetRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -21,6 +28,14 @@ export function AdminPasswordResetRequestsPage() {
     let ignore = false;
 
     async function load() {
+      if (demoMode) {
+        if (!ignore) {
+          setRequests(getDemoPasswordResetRequests());
+          setError(null);
+        }
+        return;
+      }
+
       if (!accessToken) {
         return;
       }
@@ -45,6 +60,11 @@ export function AdminPasswordResetRequestsPage() {
   }, [accessToken, t]);
 
   async function refresh() {
+    if (demoMode) {
+      setRequests(getDemoPasswordResetRequests());
+      return;
+    }
+
     if (!accessToken) {
       return;
     }
@@ -54,6 +74,14 @@ export function AdminPasswordResetRequestsPage() {
   }
 
   async function handleApprove(id: string) {
+    if (demoMode) {
+      const result = demoApprovePasswordResetRequest(id, t('passwordReset.approveComment'));
+      await refresh();
+      setNotice(result.resetUrl ? t('passwordReset.generatedLink', { url: result.resetUrl }) : t('passwordReset.approvedNotice'));
+      setError(null);
+      return;
+    }
+
     if (!accessToken) {
       return;
     }
@@ -70,6 +98,14 @@ export function AdminPasswordResetRequestsPage() {
   }
 
   async function handleReject(id: string) {
+    if (demoMode) {
+      demoRejectPasswordResetRequest(id, t('passwordReset.rejectComment'));
+      await refresh();
+      setNotice(t('passwordReset.rejectedNotice'));
+      setError(null);
+      return;
+    }
+
     if (!accessToken) {
       return;
     }

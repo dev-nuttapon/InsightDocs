@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { StatCard } from '../../../shared/components/ui/StatCard';
+import { SectionCard } from '../../../shared/components/ui/SectionCard';
+import { Icons } from '../../../shared/components/ui/Icons';
 import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
 import { DemoWorkflowContext } from '../../../shared/components/mock/DemoWorkflowContext';
@@ -185,9 +187,23 @@ export function SignaturesPage() {
       ) : null}
 
       <div className="dashboard-summary-grid">
-        <StatCard label={t('signatures.totalPending')} value={items.length} />
-        <StatCard label={t('signatures.firstOrder')} value={items.filter((item) => item.signingOrder === 1).length} />
-        <StatCard label={t('signatures.withComment')} value={items.filter((item) => Boolean(item.comment)).length} />
+        <StatCard 
+          label={t('signatures.totalPending')} 
+          value={items.length} 
+          icon={<Icons.Signature size={20} />} 
+          trend={items.length > 5 ? t('signatures.highVolume') : undefined}
+          trendType={items.length > 5 ? 'warning' : 'neutral'}
+        />
+        <StatCard 
+          label={t('signatures.firstOrder')} 
+          value={items.filter((item) => item.signingOrder === 1).length} 
+          icon={<Icons.Approval size={20} />} 
+        />
+        <StatCard 
+          label={t('signatures.withComment')} 
+          value={items.filter((item) => Boolean(item.comment)).length} 
+          icon={<Icons.Audit size={20} />} 
+        />
       </div>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
@@ -250,13 +266,11 @@ export function SignaturesPage() {
         </div>
       </section>
 
-      <section className="panel panel--full stack">
-        <div className="section-heading">
-          <span className="sidebar__eyebrow">{t('signatures.queueEyebrow')}</span>
-          <h3>{t('signatures.queueTitle')}</h3>
-          <p className="section-heading__description muted">{t('signatures.queueDescription')}</p>
-        </div>
-
+      <SectionCard 
+        title={t('signatures.queueTitle')} 
+        subtitle={t('signatures.queueEyebrow')}
+        className="stack"
+      >
         {items.length === 0 ? (
           <EmptyState 
             title={t('signatures.emptyTitle')} 
@@ -335,7 +349,7 @@ export function SignaturesPage() {
             ))}
           </div>
         )}
-      </section>
+      </SectionCard>
     </div>
   );
 }

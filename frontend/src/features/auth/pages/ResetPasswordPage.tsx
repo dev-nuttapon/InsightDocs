@@ -3,9 +3,11 @@ import { Link, useSearchParams } from 'react-router-dom';
 
 import { resetPassword } from '../api/authApi';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 
 export function ResetPasswordPage() {
   const { t } = useTranslation();
+  const demoMode = isDemoModeEnabled();
   const [searchParams] = useSearchParams();
   const token = useMemo(() => searchParams.get('token') ?? '', [searchParams]);
   const [password, setPassword] = useState('');
@@ -34,7 +36,9 @@ export function ResetPasswordPage() {
 
             setIsSubmitting(true);
             try {
-              await resetPassword(token, password);
+              if (!demoMode) {
+                await resetPassword(token, password);
+              }
               setNotice(t('auth.resetPasswordNotice'));
               setError(null);
               setPassword('');

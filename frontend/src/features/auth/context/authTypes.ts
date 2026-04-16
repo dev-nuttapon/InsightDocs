@@ -1,3 +1,5 @@
+import type { DemoRolePreset } from '../../../shared/mock/demoAuth';
+
 export type CurrentUser = {
   subject: string | null;
   displayName: string | null;
@@ -16,6 +18,9 @@ export type AuthContextValue = {
   isReady: boolean;
   isLoading: boolean;
   user: CurrentUser | null;
+  isDemoSession: boolean;
+  demoRole: DemoRolePreset | null;
   login: (returnTo?: string) => Promise<void>;
   logout: () => Promise<void>;
+  setDemoRole: (role: DemoRolePreset) => void;
 };

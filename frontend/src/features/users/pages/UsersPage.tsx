@@ -11,6 +11,8 @@ import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { FeatureHeroPanel } from '../../../shared/components/mock/FeatureHeroPanel';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
+import { demoDeleteUser, demoDisableUser, demoEnableUser, getDemoUsers } from '../../../shared/mock/demoScenario';
 
 type PendingAction =
   | {
@@ -22,6 +24,7 @@ type PendingAction =
 export function UsersPage() {
   const { accessToken } = useAuth();
   const { language, t } = useTranslation();
+  const demoMode = isDemoModeEnabled();
   const location = useLocation();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +38,15 @@ export function UsersPage() {
     let ignore = false;
 
     async function load() {
+      if (demoMode) {
+        if (!ignore) {
+          setUsers(getDemoUsers());
+          setError(null);
+          setIsLoading(false);
+        }
+        return;
+      }
+
       if (!accessToken) {
         return;
       }
@@ -65,11 +77,11 @@ export function UsersPage() {
 
   async function runRowAction(
     userId: string,
-    action: () => Promise<AppUser | void>,
+    action: () => Promise<AppUser | void> | AppUser | void,
     successMessage: string,
     options?: { remove?: boolean },
   ) {
-    if (!accessToken) {
+    if (!accessToken && !demoMode) {
       return;
     }
 
@@ -82,6 +94,11 @@ export function UsersPage() {
         }
 
         if (!result) {
+          // In demo mode, some actions might not return the updated user directly from the mutator
+          // so we refresh from the demo state
+          if (demoMode) {
+            return getDemoUsers();
+          }
           return current;
         }
 
@@ -99,6 +116,16 @@ export function UsersPage() {
   }
 
   async function handleDelete(user: AppUser) {
+    if (demoMode) {
+      await runRowAction(
+        user.id,
+        () => demoDeleteUser(user.id),
+        t('users.deleteSuccess'),
+        { remove: true },
+      );
+      return;
+    }
+
     if (!accessToken) {
       return;
     }
@@ -112,6 +139,15 @@ export function UsersPage() {
   }
 
   async function handleDisable(user: AppUser) {
+    if (demoMode) {
+      await runRowAction(
+        user.id,
+        () => demoDisableUser(user.id),
+        t('users.disableSuccess'),
+      );
+      return;
+    }
+
     await runRowAction(
       user.id,
       () => disableUser(user.id, accessToken!),
@@ -120,6 +156,15 @@ export function UsersPage() {
   }
 
   async function handleEnable(user: AppUser) {
+    if (demoMode) {
+      await runRowAction(
+        user.id,
+        () => demoEnableUser(user.id),
+        t('users.enableSuccess'),
+      );
+      return;
+    }
+
     await runRowAction(
       user.id,
       () => enableUser(user.id, accessToken!),

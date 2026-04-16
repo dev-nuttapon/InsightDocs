@@ -7,9 +7,10 @@ import { useTranslation } from '../../../i18n/useTranslation';
 import { useAuth } from '../../../features/auth/context/useAuth';
 import { buildAccessProfile } from '../../auth/authorization';
 import { isDemoModeEnabled } from '../../mock/demoMode';
+import { Icons } from '../ui/Icons';
 
 export function AppShell() {
-  const { user } = useAuth();
+  const { user, isDemoSession, demoRole, setDemoRole } = useAuth();
   const { t } = useTranslation();
   const demoMode = isDemoModeEnabled();
   const location = useLocation();
@@ -24,29 +25,30 @@ export function AppShell() {
         key: 'workspace' as const,
         label: t('shell.workspace'),
         links: [
-          { to: '/dashboard', label: t('shell.dashboard') },
-          { to: '/documents', label: t('shell.documents') },
-          { to: '/search', label: t('shell.search') },
+          { to: '/dashboard', label: t('shell.dashboard'), icon: Icons.Dashboard },
+          { to: '/documents', label: t('shell.documents'), icon: Icons.Documents },
+          { to: '/search', label: t('shell.search'), icon: Icons.Search },
         ],
       },
       {
         key: 'actions' as const,
         label: t('shell.actions'),
         links: [
-          ...(access.canReviewDocuments ? [{ to: '/approvals', label: t('shell.approvals') }] : []),
-          ...(access.canSignDocuments ? [{ to: '/signatures', label: t('shell.signatures') }] : []),
+          ...(access.canReviewDocuments ? [{ to: '/approvals', label: t('shell.approvals'), icon: Icons.Approval }] : []),
+          ...(access.canSignDocuments ? [{ to: '/signatures', label: t('shell.signatures'), icon: Icons.Signature }] : []),
         ],
       },
       {
         key: 'admin' as const,
         label: t('shell.admin'),
         links: [
-          ...(access.canAccessUsers ? [{ to: '/users', label: t('shell.users') }] : []),
-          ...(access.canAccessUsers ? [{ to: '/users/new', label: t('shell.inviteUser') }] : []),
-          ...(access.canAccessPasswordResetAdmin ? [{ to: '/admin/password-reset-requests', label: t('shell.passwordResetRequests') }] : []),
-          ...(access.canAccessAuditLogs ? [{ to: '/audit-logs', label: t('shell.auditLogs') }] : []),
+          ...(access.canAccessUsers ? [{ to: '/users', label: t('shell.users'), icon: Icons.Users }] : []),
+          ...(access.canAccessUsers ? [{ to: '/users/new', label: t('shell.inviteUser'), icon: Icons.Plus }] : []),
+          ...(access.canAccessPasswordResetAdmin ? [{ to: '/admin/password-reset-requests', label: t('shell.passwordResetRequests'), icon: Icons.Settings }] : []),
+          ...(access.canAccessAuditLogs ? [{ to: '/audit-logs', label: t('shell.auditLogs'), icon: Icons.Audit }] : []),
         ],
       },
+
     ];
 
     return items.filter((section) => section.links.length > 0);
@@ -102,7 +104,10 @@ export function AppShell() {
                           to={link.to}
                           end
                         >
-                          <span>{link.label}</span>
+                          <div className="sidebar__link-content">
+                            {link.icon && <link.icon size={18} className="sidebar__link-icon" />}
+                            <span>{link.label}</span>
+                          </div>
                           <span className="sidebar__link-arrow" aria-hidden="true">→</span>
                         </NavLink>
                       ))}
@@ -154,6 +159,22 @@ export function AppShell() {
                     <NavLink className="topbar__menu-link" to="/me" onClick={() => setIsUserMenuOpen(false)}>
                       {t('shell.myProfile')}
                     </NavLink>
+                    {isDemoSession ? (
+                      <div className="topbar__menu-theme">
+                        <span className="topbar__menu-label">{t('demo.roleSwitcherLabel')}</span>
+                        <select
+                          className="input input--select"
+                          value={demoRole ?? 'admin'}
+                          onChange={(event) => setDemoRole(event.target.value as typeof demoRole extends null ? never : NonNullable<typeof demoRole>)}
+                        >
+                          <option value="admin">{t('demo.roleAdmin')}</option>
+                          <option value="document_controller">{t('demo.roleController')}</option>
+                          <option value="manager">{t('demo.roleManager')}</option>
+                          <option value="signer">{t('demo.roleSigner')}</option>
+                          <option value="viewer">{t('demo.roleViewer')}</option>
+                        </select>
+                      </div>
+                    ) : null}
                     <div className="topbar__menu-theme">
                       <span className="topbar__menu-label">{t('language.label')}</span>
                       <LanguageSwitcher variant="menu" />

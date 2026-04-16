@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 
 import { createForgotPasswordRequest } from '../api/authApi';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 
 export function ForgotPasswordPage() {
   const { t } = useTranslation();
+  const demoMode = isDemoModeEnabled();
   const [value, setValue] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -29,7 +31,9 @@ export function ForgotPasswordPage() {
             event.preventDefault();
             setIsSubmitting(true);
             try {
-              await createForgotPasswordRequest(value);
+              if (!demoMode) {
+                await createForgotPasswordRequest(value);
+              }
               setNotice(t('auth.forgotPasswordNotice'));
               setError(null);
               setValue('');

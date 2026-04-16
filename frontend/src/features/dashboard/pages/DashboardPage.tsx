@@ -6,6 +6,8 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { StatCard } from '../../../shared/components/ui/StatCard';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
+import { SectionCard } from '../../../shared/components/ui/SectionCard';
+import { Icons } from '../../../shared/components/ui/Icons';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
@@ -154,18 +156,18 @@ export function DashboardPage() {
     const cards = [];
 
     if (access.canReviewDocuments) {
-      cards.push({ label: t('dashboard.pendingApprovalsCard'), value: summary.pendingApprovals });
+      cards.push({ label: t('dashboard.pendingApprovalsCard'), value: summary.pendingApprovals, icon: Icons.Approval, trend: '+2', trendType: 'up' });
     }
-
+    
     if (access.canSignDocuments) {
-      cards.push({ label: t('dashboard.pendingSignaturesCard'), value: summary.pendingSignatures });
+      cards.push({ label: t('dashboard.pendingSignaturesCard'), value: summary.pendingSignatures, icon: Icons.Signature, trend: 'stable', trendType: 'neutral' });
     }
-
-    cards.push({ label: t('dashboard.totalDocuments'), value: summary.totalDocuments });
-    cards.push({ label: t('dashboard.approvedDocuments'), value: summary.approvedDocuments });
-
+    
+    cards.push({ label: t('dashboard.totalDocuments'), value: summary.totalDocuments, icon: Icons.Documents });
+    cards.push({ label: t('dashboard.approvedDocuments'), value: summary.approvedDocuments, icon: Icons.Approval, trendType: 'neutral' });
+    
     if (access.canManageDocuments || access.isAdmin) {
-      cards.push({ label: t('dashboard.archivedDocuments'), value: summary.archivedDocuments });
+      cards.push({ label: t('dashboard.archivedDocuments'), value: summary.archivedDocuments, icon: Icons.Audit });
     }
 
     return cards.slice(0, 4);
@@ -257,7 +259,14 @@ export function DashboardPage() {
             </div>
             <div className="dashboard-flagship__signal-grid">
               {summaryCards.map((card) => (
-                <StatCard key={card.label} label={card.label} value={card.value} />
+                <StatCard 
+                  key={card.label} 
+                  label={card.label} 
+                  value={card.value} 
+                  icon={card.icon && <card.icon size={20} />}
+                  trend={card.trend}
+                  trendType={card.trendType}
+                />
               ))}
             </div>
           </div>
@@ -304,13 +313,12 @@ export function DashboardPage() {
         </section>
       ) : null}
 
-      <div className="split-layout">
-        <section className="panel stack">
-          <div className="section-heading">
-            <span className="sidebar__eyebrow">{t('dashboard.quickActions')}</span>
-            <h3>{t('dashboard.quickActions')}</h3>
-            <p className="section-heading__description muted">{t('dashboard.quickActionsDescription')}</p>
-          </div>
+      <div className="split-layout split-layout--dashboard">
+        <SectionCard
+          title={t('dashboard.quickActions')}
+          subtitle={t('dashboard.quickActionsDescription')}
+          className="stack"
+        >
           <div className="action-list">
             {quickActions.map((action) => (
               <div key={action.to} className="action-row">
@@ -322,14 +330,13 @@ export function DashboardPage() {
               </div>
             ))}
           </div>
-        </section>
+        </SectionCard>
 
-        <section className="panel stack">
-          <div className="section-heading">
-            <span className="sidebar__eyebrow">{t('dashboard.focusNow')}</span>
-            <h3>{t('dashboard.focusNow')}</h3>
-            <p className="section-heading__description muted">{t('dashboard.focusNowDescription')}</p>
-          </div>
+        <SectionCard
+          title={t('dashboard.focusNow')}
+          subtitle={t('dashboard.focusNowDescription')}
+          className="stack"
+        >
           <div className="action-list">
             {access.canReviewDocuments ? (
               <div className="action-row">
@@ -366,16 +373,15 @@ export function DashboardPage() {
               </div>
             ) : null}
           </div>
-        </section>
+        </SectionCard>
       </div>
 
-      <div className="split-layout split-layout--wide">
-        <section className="panel stack">
-          <div className="section-heading">
-            <span className="sidebar__eyebrow">{t('dashboard.recentDocuments')}</span>
-            <h3>{t('dashboard.recentDocuments')}</h3>
-            <p className="section-heading__description muted">{t('dashboard.recentDocumentsDescription')}</p>
-          </div>
+      <div className="split-layout split-layout--wide split-layout--dashboard-secondary">
+        <SectionCard
+          title={t('dashboard.recentDocuments')}
+          subtitle={t('dashboard.recentDocumentsDescription')}
+          className="stack"
+        >
           {displayedRecentDocuments.length === 0 ? (
             <EmptyState 
               title={t('dashboard.noDocuments')} 
@@ -406,14 +412,13 @@ export function DashboardPage() {
               ))}
             </div>
           )}
-        </section>
+        </SectionCard>
 
-        <section className="panel stack">
-          <div className="section-heading">
-            <span className="sidebar__eyebrow">{t('dashboard.recentActivities')}</span>
-            <h3>{t('dashboard.recentActivities')}</h3>
-            <p className="section-heading__description muted">{t('dashboard.recentActivitiesDescription')}</p>
-          </div>
+        <SectionCard
+          title={t('dashboard.recentActivities')}
+          subtitle={t('dashboard.recentActivitiesDescription')}
+          className="stack"
+        >
           {displayedRecentActivities.length === 0 ? (
             <EmptyState 
               title={t('dashboard.noActivity')} 
@@ -443,7 +448,7 @@ export function DashboardPage() {
               ))}
             </div>
           )}
-        </section>
+        </SectionCard>
       </div>
     </section>
   );

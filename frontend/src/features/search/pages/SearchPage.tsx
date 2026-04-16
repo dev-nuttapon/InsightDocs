@@ -4,6 +4,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { StatusBadge } from '../../../shared/components/ui/StatusBadge';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
+import { SectionCard } from '../../../shared/components/ui/SectionCard';
+import { Icons } from '../../../shared/components/ui/Icons';
 import { DemoScenarioPanel } from '../../../shared/components/mock/DemoScenarioPanel';
 import { ModuleMockup } from '../../../shared/components/mock/ModuleMockup';
 import { DemoDocumentSpotlight } from '../../../shared/components/mock/DemoDocumentSpotlight';
@@ -175,67 +177,87 @@ export function SearchPage() {
 
       <SampleDocumentsShowcase />
 
-      <section className="panel stack">
+      <SectionCard 
+        title={t('search.mockupTitle')} 
+        subtitle={t('search.mockupDescription')}
+        className="stack"
+      >
+        <div className="stack stack--compact">
+          <div className="filter-bar">
+            <div className="filter-group">
+              <span className="filter-bar__label">{t('search.queryLabel')}</span>
+              <div className="input-with-icon">
+                <Icons.Search size={16} className="input-icon" />
+                <input 
+                  className="input" 
+                  placeholder={t('search.queryPlaceholder')} 
+                  value={filters.query} 
+                  onChange={(event) => updateFilters({ query: event.target.value, page: 1 })} 
+                />
+              </div>
+            </div>
+            <div className="filter-group">
+              <span className="filter-bar__label">{t('search.categoryLabel')}</span>
+              <input 
+                className="input" 
+                placeholder={t('search.categoryPlaceholder')} 
+                value={filters.category} 
+                onChange={(event) => updateFilters({ category: event.target.value, page: 1 })} 
+              />
+            </div>
+            <div className="filter-group search-filter-group--compact">
+              <span className="filter-bar__label">{t('search.lifecycleLabel')}</span>
+              <select 
+                className="input input--select" 
+                value={filters.status} 
+                onChange={(event) => updateFilters({ status: event.target.value, page: 1 })}
+              >
+                <option value="">{t('search.anyStatus')}</option>
+                <option value="Draft">{t('documents.statusDraft')}</option>
+                <option value="InReview">{t('documents.statusInReview')}</option>
+                <option value="Approved">{t('documents.statusApproved')}</option>
+                <option value="Rejected">{t('documents.statusRejected')}</option>
+                <option value="Archived">{t('documents.statusArchived')}</option>
+              </select>
+            </div>
+            <button
+              className="button button--secondary filter-action-button"
+              type="button"
+              onClick={() => updateFilters({ ...defaultFilters, page: 1 })}
+              disabled={Object.entries(filters).every(([k, v]) => k === 'page' || k === 'pageSize' || v === '')}
+            >
+              {t('search.clearAll')}
+            </button>
+          </div>
 
-
-      <div className="stack stack--compact">
-        <div className="filter-bar">
-          <div className="filter-group">
-            <span className="filter-bar__label">{t('search.queryLabel')}</span>
-            <input className="input" placeholder={t('search.queryPlaceholder')} value={filters.query} onChange={(event) => updateFilters({ query: event.target.value, page: 1 })} />
+          <div className="filter-chip-list">
+            {filters.query && (
+              <span className="filter-chip">
+                <span className="filter-chip__label">{t('search.queryChip')}</span> {filters.query}
+                <button className="filter-chip__remove" onClick={() => updateFilters({ query: '' })}>×</button>
+              </span>
+            )}
+            {filters.category && (
+              <span className="filter-chip">
+                <span className="filter-chip__label">{t('search.categoryChip')}</span> {filters.category}
+                <button className="filter-chip__remove" onClick={() => updateFilters({ category: '' })}>×</button>
+              </span>
+            )}
+            {filters.status && (
+              <span className="filter-chip">
+                <span className="filter-chip__label">{t('search.statusChip')}</span> {filters.status}
+                <button className="filter-chip__remove" onClick={() => updateFilters({ status: '' })}>×</button>
+              </span>
+            )}
+            {filters.owner && (
+              <span className="filter-chip">
+                <span className="filter-chip__label">{t('search.ownerChip')}</span> {filters.owner}
+                <button className="filter-chip__remove" onClick={() => updateFilters({ owner: '' })}>×</button>
+              </span>
+            )}
           </div>
-          <div className="filter-group">
-            <span className="filter-bar__label">{t('search.categoryLabel')}</span>
-            <input className="input" placeholder={t('search.categoryPlaceholder')} value={filters.category} onChange={(event) => updateFilters({ category: event.target.value, page: 1 })} />
-          </div>
-          <div className="filter-group search-filter-group--compact">
-            <span className="filter-bar__label">{t('search.lifecycleLabel')}</span>
-            <select className="input input--select" value={filters.status} onChange={(event) => updateFilters({ status: event.target.value, page: 1 })}>
-              <option value="">{t('search.anyStatus')}</option>
-              <option value="Draft">{t('documents.statusDraft')}</option>
-              <option value="InReview">{t('documents.statusInReview')}</option>
-              <option value="Approved">{t('documents.statusApproved')}</option>
-              <option value="Rejected">{t('documents.statusRejected')}</option>
-              <option value="Archived">{t('documents.statusArchived')}</option>
-            </select>
-          </div>
-          <button
-            className="button button--secondary filter-action-button"
-            type="button"
-            onClick={() => updateFilters({ ...defaultFilters, page: 1 })}
-            disabled={Object.entries(filters).every(([k, v]) => k === 'page' || k === 'pageSize' || v === '')}
-          >
-            {t('search.clearAll')}
-          </button>
         </div>
-
-        <div className="filter-chip-list">
-          {filters.query && (
-            <span className="filter-chip">
-              <span className="filter-chip__label">{t('search.queryChip')}</span> {filters.query}
-              <button className="filter-chip__remove" onClick={() => updateFilters({ query: '' })}>×</button>
-            </span>
-          )}
-          {filters.category && (
-            <span className="filter-chip">
-              <span className="filter-chip__label">{t('search.categoryChip')}</span> {filters.category}
-              <button className="filter-chip__remove" onClick={() => updateFilters({ category: '' })}>×</button>
-            </span>
-          )}
-          {filters.status && (
-            <span className="filter-chip">
-              <span className="filter-chip__label">{t('search.statusChip')}</span> {filters.status}
-              <button className="filter-chip__remove" onClick={() => updateFilters({ status: '' })}>×</button>
-            </span>
-          )}
-          {filters.owner && (
-            <span className="filter-chip">
-              <span className="filter-chip__label">{t('search.ownerChip')}</span> {filters.owner}
-              <button className="filter-chip__remove" onClick={() => updateFilters({ owner: '' })}>×</button>
-            </span>
-          )}
-        </div>
-      </div>
+      </SectionCard>
 
       {error ? <div className="callout callout--danger">{error}</div> : null}
 

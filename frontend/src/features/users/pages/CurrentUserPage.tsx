@@ -9,10 +9,12 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { ErrorModal } from '../../../shared/components/state/ErrorModal';
 import { FeatureHeroPanel } from '../../../shared/components/mock/FeatureHeroPanel';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 
 export function CurrentUserPage() {
   const { accessToken, user } = useAuth();
   const { language, t } = useTranslation();
+  const demoMode = isDemoModeEnabled();
   const [profile, setProfile] = useState<{ firstName?: string; lastName?: string; username?: string; email?: string } | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -30,6 +32,18 @@ export function CurrentUserPage() {
     let ignore = false;
 
     async function loadProfile() {
+      if (demoMode) {
+        if (!ignore) {
+          setProfile({
+            firstName: splitDisplayName(user?.displayName).firstName,
+            lastName: splitDisplayName(user?.displayName).lastName,
+            username: user?.username ?? undefined,
+            email: user?.email ?? undefined,
+          });
+        }
+        return;
+      }
+
       try {
         const payload = await getUserProfile();
         if (!ignore) {
@@ -47,7 +61,7 @@ export function CurrentUserPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [demoMode, user?.displayName, user?.email, user?.username]);
 
   const derivedName = useMemo(() => splitDisplayName(user?.displayName), [user?.displayName]);
   const firstName = profile?.firstName?.trim() || derivedName.firstName || '-';
@@ -75,7 +89,9 @@ export function CurrentUserPage() {
     try {
       setIsSavingPassword(true);
       setError(null);
-      await changePassword(newPassword, accessToken);
+      if (!demoMode) {
+        await changePassword(newPassword, accessToken);
+      }
       setNotice(t('profile.passwordChanged'));
       setNewPassword('');
       setConfirmPassword('');
