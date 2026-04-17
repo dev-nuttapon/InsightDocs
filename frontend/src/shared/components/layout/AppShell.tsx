@@ -8,12 +8,16 @@ import { useAuth } from '../../../features/auth/context/useAuth';
 import { buildAccessProfile } from '../../auth/authorization';
 import { isDemoModeEnabled } from '../../mock/demoMode';
 import { Icons } from '../ui/Icons';
-import { DemoRoleSwitcher } from '../mock/DemoRoleSwitcher';
 import { resetDemoScenario } from '../../mock/demoScenario';
-import { getAvailableDemoRoles, DemoRolePreset } from '../../mock/demoAuth';
+import {
+  getAvailableDemoRoles,
+  getDemoRoleColorToken,
+  getDemoRoleTranslationKey,
+  DemoRolePreset,
+} from '../../mock/demoAuth';
 
 export function AppShell() {
-  const { user, isDemoSession, demoRole, setDemoRole } = useAuth();
+  const { user, demoRole, setDemoRole } = useAuth();
   const { t } = useTranslation();
   const demoMode = isDemoModeEnabled();
   const location = useLocation();
@@ -90,15 +94,17 @@ export function AppShell() {
   };
 
   const demoRoles = getAvailableDemoRoles();
+  const currentRole = demoRole ?? 'admin';
+  const currentRoleColorToken = getDemoRoleColorToken(currentRole);
 
   return (
     <div 
       className="app-shell"
       style={{ 
-        '--role-color': `var(--color-role-${demoRole ?? 'admin'})`,
-        '--role-color-soft': `var(--color-role-${demoRole ?? 'admin'})1A`, /* 10% opacity */
-        '--role-color-border': `var(--color-role-${demoRole ?? 'admin'})33`, /* 20% opacity */
-        '--role-color-text': `var(--color-role-${demoRole ?? 'admin'})`,
+        '--role-color': `var(--color-role-${currentRoleColorToken})`,
+        '--role-color-soft': `color-mix(in srgb, var(--color-role-${currentRoleColorToken}) 12%, transparent)`,
+        '--role-color-border': `color-mix(in srgb, var(--color-role-${currentRoleColorToken}) 24%, transparent)`,
+        '--role-color-text': `var(--color-role-${currentRoleColorToken})`,
       } as any}
     >
       <div 
@@ -189,7 +195,7 @@ export function AppShell() {
                       onClick={() => setIsDemoMenuOpen(!isDemoMenuOpen)}
                     >
                       <span className="role-dot" style={{ backgroundColor: 'var(--role-color)' }} />
-                      {t(`demo.role${roleToKey(demoRole ?? 'admin')}`)}
+                      {t(`demo.role${getDemoRoleTranslationKey(currentRole)}`)}
                       <span className="topbar__menu-chevron" aria-hidden="true" style={{ marginLeft: '8px', opacity: 0.6 }}>{isDemoMenuOpen ? '▴' : '▾'}</span>
                     </button>
                   </div>
@@ -238,13 +244,13 @@ export function AppShell() {
                             {demoRoles.map((role) => {
                               const isActive = demoRole === role;
                               const Icon = getRoleIcon(role);
-                              const roleKey = roleToKey(role);
+                              const roleKey = getDemoRoleTranslationKey(role);
                               return (
                                 <button
                                   key={role}
                                   className={`topbar__persona-item ${isActive ? 'active' : ''}`}
                                   onClick={() => handleRoleSwitch(role)}
-                                  style={{ '--role-color-local': `var(--color-role-${role})` } as any}
+                                  style={{ '--role-color-local': `var(--color-role-${getDemoRoleColorToken(role)})` } as any}
                                 >
                                   <div className="topbar__persona-icon">
                                     <Icon size={18} />
@@ -321,16 +327,12 @@ export function AppShell() {
           <div className="demo-switcher__overlay-content">
             <div className="spinner" />
             <p>{t('demo.personaSwitching')}</p>
-            <strong>{t(`demo.role${roleToKey(demoRole ?? 'admin')}`)}</strong>
+            <strong>{t(`demo.role${getDemoRoleTranslationKey(currentRole)}`)}</strong>
           </div>
         </div>
       )}
     </div>
   );
-}
-
-function roleToKey(role: string): string {
-  return role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
 }
 
 function resolveOpenSection(pathname: string): 'workspace' | 'actions' | 'admin' {

@@ -331,7 +331,6 @@ export function SearchPage() {
           </button>
         </div>
       </section>
-    </section>
   </div>
 );
 }

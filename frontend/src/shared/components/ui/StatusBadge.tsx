@@ -22,10 +22,12 @@ export function StatusBadge({ status, label }: StatusBadgeProps) {
   const normalizedStatus = statusString.replace(/\s+/g, '');
   const variant = getVariant(normalizedStatus);
   
+  return (
     <span className={`status-badge status-badge--${variant}`}>
       <span className="status-badge__dot" aria-hidden="true" />
       {label ?? status}
     </span>
+  );
 }
 
 function getVariant(status: string) {

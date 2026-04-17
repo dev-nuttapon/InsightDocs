@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from '../../../features/auth/context/useAuth';
 import { useTranslation } from '../../../i18n/useTranslation';
-import { getAvailableDemoRoles, DemoRolePreset } from '../../mock/demoAuth';
+import {
+  getAvailableDemoRoles,
+  getDemoRoleColorToken,
+  getDemoRoleTranslationKey,
+  DemoRolePreset,
+} from '../../mock/demoAuth';
 import { Icons } from '../ui/Icons';
 
 export function DemoRoleSwitcher() {
@@ -38,7 +43,8 @@ export function DemoRoleSwitcher() {
     }
   };
 
-  const currentRoleName = t(`demo.role${roleToKey(demoRole ?? 'admin')}`);
+  const currentRole = demoRole ?? 'admin';
+  const currentRoleName = t(`demo.role${getDemoRoleTranslationKey(currentRole)}`);
 
   return (
     <div className={`demo-switcher ${isOpen ? 'demo-switcher--open' : ''}`}>
@@ -56,7 +62,7 @@ export function DemoRoleSwitcher() {
         className="demo-switcher__trigger"
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Toggle Demo Controls"
-        style={{ '--role-color': `var(--color-role-${demoRole ?? 'admin'})` } as any}
+        style={{ '--role-color': `var(--color-role-${getDemoRoleColorToken(currentRole)})` } as any}
       >
         <div className="demo-switcher__trigger-icon">
           {isOpen ? <Icons.Plus style={{ transform: 'rotate(45deg)' }} /> : <Icons.Users />}
@@ -74,14 +80,14 @@ export function DemoRoleSwitcher() {
           {roles.map((role) => {
             const isActive = demoRole === role;
             const Icon = getRoleIcon(role);
-            const roleKey = roleToKey(role);
+            const roleKey = getDemoRoleTranslationKey(role);
 
             return (
               <button
                 key={role}
                 className={`demo-switcher__item ${isActive ? 'demo-switcher__item--active' : ''}`}
                 onClick={() => handleRoleSwitch(role)}
-                style={{ '--role-color': `var(--color-role-${role})` } as any}
+                style={{ '--role-color': `var(--color-role-${getDemoRoleColorToken(role)})` } as any}
               >
                 <div className="demo-switcher__item-icon">
                   <Icon size={20} />
@@ -98,8 +104,4 @@ export function DemoRoleSwitcher() {
       </div>
     </div>
   );
-}
-
-function roleToKey(role: string): string {
-  return role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
 }

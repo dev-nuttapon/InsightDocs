@@ -6,7 +6,7 @@ export type DemoRolePreset =
   | 'viewer';
 
 const DEMO_ROLE_STORAGE_KEY = 'insightdocs.demo.role';
-const DEMO_AUTH_STORAGE_KEY = 'insightdocs.demo.authenticated';
+const DEMO_AUTH_STORAGE_KEY = 'insightdocs.demo.authenticated.v2';
 
 const demoRoleMap: Record<DemoRolePreset, { roles: string[]; displayName: string; username: string; email: string }> = {
   admin: {
@@ -47,6 +47,27 @@ export function getDefaultDemoRole(): DemoRolePreset {
 
 export function getAvailableDemoRoles(): DemoRolePreset[] {
   return Object.keys(demoRoleMap) as DemoRolePreset[];
+}
+
+export function getDemoRoleTranslationKey(role: DemoRolePreset) {
+  switch (role) {
+    case 'document_controller':
+      return 'Controller';
+    case 'admin':
+      return 'Admin';
+    case 'manager':
+      return 'Manager';
+    case 'signer':
+      return 'Signer';
+    case 'viewer':
+      return 'Viewer';
+    default:
+      return 'Viewer';
+  }
+}
+
+export function getDemoRoleColorToken(role: DemoRolePreset) {
+  return role === 'document_controller' ? 'controller' : role;
 }
 
 export function readDemoRole(): DemoRolePreset {

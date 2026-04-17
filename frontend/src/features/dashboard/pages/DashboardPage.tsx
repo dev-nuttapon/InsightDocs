@@ -156,15 +156,15 @@ export function DashboardPage() {
     const cards = [];
 
     if (access.canReviewDocuments) {
-      cards.push({ label: t('dashboard.pendingApprovalsCard'), value: summary.pendingApprovals, icon: Icons.Approval, trend: '+2', trendType: 'up' });
+      cards.push({ label: t('dashboard.pendingApprovalsCard'), value: summary.pendingApprovals, icon: Icons.Approval, trend: '+2', trendType: 'up' as const });
     }
     
     if (access.canSignDocuments) {
-      cards.push({ label: t('dashboard.pendingSignaturesCard'), value: summary.pendingSignatures, icon: Icons.Signature, trend: 'stable', trendType: 'neutral' });
+      cards.push({ label: t('dashboard.pendingSignaturesCard'), value: summary.pendingSignatures, icon: Icons.Signature, trend: 'stable', trendType: 'neutral' as const });
     }
     
     cards.push({ label: t('dashboard.totalDocuments'), value: summary.totalDocuments, icon: Icons.Documents });
-    cards.push({ label: t('dashboard.approvedDocuments'), value: summary.approvedDocuments, icon: Icons.Approval, trendType: 'neutral' });
+    cards.push({ label: t('dashboard.approvedDocuments'), value: summary.approvedDocuments, icon: Icons.Approval, trendType: 'neutral' as const });
     
     if (access.canManageDocuments || access.isAdmin) {
       cards.push({ label: t('dashboard.archivedDocuments'), value: summary.archivedDocuments, icon: Icons.Audit });

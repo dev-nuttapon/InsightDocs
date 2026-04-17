@@ -4,7 +4,12 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { buildAccessProfile, canAccessPath, resolveDefaultAuthorizedPath } from '../../../shared/auth/authorization';
 import { useAuth } from '../context/useAuth';
 import { useTranslation } from '../../../i18n/useTranslation';
-import { getAvailableDemoRoles, type DemoRolePreset } from '../../../shared/mock/demoAuth';
+import {
+  getAvailableDemoRoles,
+  getDemoRoleColorToken,
+  getDemoRoleTranslationKey,
+  type DemoRolePreset,
+} from '../../../shared/mock/demoAuth';
 import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 import { Icons } from '../../../shared/components/ui/Icons';
 
@@ -12,6 +17,7 @@ export function LoginPage() {
   const location = useLocation();
   const { t } = useTranslation();
   const { authState, isAuthenticated, isReady, login, error, user } = useAuth();
+  const demoMode = isDemoModeEnabled();
   const redirectTarget = readRedirectTarget(location.state);
   const entryError = readEntryError(location.state) ?? error;
   const isExpiredSession = authState === 'expired' || isExpiredSessionMessage(entryError);
@@ -65,7 +71,8 @@ export function LoginPage() {
         {demoMode ? (
           <div className="auth-persona-grid">
             {getAvailableDemoRoles().map((role) => {
-              const roleKey = roleToKey(role);
+              const roleKey = getDemoRoleTranslationKey(role);
+              const roleLabel = t(`demo.role${roleKey}`);
               const Icon = getRoleIcon(role);
 
               return (
@@ -73,17 +80,17 @@ export function LoginPage() {
                   key={role}
                   className="auth-persona-card"
                   onClick={() => void login(redirectTarget, role)}
-                  style={{ '--role-color': `var(--color-role-${role})` } as any}
+                  style={{ '--role-color': `var(--color-role-${getDemoRoleColorToken(role)})` } as any}
                 >
                   <div className="auth-persona-card__icon">
                     <Icon size={24} />
                   </div>
                   <div className="auth-persona-card__body">
-                    <strong>{t(`demo.role${roleKey}`)}</strong>
+                    <strong>{roleLabel}</strong>
                     <p className="muted">{t(`demo.role${roleKey}Desc`)}</p>
                   </div>
                   <div className="auth-persona-card__footer">
-                    {t('auth.loginAs', { role: '' })} →
+                    {t('auth.loginAs', { role: roleLabel })} →
                   </div>
                 </button>
               );
@@ -150,10 +157,6 @@ function isExpiredSessionMessage(message: string | null) {
 
   const normalized = message.trim().toLowerCase();
   return normalized.includes('session expired') || normalized.includes('sign in again');
-}
-
-function roleToKey(role: string): string {
-  return role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
 }
 
 function getRoleIcon(role: DemoRolePreset) {

@@ -4,7 +4,7 @@ interface StatCardProps {
   label: string;
   value: string | number;
   trend?: string;
-  trendType?: 'up' | 'down' | 'neutral';
+  trendType?: 'up' | 'down' | 'neutral' | 'warning';
   icon?: React.ReactNode;
 }
 
