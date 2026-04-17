@@ -1,186 +1,186 @@
-# 🚀 InsightDocs — Impact & Benefit
+# 🚀 InsightDocs — ผลกระทบและประโยชน์ (Impact & Benefit)
 
-## 🎯 Overview
+## 🎯 ภาพรวม
 
-InsightDocs is an **Enterprise Document Intelligence Platform** designed to solve common challenges in document-heavy organizations, including slow document retrieval, duplicated work, lack of version control, and inefficient approval/signature processes.
+InsightDocs คือ **แพลตฟอร์มจัดการเอกสารอัจฉริยะระดับองค์กร (Enterprise Document Intelligence Platform)**  
+ที่ถูกพัฒนาขึ้นเพื่อแก้ปัญหาหลักขององค์กรที่มีเอกสารจำนวนมาก เช่น การค้นหาเอกสารที่ใช้เวลานาน การทำงานซ้ำซ้อน การขาดการควบคุมเวอร์ชัน และกระบวนการอนุมัติ/ลงนามที่ไม่มีประสิทธิภาพ
 
-The system centralizes documents and enhances them with structured workflows, version tracking, and real PDF digital signatures.
-
----
-
-# 💼 1. Productivity Improvement
-
-## 🔴 Problem
-
-- Time-consuming document search
-- Documents stored across multiple locations
-- Inefficient manual processes
-
-## ✅ Solution
-
-- Centralized document repository
-- Fast document search
-- Quick access to relevant information
-
-## 📊 Impact
-
-- Reduce document search time from **10–30 minutes → seconds**
-- Improve overall team productivity
-- Faster access to business-critical information
+ระบบช่วยรวมศูนย์เอกสาร พร้อมเพิ่มความสามารถด้านการค้นหา การควบคุมเวอร์ชัน การอนุมัติ และการลงลายเซ็นดิจิทัลในไฟล์ PDF จริง
 
 ---
 
-# 📂 2. Reduction of Duplicate Work
+# 💼 1. เพิ่มประสิทธิภาพในการทำงาน (Productivity)
 
-## 🔴 Problem
+## 🔴 ปัญหา
 
-- Users are unaware of existing documents
-- Recreating similar reports or proposals
+- ใช้เวลานานในการค้นหาเอกสาร
+- เอกสารกระจายอยู่หลายแหล่ง
+- ต้องเปิดอ่านหลายไฟล์เพื่อหาข้อมูล
 
-## ✅ Solution
+## ✅ สิ่งที่ระบบช่วย
 
-- Efficient search and filtering
-- Categorization and tagging system
-- Easy reuse of existing documents
+- รวมเอกสารไว้ในศูนย์กลางเดียว
+- ค้นหาเอกสารได้รวดเร็ว
+- เข้าถึงข้อมูลได้ทันที
 
-## 📊 Impact
+## 📊 ผลลัพธ์
 
-- Reduce duplicated document creation
-- Lower operational effort
-- Increase efficiency across teams
-
----
-
-# 🔁 3. Data Accuracy & Version Control
-
-## 🔴 Problem
-
-- Using outdated document versions
-- No clear version tracking
-- Risk of incorrect data usage
-
-## ✅ Solution
-
-- Full document version control
-- Clear indication of current version
-- Version history tracking and rollback capability
-
-## 📊 Impact
-
-- Minimize human error
-- Improve data reliability
-- Increase confidence in decision-making
+- ลดเวลาในการค้นหาเอกสารจาก **10–30 นาที เหลือเพียงไม่กี่วินาที**
+- เพิ่มความเร็วในการทำงานของทีม
+- ลดเวลาที่สูญเสียไปกับงานที่ไม่จำเป็น
 
 ---
 
-# ✍️ 4. Document Control & Auditability
+# 📂 2. ลดงานซ้ำซ้อน (Duplication Reduction)
 
-## 🔴 Problem
+## 🔴 ปัญหา
 
-- Lack of visibility into document changes
-- No audit trail for actions
-- Difficult to trace modifications
+- ไม่ทราบว่ามีเอกสารเดิมอยู่แล้ว
+- ต้องสร้างเอกสารใหม่ซ้ำ เช่น proposal หรือ report
 
-## ✅ Solution
+## ✅ สิ่งที่ระบบช่วย
 
-- Full audit log tracking
-- Record of all user actions
-- Transparent document lifecycle
+- ค้นหาเอกสารเดิมได้ง่าย
+- มีระบบจัดหมวดหมู่และ tag
+- สามารถนำข้อมูลเดิมมา reuse ได้
 
-## 📊 Impact
+## 📊 ผลลัพธ์
 
-- Improve traceability and accountability
-- Support compliance requirements
-- Increase system transparency
-
----
-
-# 🖊️ 5. Digital Signature (Key Differentiator)
-
-## 🔴 Problem
-
-- Manual signing process (print / scan)
-- Time-consuming approval cycles
-- Difficult to track signature status
-
-## ✅ Solution
-
-- Real PDF digital signature integration
-- Assign signers per document
-- Define signature position within PDF
-- Track who signed and when
-
-## 📊 Impact
-
-- Eliminate manual document handling
-- Accelerate approval process
-- Improve accuracy and transparency
+- ลดการสร้างเอกสารซ้ำ
+- ลดภาระงานของทีม
+- เพิ่มประสิทธิภาพในการทำงานร่วมกัน
 
 ---
 
-# ⚡ 6. Workflow Efficiency
+# 🔁 3. ความถูกต้องของข้อมูล (Data Accuracy & Version Control)
 
-## 🔴 Problem
+## 🔴 ปัญหา
 
-- Delays in approval processes
-- Lack of structured workflows
+- ใช้เอกสารเวอร์ชันผิด
+- ไม่ทราบว่าไฟล์ใดเป็นเวอร์ชันล่าสุด
+- ไม่มีประวัติการเปลี่ยนแปลง
 
-## ✅ Solution
+## ✅ สิ่งที่ระบบช่วย
 
-- Digital approval workflow
-- Online document routing
-- Integrated signature process
+- มีระบบ Version Control
+- แสดงเวอร์ชันปัจจุบันชัดเจน
+- สามารถดูประวัติและย้อนกลับเวอร์ชันได้
 
-## 📊 Impact
+## 📊 ผลลัพธ์
 
-- Reduce document lifecycle time
-- Faster decision-making
-- Improved operational efficiency
-
----
-
-# 🧠 7. Knowledge Management
-
-## 🔴 Problem
-
-- Knowledge scattered across teams
-- Loss of organizational knowledge
-
-## ✅ Solution
-
-- Centralized document knowledge base
-- Easy access to historical documents
-- Structured document organization
-
-## 📊 Impact
-
-- Preserve organizational knowledge
-- Reduce dependency on individuals
-- Improve knowledge sharing
+- ลดความผิดพลาดจากมนุษย์ (Human Error)
+- เพิ่มความน่าเชื่อถือของข้อมูล
+- สนับสนุนการตัดสินใจที่แม่นยำ
 
 ---
 
-# 💥 Summary
+# ✍️ 4. การควบคุมเอกสารและการตรวจสอบ (Document Control & Audit)
 
-InsightDocs delivers measurable impact across key areas:
+## 🔴 ปัญหา
 
-- 🚀 Productivity improvement
-- 📂 Reduced duplicate work
-- 🔁 Accurate and reliable data
-- ✍️ Strong document control & auditability
-- 🖊️ Real PDF digital signature capability
-- ⚡ Faster workflows
-- 🧠 Better knowledge management
+- ไม่สามารถตรวจสอบได้ว่าใครแก้ไขอะไร
+- ไม่มี audit trail
+- ยากต่อการตรวจสอบย้อนหลัง
+
+## ✅ สิ่งที่ระบบช่วย
+
+- บันทึกประวัติการใช้งาน (Audit Log)
+- ติดตามการเปลี่ยนแปลงของเอกสาร
+- ตรวจสอบการทำงานย้อนหลังได้
+
+## 📊 ผลลัพธ์
+
+- เพิ่มความโปร่งใสในการทำงาน
+- รองรับการตรวจสอบ (Compliance)
+- เพิ่มความน่าเชื่อถือของระบบ
 
 ---
 
-# 🏁 Conclusion
+# 🖊️ 5. การลงลายเซ็นดิจิทัล (Digital Signature) ⭐ จุดเด่นหลัก
 
-InsightDocs transforms traditional document handling into a **modern, intelligent, and efficient workflow**, enabling organizations to:
+## 🔴 ปัญหา
 
-- Work faster
-- Reduce errors
-- Improve transparency
-- Strengthen operational control
+- ต้องพิมพ์เอกสารเพื่อเซ็น
+- ใช้การ scan เอกสารกลับเข้าระบบ
+- ติดตามสถานะการลงนามได้ยาก
 
-> **"Search Less. Know More."**
+## ✅ สิ่งที่ระบบช่วย
+
+- ลงลายเซ็นในไฟล์ PDF จริง
+- กำหนดผู้ลงนามและตำแหน่งลายเซ็นได้
+- ตรวจสอบได้ว่าใครลงนามและเมื่อใด
+
+## 📊 ผลลัพธ์
+
+- ลดขั้นตอน manual (print / scan)
+- ลดเวลาในกระบวนการอนุมัติ
+- เพิ่มความถูกต้องและความโปร่งใส
+
+---
+
+# ⚡ 6. เพิ่มความเร็วของ Workflow
+
+## 🔴 ปัญหา
+
+- กระบวนการอนุมัติล่าช้า
+- การทำงานเป็นลำดับใช้เวลานาน
+
+## ✅ สิ่งที่ระบบช่วย
+
+- อนุมัติเอกสารผ่านระบบออนไลน์
+- ลงนามเอกสารได้ทันที
+- ไม่ต้องใช้เอกสารกระดาษ
+
+## 📊 ผลลัพธ์
+
+- ลดระยะเวลาในวงจรเอกสาร (Cycle Time)
+- เร่งกระบวนการตัดสินใจ
+- เพิ่มความคล่องตัวในการทำงาน
+
+---
+
+# 🧠 7. การจัดการองค์ความรู้ (Knowledge Management)
+
+## 🔴 ปัญหา
+
+- ความรู้กระจายอยู่ในหลายที่
+- เสี่ยงต่อการสูญเสียความรู้เมื่อพนักงานลาออก
+
+## ✅ สิ่งที่ระบบช่วย
+
+- เก็บเอกสารเป็นศูนย์กลางความรู้
+- ค้นหาและใช้งานข้อมูลย้อนหลังได้
+- จัดโครงสร้างข้อมูลอย่างเป็นระบบ
+
+## 📊 ผลลัพธ์
+
+- เก็บรักษาองค์ความรู้ขององค์กร
+- ลดการพึ่งพาบุคคล
+- สนับสนุนการเรียนรู้ในองค์กร
+
+---
+
+# 💥 สรุป
+
+InsightDocs ช่วยยกระดับการทำงานขององค์กรในหลายด้าน:
+
+- 🚀 เพิ่มประสิทธิภาพการทำงาน
+- 📂 ลดงานซ้ำซ้อน
+- 🔁 เพิ่มความถูกต้องของข้อมูล
+- ✍️ ควบคุมเอกสารและตรวจสอบได้
+- 🖊️ รองรับลายเซ็นดิจิทัลใน PDF จริง
+- ⚡ เพิ่มความเร็วของ workflow
+- 🧠 จัดการองค์ความรู้ได้อย่างมีประสิทธิภาพ
+
+---
+
+# 🏁 บทสรุป
+
+InsightDocs เปลี่ยนการจัดการเอกสารแบบเดิมให้กลายเป็นระบบดิจิทัลที่มีประสิทธิภาพ ช่วยให้องค์กร:
+
+- ทำงานได้เร็วขึ้น
+- ลดความผิดพลาด
+- เพิ่มความโปร่งใส
+- ควบคุมข้อมูลได้อย่างมีประสิทธิภาพ
+
+> **“ค้นหาน้อยลง เข้าใจมากขึ้น (Search Less, Know More)”**

@@ -21,6 +21,7 @@ const UnauthorizedPage = lazy(async () => ({ default: (await import('../features
 const DashboardPage = lazy(async () => ({ default: (await import('../features/dashboard/pages/DashboardPage')).DashboardPage }));
 const DocumentDetailPage = lazy(async () => ({ default: (await import('../features/documents/pages/DocumentDetailPage')).DocumentDetailPage }));
 const DocumentsPage = lazy(async () => ({ default: (await import('../features/documents/pages/DocumentsPage')).DocumentsPage }));
+const ImpactBenefitPage = lazy(async () => ({ default: (await import('../features/impact/pages/ImpactBenefitPage')).ImpactBenefitPage }));
 const SearchPage = lazy(async () => ({ default: (await import('../features/search/pages/SearchPage')).SearchPage }));
 const SignaturesPage = lazy(async () => ({ default: (await import('../features/signatures/pages/SignaturesPage')).SignaturesPage }));
 const CurrentUserPage = lazy(async () => ({ default: (await import('../features/users/pages/CurrentUserPage')).CurrentUserPage }));
@@ -68,6 +69,10 @@ export const router = createBrowserRouter([
   {
     path: '/unauthorized',
     element: withPageLoader(<UnauthorizedPage />),
+  },
+  {
+    path: '/impact-benefit',
+    element: withPageLoader(<ImpactBenefitPage />),
   },
   {
     element: <ProtectedRoute />,

@@ -5269,3 +5269,762 @@ button {
     min-height: auto;
   }
 }
+
+.impact-page {
+  display: grid;
+  gap: clamp(24px, 3.4vw, 44px);
+}
+
+.impact-page--public {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: clamp(18px, 3vw, 36px) 0 clamp(48px, 7vw, 90px);
+}
+
+.impact-public-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.impact-public-nav__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text);
+  font-weight: 900;
+}
+
+.impact-public-nav__brand span {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, var(--color-primary-strong), var(--color-secondary));
+  color: var(--color-text-inverse);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+.impact-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.52fr);
+  gap: clamp(24px, 4vw, 54px);
+  align-items: center;
+  min-height: auto;
+  padding: clamp(28px, 5vw, 64px);
+  border: 1px solid var(--color-border);
+  border-radius: clamp(24px, 3vw, 36px);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--color-role-signer) 18%, transparent), transparent 30%),
+    radial-gradient(circle at 8% 92%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 34%),
+    linear-gradient(135deg, var(--color-surface-strong), var(--color-surface));
+}
+
+.impact-hero::before {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--color-border) 52%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-border) 52%, transparent) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(circle at center, #000, transparent 72%);
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+.impact-hero__copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 760px;
+}
+
+.impact-hero__copy h1 {
+  margin: 0;
+  max-width: 16ch;
+  color: var(--color-text);
+  font-size: clamp(38px, 5.4vw, 76px);
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.impact-hero__copy p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: clamp(16px, 1.35vw, 21px);
+  line-height: 1.7;
+}
+
+.impact-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.impact-hero__panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 26px;
+  background: color-mix(in srgb, var(--color-card) 88%, transparent);
+}
+
+.impact-hero__panel-icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  color: var(--color-primary);
+}
+
+.impact-hero__panel h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(22px, 2.2vw, 32px);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.impact-hero__panel ul {
+  display: grid;
+  gap: 11px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.impact-hero__panel li {
+  display: flex;
+  gap: 10px;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.impact-hero__panel li::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: var(--color-secondary);
+}
+
+.impact-orbit {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  min-height: 360px;
+}
+
+.impact-orbit__ring {
+  position: absolute;
+  inset: 8%;
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 46%, transparent);
+  border-radius: 999px;
+  animation: impactSpin 28s linear infinite;
+}
+
+.impact-orbit__ring::before,
+.impact-orbit__ring::after {
+  content: "";
+  position: absolute;
+  inset: 15%;
+  border: 1px solid color-mix(in srgb, var(--color-border-strong) 62%, transparent);
+  border-radius: inherit;
+}
+
+.impact-orbit__ring::after {
+  inset: 31%;
+  border-style: dashed;
+}
+
+.impact-orbit__core {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  width: clamp(190px, 22vw, 280px);
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 42%, transparent);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 26%, color-mix(in srgb, var(--color-secondary) 30%, transparent), transparent 38%),
+    var(--color-card);
+  color: var(--color-text);
+  box-shadow: 0 34px 70px var(--color-shadow);
+}
+
+.impact-orbit__core svg {
+  color: var(--color-primary);
+}
+
+.impact-orbit__core strong {
+  font-size: clamp(22px, 2vw, 32px);
+  letter-spacing: -0.04em;
+}
+
+.impact-orbit__core span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.impact-orbit__node {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-card);
+  color: var(--color-primary);
+  box-shadow: 0 18px 32px var(--color-shadow);
+}
+
+.impact-orbit__node--search {
+  top: 12%;
+  right: 20%;
+}
+
+.impact-orbit__node--audit {
+  left: 11%;
+  bottom: 24%;
+}
+
+.impact-orbit__node--sign {
+  right: 13%;
+  bottom: 15%;
+  color: var(--color-role-signer);
+}
+
+.impact-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-border);
+}
+
+.impact-metric {
+  display: grid;
+  gap: 8px;
+  padding: clamp(20px, 2.6vw, 30px);
+  background: var(--color-card);
+}
+
+.impact-metric strong {
+  color: var(--color-text);
+  font-size: clamp(24px, 2.6vw, 38px);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.impact-metric span {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.impact-metric small {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.impact-section-heading {
+  display: grid;
+  gap: 10px;
+  max-width: 760px;
+}
+
+.impact-section-heading h2,
+.impact-signature-spotlight h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(28px, 3.4vw, 48px);
+  line-height: 1.03;
+  letter-spacing: -0.055em;
+}
+
+.impact-section-heading p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.impact-benefit-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.impact-benefit {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-height: 300px;
+  padding: clamp(20px, 2.4vw, 28px);
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--impact-accent) 11%, transparent), transparent 42%),
+    var(--color-card);
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.impact-benefit:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--impact-accent) 50%, var(--color-border));
+}
+
+.impact-benefit--featured {
+  background:
+    radial-gradient(circle at 8% 18%, color-mix(in srgb, var(--impact-accent) 22%, transparent), transparent 32%),
+    linear-gradient(90deg, color-mix(in srgb, var(--impact-accent) 14%, transparent), transparent 48%),
+    var(--color-card);
+}
+
+.impact-benefit__intro {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.impact-benefit__intro span {
+  width: max-content;
+  padding: 7px 11px;
+  border: 1px solid color-mix(in srgb, var(--impact-accent) 42%, transparent);
+  border-radius: 999px;
+  color: var(--impact-accent);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.impact-benefit__intro h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(20px, 2vw, 28px);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.impact-benefit__intro strong {
+  color: var(--impact-accent);
+}
+
+.impact-benefit p {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.impact-benefit__points {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.impact-benefit__columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.impact-column {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--color-surface) 76%, transparent);
+}
+
+.impact-column strong {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.impact-column--danger strong {
+  color: var(--color-danger);
+}
+
+.impact-column--support strong {
+  color: var(--color-primary);
+}
+
+.impact-column--success strong {
+  color: var(--color-success);
+}
+
+.impact-column ul {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.impact-signature-spotlight {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.62fr);
+  gap: clamp(20px, 3vw, 42px);
+  align-items: center;
+  padding: clamp(24px, 4vw, 48px);
+  border: 1px solid color-mix(in srgb, var(--impact-accent) 36%, var(--color-border));
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 92% 18%, color-mix(in srgb, var(--impact-accent) 24%, transparent), transparent 30%),
+    var(--color-card);
+}
+
+.impact-signature-spotlight p {
+  margin: 16px 0 0;
+  color: var(--color-text-muted);
+  font-size: 17px;
+  line-height: 1.75;
+}
+
+.impact-signature-spotlight__steps {
+  display: grid;
+  gap: 10px;
+}
+
+.impact-signature-spotlight__steps span {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.impact-signature-spotlight__steps strong {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--impact-accent) 18%, transparent);
+  color: var(--impact-accent);
+  font-size: 12px;
+}
+
+.impact-quote {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: clamp(28px, 5vw, 60px);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 20%, transparent), color-mix(in srgb, var(--color-secondary) 18%, transparent)),
+    var(--color-surface);
+  color: var(--color-text);
+  text-align: center;
+}
+
+.impact-quote p {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 66px);
+  line-height: 1;
+  letter-spacing: -0.07em;
+  font-weight: 900;
+}
+
+.impact-quote footer {
+  max-width: 760px;
+  margin: 0 auto;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+@keyframes impactSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1180px) {
+  .impact-hero,
+  .impact-signature-spotlight {
+    grid-template-columns: 1fr;
+  }
+
+  .impact-orbit {
+    min-height: 300px;
+  }
+
+  .impact-benefit-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .impact-hero {
+    padding: 28px;
+  }
+
+  .impact-metrics,
+  .impact-benefit-list,
+  .impact-benefit__columns {
+    grid-template-columns: 1fr;
+  }
+
+  .impact-orbit {
+    min-height: 260px;
+  }
+
+  .impact-orbit__node {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 560px) {
+  .impact-hero__actions .button,
+  .impact-hero__actions a.button {
+    width: 100%;
+  }
+
+  .impact-signature-spotlight {
+    padding: 22px;
+  }
+}
+
+/* Public impact page readability pass */
+.impact-page--public {
+  width: min(1120px, calc(100% - 32px));
+}
+
+.impact-page--public .impact-page {
+  gap: clamp(20px, 3vw, 34px);
+}
+
+.impact-page--public .impact-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.48fr);
+  gap: clamp(22px, 3.8vw, 46px);
+  padding: clamp(24px, 4vw, 52px);
+}
+
+.impact-page--public .impact-hero__copy {
+  gap: 16px;
+}
+
+.impact-page--public .impact-hero__copy h1 {
+  max-width: 18ch;
+  font-size: clamp(34px, 4.6vw, 62px);
+  line-height: 1.06;
+  letter-spacing: -0.045em;
+}
+
+.impact-page--public .impact-hero__copy p {
+  max-width: 660px;
+  font-size: clamp(15px, 1.15vw, 18px);
+  line-height: 1.75;
+}
+
+.impact-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.impact-summary article {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-card);
+}
+
+.impact-summary strong {
+  color: var(--color-text);
+  font-size: clamp(20px, 2vw, 28px);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.impact-summary span {
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.impact-page--public .impact-metric {
+  padding: clamp(18px, 2.2vw, 26px);
+}
+
+.impact-page--public .impact-metric strong {
+  font-size: clamp(23px, 2.4vw, 34px);
+}
+
+.impact-page--public .impact-section-heading {
+  max-width: 720px;
+}
+
+.impact-page--public .impact-section-heading h2,
+.impact-page--public .impact-signature-spotlight h2 {
+  font-size: clamp(28px, 3.1vw, 44px);
+}
+
+.impact-page--public .impact-benefit-list {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.impact-page--public .impact-benefit {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  border-radius: 22px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--impact-accent) 9%, transparent), transparent 34%),
+    var(--color-card);
+  overflow: hidden;
+}
+
+.impact-page--public .impact-benefit:hover {
+  transform: none;
+}
+
+.impact-benefit__summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.impact-benefit__summary::-webkit-details-marker {
+  display: none;
+}
+
+.impact-benefit__summary span {
+  width: max-content;
+  padding: 7px 11px;
+  border: 1px solid color-mix(in srgb, var(--impact-accent) 42%, transparent);
+  border-radius: 999px;
+  color: var(--impact-accent);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.impact-benefit__summary h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(18px, 1.8vw, 24px);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+.impact-benefit__summary strong {
+  color: var(--impact-accent);
+  font-size: 13px;
+}
+
+.impact-benefit__summary small {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.impact-benefit[open] .impact-benefit__summary {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.impact-benefit__details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px 22px 22px;
+}
+
+.impact-page--public .impact-column {
+  padding: 16px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+}
+
+.impact-page--public .impact-column ul {
+  gap: 8px;
+  line-height: 1.52;
+}
+
+.impact-page--public .impact-signature-spotlight {
+  padding: clamp(22px, 3.4vw, 42px);
+}
+
+.impact-page--public .impact-signature-spotlight p {
+  margin-top: 12px;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.impact-page--public .impact-quote {
+  padding: clamp(24px, 4vw, 48px);
+}
+
+.impact-page--public .impact-quote p {
+  font-size: clamp(30px, 4vw, 54px);
+}
+
+@media (max-width: 1180px) {
+  .impact-page--public .impact-hero,
+  .impact-page--public .impact-signature-spotlight {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .impact-summary,
+  .impact-page--public .impact-metrics,
+  .impact-benefit__details {
+    grid-template-columns: 1fr;
+  }
+
+  .impact-benefit__summary {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .impact-benefit__summary small {
+    grid-column: 2;
+  }
+}

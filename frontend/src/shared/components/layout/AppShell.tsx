@@ -38,6 +38,7 @@ export function AppShell() {
           { to: '/dashboard', label: t('shell.dashboard'), icon: Icons.Dashboard },
           { to: '/documents', label: t('shell.documents'), icon: Icons.Documents },
           { to: '/search', label: t('shell.search'), icon: Icons.Search },
+          { to: '/impact-benefit', label: t('shell.impactBenefit'), icon: Icons.Audit },
         ],
       },
       {
