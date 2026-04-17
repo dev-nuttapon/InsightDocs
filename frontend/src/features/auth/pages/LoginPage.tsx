@@ -1,11 +1,14 @@
-import { useEffect, useRef } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
 import { buildAccessProfile, canAccessPath, resolveDefaultAuthorizedPath } from '../../../shared/auth/authorization';
 import { useAuth } from '../context/useAuth';
 import { useTranslation } from '../../../i18n/useTranslation';
 import {
+  findDemoRoleByCredentials,
   getAvailableDemoRoles,
+  getDefaultDemoRole,
+  getDemoCredentials,
   getDemoRoleColorToken,
   getDemoRoleTranslationKey,
   type DemoRolePreset,
@@ -18,6 +21,10 @@ export function LoginPage() {
   const { t } = useTranslation();
   const { authState, isAuthenticated, isReady, login, error, user } = useAuth();
   const demoMode = isDemoModeEnabled();
+  const defaultDemoRole = getDefaultDemoRole();
+  const [selectedDemoRole, setSelectedDemoRole] = useState<DemoRolePreset>(defaultDemoRole);
+  const [credentials, setCredentials] = useState(() => getDemoCredentials(defaultDemoRole));
+  const [credentialError, setCredentialError] = useState<string | null>(null);
   const redirectTarget = readRedirectTarget(location.state);
   const entryError = readEntryError(location.state) ?? error;
   const isExpiredSession = authState === 'expired' || isExpiredSessionMessage(entryError);
@@ -59,6 +66,26 @@ export function LoginPage() {
       ? t('auth.sessionExpiredDescription')
       : t('auth.checkingSessionDescription');
 
+  const handleDemoCredentialSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const matchedRole = findDemoRoleByCredentials(credentials.email, credentials.password);
+    if (!matchedRole) {
+      setCredentialError(t('auth.demoInvalidCredentials'));
+      return;
+    }
+
+    setSelectedDemoRole(matchedRole);
+    setCredentialError(null);
+    await login(redirectTarget, matchedRole);
+  };
+
+  const handleDemoRoleSelect = (role: DemoRolePreset) => {
+    setSelectedDemoRole(role);
+    setCredentials(getDemoCredentials(role));
+    setCredentialError(null);
+  };
+
   return (
     <section className="auth-layout">
       <article className={`panel auth-panel auth-panel--form ${demoMode ? 'auth-panel--wide' : ''}`}>
@@ -69,32 +96,76 @@ export function LoginPage() {
         {entryError && !isExpiredSession ? <div className="callout callout--danger">{entryError}</div> : null}
 
         {demoMode ? (
-          <div className="auth-persona-grid">
-            {getAvailableDemoRoles().map((role) => {
-              const roleKey = getDemoRoleTranslationKey(role);
-              const roleLabel = t(`demo.role${roleKey}`);
-              const Icon = getRoleIcon(role);
+          <div className="auth-demo-workspace">
+            <form className="auth-demo-form" onSubmit={handleDemoCredentialSubmit}>
+              <span className="sidebar__eyebrow">{t('auth.demoCredentialsTitle')}</span>
+              <div className="auth-demo-form__header">
+                <strong>{t('auth.demoCredentialsHeading')}</strong>
+                <p className="muted">{t('auth.demoCredentialsDescription')}</p>
+              </div>
 
-              return (
-                <button
-                  key={role}
-                  className="auth-persona-card"
-                  onClick={() => void login(redirectTarget, role)}
-                  style={{ '--role-color': `var(--color-role-${getDemoRoleColorToken(role)})` } as any}
-                >
-                  <div className="auth-persona-card__icon">
-                    <Icon size={24} />
-                  </div>
-                  <div className="auth-persona-card__body">
-                    <strong>{roleLabel}</strong>
-                    <p className="muted">{t(`demo.role${roleKey}Desc`)}</p>
-                  </div>
-                  <div className="auth-persona-card__footer">
-                    {t('auth.loginAs', { role: roleLabel })} →
-                  </div>
-                </button>
-              );
-            })}
+              <label className="auth-demo-field">
+                <span>{t('auth.demoEmailLabel')}</span>
+                <input
+                  className="input"
+                  type="email"
+                  autoComplete="username"
+                  value={credentials.email}
+                  onChange={(event) => setCredentials((current) => ({ ...current, email: event.target.value }))}
+                />
+              </label>
+
+              <label className="auth-demo-field">
+                <span>{t('auth.demoPasswordLabel')}</span>
+                <input
+                  className="input"
+                  type="password"
+                  autoComplete="current-password"
+                  value={credentials.password}
+                  onChange={(event) => setCredentials((current) => ({ ...current, password: event.target.value }))}
+                />
+              </label>
+
+              {credentialError ? <div className="callout callout--danger">{credentialError}</div> : null}
+
+              <button className="button button--wide" type="submit">
+                {t('auth.enterDemo')}
+              </button>
+
+              <div className="auth-demo-form__hint">
+                <span>{t('auth.selectedDemoRole')}</span>
+                <strong>{t(`demo.role${getDemoRoleTranslationKey(selectedDemoRole)}`)}</strong>
+              </div>
+            </form>
+
+            <div className="auth-persona-grid">
+              {getAvailableDemoRoles().map((role) => {
+                const roleKey = getDemoRoleTranslationKey(role);
+                const roleLabel = t(`demo.role${roleKey}`);
+                const Icon = getRoleIcon(role);
+
+                return (
+                  <button
+                    key={role}
+                    className={`auth-persona-card ${selectedDemoRole === role ? 'auth-persona-card--active' : ''}`}
+                    type="button"
+                    onClick={() => handleDemoRoleSelect(role)}
+                    style={{ '--role-color': `var(--color-role-${getDemoRoleColorToken(role)})` } as any}
+                  >
+                    <div className="auth-persona-card__icon">
+                      <Icon size={24} />
+                    </div>
+                    <div className="auth-persona-card__body">
+                      <strong>{roleLabel}</strong>
+                      <p className="muted">{t(`demo.role${roleKey}Desc`)}</p>
+                    </div>
+                    <div className="auth-persona-card__footer">
+                      {t('auth.loginAs', { role: roleLabel })} →
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ) : entryError && !isExpiredSession ? (
           <div className="actions">

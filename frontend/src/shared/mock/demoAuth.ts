@@ -8,36 +8,47 @@ export type DemoRolePreset =
 const DEMO_ROLE_STORAGE_KEY = 'insightdocs.demo.role';
 const DEMO_AUTH_STORAGE_KEY = 'insightdocs.demo.authenticated.v2';
 
-const demoRoleMap: Record<DemoRolePreset, { roles: string[]; displayName: string; username: string; email: string }> = {
+const demoRoleMap: Record<DemoRolePreset, {
+  roles: string[];
+  displayName: string;
+  username: string;
+  email: string;
+  password: string;
+}> = {
   admin: {
     roles: ['insightdocs:admin'],
     displayName: 'Demo Admin',
     username: 'demo.admin',
     email: 'admin@insightdocs.demo',
+    password: 'AdminDemo123!',
   },
   document_controller: {
     roles: ['insightdocs:document_controller'],
     displayName: 'Demo Controller',
     username: 'demo.controller',
     email: 'controller@insightdocs.demo',
+    password: 'ControllerDemo123!',
   },
   manager: {
     roles: ['insightdocs:manager'],
     displayName: 'Demo Manager',
     username: 'demo.manager',
     email: 'manager@insightdocs.demo',
+    password: 'ManagerDemo123!',
   },
   signer: {
     roles: ['insightdocs:signer'],
     displayName: 'Demo Signer',
     username: 'demo.signer',
     email: 'signer@insightdocs.demo',
+    password: 'SignerDemo123!',
   },
   viewer: {
     roles: ['insightdocs:viewer'],
     displayName: 'Demo Viewer',
     username: 'demo.viewer',
     email: 'viewer@insightdocs.demo',
+    password: 'ViewerDemo123!',
   },
 };
 
@@ -68,6 +79,24 @@ export function getDemoRoleTranslationKey(role: DemoRolePreset) {
 
 export function getDemoRoleColorToken(role: DemoRolePreset) {
   return role === 'document_controller' ? 'controller' : role;
+}
+
+export function getDemoCredentials(role: DemoRolePreset) {
+  const preset = demoRoleMap[role];
+
+  return {
+    email: preset.email,
+    password: preset.password,
+  };
+}
+
+export function findDemoRoleByCredentials(email: string, password: string): DemoRolePreset | null {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  return getAvailableDemoRoles().find((role) => {
+    const preset = demoRoleMap[role];
+    return preset.email.toLowerCase() === normalizedEmail && preset.password === password;
+  }) ?? null;
 }
 
 export function readDemoRole(): DemoRolePreset {

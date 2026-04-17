@@ -300,13 +300,15 @@ export function AppShell() {
                     <NavLink className="topbar__menu-link" to="/me" onClick={() => setIsUserMenuOpen(false)}>
                       {t('shell.myProfile')}
                     </NavLink>
-                    <div className="topbar__menu-theme">
-                      <span className="topbar__menu-label">{t('language.label')}</span>
-                      <LanguageSwitcher variant="menu" />
-                    </div>
-                    <div className="topbar__menu-theme">
-                      <span className="topbar__menu-label">{t('theme.label')}</span>
-                      <ThemeToggle variant="menu" />
+                    <div className="topbar__menu-preferences">
+                      <div className="topbar__menu-control">
+                        <span className="topbar__menu-label">{t('language.label')}</span>
+                        <LanguageSwitcher variant="menu" />
+                      </div>
+                      <div className="topbar__menu-control">
+                        <span className="topbar__menu-label">{t('theme.label')}</span>
+                        <ThemeToggle variant="menu" />
+                      </div>
                     </div>
                     <NavLink className="topbar__menu-link" to="/logout" onClick={() => setIsUserMenuOpen(false)}>
                       {t('shell.logout')}
