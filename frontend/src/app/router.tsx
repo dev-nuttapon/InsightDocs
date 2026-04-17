@@ -4,6 +4,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import { StatePanel } from '../shared/components/state/StatePanel';
 import { ProtectedRoute } from '../features/auth/routes/ProtectedRoute';
 import { RoleRoute } from '../shared/routing/RoleRoute';
+import { getRouterBasename } from '../shared/routing/appBasePath';
 
 const AppShell = lazy(async () => ({ default: (await import('../shared/components/layout/AppShell')).AppShell }));
 const ApprovalsPage = lazy(async () => ({ default: (await import('../features/approvals/pages/ApprovalsPage')).ApprovalsPage }));
@@ -154,4 +155,6 @@ export const router = createBrowserRouter([
       },
     ],
   },
-]);
+], {
+  basename: getRouterBasename(),
+});

@@ -9,6 +9,7 @@ import { buildAccessProfile } from '../../auth/authorization';
 import { isDemoModeEnabled } from '../../mock/demoMode';
 import { Icons } from '../ui/Icons';
 import { resetDemoScenario } from '../../mock/demoScenario';
+import { toAppPath } from '../../routing/appBasePath';
 import {
   getAvailableDemoRoles,
   getDemoRoleColorToken,
@@ -225,7 +226,7 @@ export function AppShell() {
                             type="button"
                             onClick={() => {
                               resetDemoScenario();
-                              window.location.assign('/dashboard');
+                              window.location.assign(toAppPath('/dashboard'));
                             }}
                           >
                             <div className="topbar__menu-link-content">

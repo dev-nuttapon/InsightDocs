@@ -22,6 +22,7 @@ import {
   getDemoScenarioState,
 } from '../../../shared/mock/demoScenario';
 import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
+import { toAppPath } from '../../../shared/routing/appBasePath';
 import { useAuth } from '../../auth/context/useAuth';
 import {
   getDashboardSummary,
@@ -218,7 +219,7 @@ export function DashboardPage() {
 
   function handleResetDemo() {
     resetDemoScenario();
-    window.location.assign('/dashboard');
+    window.location.assign(toAppPath('/dashboard'));
   }
 
   if (!summary && !error) {

@@ -47,6 +47,26 @@ npm run dev
 
 Default URL: `http://localhost:5173`
 
+## GitHub Pages Deploy
+
+The repository includes a GitHub Actions workflow at `.github/workflows/deploy-github-pages.yml`.
+
+Deployment behavior:
+
+- builds the Vite frontend from `frontend`
+- uses the project-site base path `/InsightDocs/`
+- forces frontend demo mode with `VITE_DEMO_MODE=true`
+- copies `dist/index.html` to `dist/404.html` so direct SPA routes such as `/InsightDocs/dashboard` refresh correctly
+
+To enable the first deployment in GitHub:
+
+1. Open repository settings
+2. Go to `Pages`
+3. Set `Source` to `GitHub Actions`
+4. Push to `master` or run the `Deploy GitHub Pages` workflow manually
+
+Expected URL: `https://dev-nuttapon.github.io/InsightDocs/`
+
 Recommended companion services:
 
 - backend API at `http://localhost:8081`
