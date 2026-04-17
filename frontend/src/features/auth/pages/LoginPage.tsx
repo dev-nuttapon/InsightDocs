@@ -4,6 +4,9 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { buildAccessProfile, canAccessPath, resolveDefaultAuthorizedPath } from '../../../shared/auth/authorization';
 import { useAuth } from '../context/useAuth';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { getAvailableDemoRoles, type DemoRolePreset } from '../../../shared/mock/demoAuth';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
+import { Icons } from '../../../shared/components/ui/Icons';
 
 export function LoginPage() {
   const location = useLocation();
@@ -20,7 +23,7 @@ export function LoginPage() {
     : resolveDefaultAuthorizedPath(access);
 
   useEffect(() => {
-    if (!isReady || isAuthenticated || loginStartedRef.current || (entryError && !isExpiredSession)) {
+    if (!isReady || isAuthenticated || loginStartedRef.current || (entryError && !isExpiredSession) || demoMode) {
       return;
     }
 
@@ -28,7 +31,7 @@ export function LoginPage() {
     void login(redirectTarget).catch(() => {
       loginStartedRef.current = false;
     });
-  }, [entryError, isAuthenticated, isExpiredSession, isReady, login, redirectTarget]);
+  }, [demoMode, entryError, isAuthenticated, isExpiredSession, isReady, login, redirectTarget]);
 
   if (isAuthenticated && !hasMappedAccess) {
     return <Navigate replace to="/unauthorized" state={{ errorMessage: t('auth.noMappedRoles') }} />;
@@ -52,14 +55,41 @@ export function LoginPage() {
 
   return (
     <section className="auth-layout">
-      <article className="panel auth-panel auth-panel--form">
+      <article className={`panel auth-panel auth-panel--form ${demoMode ? 'auth-panel--wide' : ''}`}>
         <span className="sidebar__eyebrow">{t('auth.eyebrow')}</span>
-        <h2>{heading}</h2>
-        <p className="muted">{description}</p>
+        <h2>{demoMode ? t('auth.quickLoginTitle') : heading}</h2>
+        <p className="muted">{demoMode ? t('auth.quickLoginDescription') : description}</p>
 
         {entryError && !isExpiredSession ? <div className="callout callout--danger">{entryError}</div> : null}
 
-        {entryError && !isExpiredSession ? (
+        {demoMode ? (
+          <div className="auth-persona-grid">
+            {getAvailableDemoRoles().map((role) => {
+              const roleKey = roleToKey(role);
+              const Icon = getRoleIcon(role);
+
+              return (
+                <button
+                  key={role}
+                  className="auth-persona-card"
+                  onClick={() => void login(redirectTarget, role)}
+                  style={{ '--role-color': `var(--color-role-${role})` } as any}
+                >
+                  <div className="auth-persona-card__icon">
+                    <Icon size={24} />
+                  </div>
+                  <div className="auth-persona-card__body">
+                    <strong>{t(`demo.role${roleKey}`)}</strong>
+                    <p className="muted">{t(`demo.role${roleKey}Desc`)}</p>
+                  </div>
+                  <div className="auth-persona-card__footer">
+                    {t('auth.loginAs', { role: '' })} →
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : entryError && !isExpiredSession ? (
           <div className="actions">
             <button className="button button--wide" type="button" onClick={() => void login(redirectTarget)} disabled={isBusy}>
               {isBusy ? t('auth.redirecting') : t('auth.retryLogin')}
@@ -69,19 +99,19 @@ export function LoginPage() {
           <div className="card">
             <span className="card__label">{t('auth.automaticRedirect')}</span>
             <strong>{t('auth.sendingToKeycloak')}</strong>
-            <div className="muted">
-              {t('auth.redirectHint')}
-            </div>
+            <div className="muted">{t('auth.redirectHint')}</div>
           </div>
         )}
 
-        <div className="auth-metadata">
-          <div className="card">
-            <span className="card__label">{t('auth.sessionReturn')}</span>
-            <strong>{redirectTarget}</strong>
-            <div className="muted">{t('auth.sessionReturnDescription')}</div>
+        {!demoMode && (
+          <div className="auth-metadata">
+            <div className="card">
+              <span className="card__label">{t('auth.sessionReturn')}</span>
+              <strong>{redirectTarget}</strong>
+              <div className="muted">{t('auth.sessionReturnDescription')}</div>
+            </div>
           </div>
-        </div>
+        )}
       </article>
     </section>
   );
@@ -120,4 +150,19 @@ function isExpiredSessionMessage(message: string | null) {
 
   const normalized = message.trim().toLowerCase();
   return normalized.includes('session expired') || normalized.includes('sign in again');
+}
+
+function roleToKey(role: string): string {
+  return role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+}
+
+function getRoleIcon(role: DemoRolePreset) {
+  switch (role) {
+    case 'admin': return Icons.Settings;
+    case 'document_controller': return Icons.Documents;
+    case 'manager': return Icons.Approval;
+    case 'signer': return Icons.Signature;
+    case 'viewer': return Icons.Search;
+    default: return Icons.Users;
+  }
 }

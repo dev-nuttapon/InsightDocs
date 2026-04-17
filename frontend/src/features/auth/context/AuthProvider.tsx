@@ -59,9 +59,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           user: authenticated ? buildDemoUser(role) : null,
           isDemoSession: true,
           demoRole: role,
-          login: async () => {
+          login: async (_returnTo, nextRole) => {
+            if (nextRole) {
+              writeDemoRole(nextRole);
+            }
             writeDemoAuthenticated(true);
-            syncDemoState(readDemoRole(), true);
+            syncDemoState(nextRole ?? readDemoRole(), true);
           },
           logout: async () => {
             writeDemoAuthenticated(false);

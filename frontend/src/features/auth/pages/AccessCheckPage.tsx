@@ -5,6 +5,7 @@ import { buildAccessProfile } from '../../../shared/auth/authorization';
 import { StatePanel } from '../../../shared/components/state/StatePanel';
 import { useAuth } from '../context/useAuth';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { isDemoModeEnabled } from '../../../shared/mock/demoMode';
 
 export function AccessCheckPage() {
   const { t } = useTranslation();
@@ -14,7 +15,7 @@ export function AccessCheckPage() {
   const dashboardPath = '/dashboard';
 
   useEffect(() => {
-    if (isLoading || isAuthenticated || hasStartedLogin.current) {
+    if (isLoading || isAuthenticated || hasStartedLogin.current || isDemoModeEnabled()) {
       return;
     }
 
@@ -39,6 +40,10 @@ export function AccessCheckPage() {
 
   if (isAuthenticated) {
     return <Navigate replace to={dashboardPath} />;
+  }
+
+  if (isDemoModeEnabled()) {
+    return <Navigate replace to="/login" />;
   }
 
   return (

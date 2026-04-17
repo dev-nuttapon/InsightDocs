@@ -72,12 +72,12 @@ export function writeDemoRole(role: DemoRolePreset) {
 
 export function readDemoAuthenticated() {
   if (typeof window === 'undefined') {
-    return true;
+    return false;
   }
 
   const raw = window.localStorage.getItem(DEMO_AUTH_STORAGE_KEY);
   if (raw === null) {
-    return true;
+    return false;
   }
 
   return raw === 'true';

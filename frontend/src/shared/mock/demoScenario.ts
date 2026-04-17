@@ -24,6 +24,7 @@ import type {
 } from '../../features/documents/types';
 import type { SearchDocumentResult, SearchDocumentsResponse, SearchFilters } from '../../features/search/types';
 import type { AppUser } from '../../features/users/types';
+import { readDemoRole } from './demoAuth';
 
 export type DemoShowcaseDocument = {
   id: string;
@@ -1093,16 +1094,28 @@ export function getDemoPendingSignatures(language: Language = 'th') {
 
 export function getDemoDashboardSummary(): DashboardSummary {
   const snapshot = readSnapshot();
+  const role = readDemoRole();
   const pendingApprovals = derivePendingApprovals(snapshot);
   const pendingSignatures = derivePendingSignatures(snapshot);
 
-  return {
+  const stats = {
     totalDocuments: snapshot.documentSummaries.length,
     pendingApprovals: pendingApprovals.length,
     pendingSignatures: pendingSignatures.length,
     approvedDocuments: snapshot.documentSummaries.filter((document) => document.status === 'Approved').length,
     archivedDocuments: snapshot.documentSummaries.filter((document) => document.status === 'Archived').length,
   };
+
+  // Role-specific "stat skewing" for a more dramatic demo experience
+  if (role === 'signer') {
+    stats.pendingSignatures = Math.max(stats.pendingSignatures, 8);
+  } else if (role === 'manager') {
+    stats.pendingApprovals = Math.max(stats.pendingApprovals, 5);
+  } else if (role === 'document_controller') {
+    stats.pendingApprovals = Math.max(stats.pendingApprovals, 3);
+  }
+  
+  return stats;
 }
 
 export function getDemoRecentDashboardDocuments(language: Language = 'th') {

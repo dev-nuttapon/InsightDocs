@@ -20,7 +20,7 @@ export type AuthContextValue = {
   user: CurrentUser | null;
   isDemoSession: boolean;
   demoRole: DemoRolePreset | null;
-  login: (returnTo?: string) => Promise<void>;
+  login: (returnTo?: string, role?: DemoRolePreset) => Promise<void>;
   logout: () => Promise<void>;
   setDemoRole: (role: DemoRolePreset) => void;
 };
